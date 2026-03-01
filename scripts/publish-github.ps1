@@ -4,7 +4,8 @@ param(
     [string]$Visibility = "private",
     [string]$Branch = "main",
     [switch]$RequireCodeOwnerReviews,
-    [int]$Approvals = 1
+    [int]$Approvals = 1,
+    [switch]$SkipBranchProtection
 )
 
 $ErrorActionPreference = "Stop"
@@ -78,20 +79,27 @@ if (-not (HasOriginRemote)) {
 
 Invoke-CmdChecked -Command "git" -Arguments @("push", "-u", "origin", $Branch)
 
-$protectScript = Join-Path "scripts" "setup-branch-protection.ps1"
-Invoke-CmdChecked -Command "powershell" -Arguments @(
-    "-ExecutionPolicy",
-    "Bypass",
-    "-File",
-    $protectScript,
-    "-Owner",
-    $owner,
-    "-Repo",
-    $RepoName,
-    "-Branch",
-    $Branch,
-    "-Approvals",
-    "$Approvals"
-)
+if (-not $SkipBranchProtection) {
+    $protectScript = Join-Path "scripts" "setup-branch-protection.ps1"
+    try {
+        Invoke-CmdChecked -Command "powershell" -Arguments @(
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            $protectScript,
+            "-Owner",
+            $owner,
+            "-Repo",
+            $RepoName,
+            "-Branch",
+            $Branch,
+            "-Approvals",
+            "$Approvals"
+        )
+    } catch {
+        Write-Warning "Nao foi possivel aplicar branch protection automaticamente. Push concluido com sucesso."
+        Write-Warning "Se o repo for privado em conta pessoal gratuita, essa API pode exigir GitHub Pro."
+    }
+}
 
 Write-Host "Publicacao concluida: https://github.com/$fullRepo"
