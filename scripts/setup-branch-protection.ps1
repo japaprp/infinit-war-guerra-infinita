@@ -60,6 +60,18 @@ function Invoke-Gh {
     }
 }
 
+function Write-JsonNoBom {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [Parameter(Mandatory = $true)]
+        [string]$Json
+    )
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $Json, $utf8NoBom)
+}
+
 if ([string]::IsNullOrWhiteSpace($Owner) -or [string]::IsNullOrWhiteSpace($Repo)) {
     $resolved = Resolve-OwnerRepoFromGit
     if ($resolved) {
@@ -132,7 +144,7 @@ $tmpPayloadPath = [System.IO.Path]::GetTempFileName()
 $applied = $false
 
 try {
-    Set-Content -Path $tmpPayloadPath -Value $payloadWithChecks -Encoding UTF8
+    Write-JsonNoBom -Path $tmpPayloadPath -Json $payloadWithChecks
     Invoke-Gh @("api", "--method", "PUT", $endpoint, "--input", $tmpPayloadPath)
     Write-Host "Branch protection aplicada com checks no repo $Owner/$Repo branch $Branch."
     $applied = $true
@@ -141,7 +153,7 @@ try {
 }
 
 if (-not $applied) {
-    Set-Content -Path $tmpPayloadPath -Value $payloadWithContexts -Encoding UTF8
+    Write-JsonNoBom -Path $tmpPayloadPath -Json $payloadWithContexts
     Invoke-Gh @("api", "--method", "PUT", $endpoint, "--input", $tmpPayloadPath)
     Write-Host "Branch protection aplicada com contexts no repo $Owner/$Repo branch $Branch."
 }
