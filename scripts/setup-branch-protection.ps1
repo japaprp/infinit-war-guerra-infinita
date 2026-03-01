@@ -87,7 +87,17 @@ if ([string]::IsNullOrWhiteSpace($Owner) -or [string]::IsNullOrWhiteSpace($Repo)
 Ensure-GhCli
 Ensure-GhAuth
 
-if ($Approvals -lt 1) { $Approvals = 1 }
+if ($Approvals -lt 0) { $Approvals = 0 }
+
+$reviewPolicy = if ($Approvals -eq 0) {
+    $null
+} else {
+    @{
+        dismiss_stale_reviews = $true
+        require_code_owner_reviews = [bool]$RequireCodeOwnerReviews
+        required_approving_review_count = $Approvals
+    }
+}
 
 $payloadWithChecks = @{
     required_status_checks = @{
@@ -100,11 +110,7 @@ $payloadWithChecks = @{
         )
     }
     enforce_admins = $true
-    required_pull_request_reviews = @{
-        dismiss_stale_reviews = $true
-        require_code_owner_reviews = [bool]$RequireCodeOwnerReviews
-        required_approving_review_count = $Approvals
-    }
+    required_pull_request_reviews = $reviewPolicy
     restrictions = $null
     required_linear_history = $true
     allow_force_pushes = $false
@@ -124,11 +130,7 @@ $payloadWithContexts = @{
         )
     }
     enforce_admins = $true
-    required_pull_request_reviews = @{
-        dismiss_stale_reviews = $true
-        require_code_owner_reviews = [bool]$RequireCodeOwnerReviews
-        required_approving_review_count = $Approvals
-    }
+    required_pull_request_reviews = $reviewPolicy
     restrictions = $null
     required_linear_history = $true
     allow_force_pushes = $false
