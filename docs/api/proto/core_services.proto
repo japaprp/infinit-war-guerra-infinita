@@ -1,0 +1,307 @@
+﻿syntax = "proto3";
+
+package iwar.core.v1;
+
+option csharp_namespace = "IWAR.Core.V1";
+
+message Empty {}
+
+message AuthContext {
+  string player_id = 1;
+  int32 realm_id = 2;
+}
+
+message ResourceBag {
+  int64 gold = 1;
+  int64 wood = 2;
+  int64 steel = 3;
+  int64 food = 4;
+  int64 gems = 5;
+  int32 energy = 6;
+  int32 energy_max = 7;
+}
+
+message PlayerProfile {
+  string player_id = 1;
+  string nickname = 2;
+  int32 level = 3;
+  int64 power = 4;
+  int32 vip_level = 5;
+  int32 realm_id = 6;
+  ResourceBag resources = 7;
+}
+
+message Hero {
+  string hero_id = 1;
+  string rarity = 2;
+  int32 level = 3;
+  int32 stars = 4;
+  int32 ascension = 5;
+  int32 atk = 6;
+  int32 def = 7;
+  int32 units = 8;
+  int32 power = 9;
+  int32 shards_owned = 10;
+  repeated int32 skill_levels = 11;
+}
+
+message Building {
+  string building_id = 1;
+  string building_type = 2;
+  string slot_code = 3;
+  int32 level = 4;
+  string state = 5;
+  int64 end_at_ms = 6;
+}
+
+message TimerEntry {
+  string id = 1;
+  string category = 2;
+  int64 end_at_ms = 3;
+}
+
+message SyncStateRequest {
+  AuthContext auth = 1;
+  string client_version = 2;
+  int64 state_version = 3;
+}
+
+message SyncStateResponse {
+  int64 server_time_ms = 1;
+  int64 state_version = 2;
+  PlayerProfile profile = 3;
+  repeated TimerEntry pending_timers = 4;
+}
+
+message ListHeroesRequest {
+  AuthContext auth = 1;
+}
+
+message ListHeroesResponse {
+  repeated Hero heroes = 1;
+}
+
+message HeroActionRequest {
+  AuthContext auth = 1;
+  string hero_id = 2;
+  int32 levels = 3;
+  string shard_mode = 4;
+  string ascension_item_code = 5;
+}
+
+message HeroActionResponse {
+  Hero hero = 1;
+  ResourceBag resources = 2;
+}
+
+message StartBuildRequest {
+  AuthContext auth = 1;
+  string building_type = 2;
+  string slot_code = 3;
+  int32 target_level = 4;
+}
+
+message StartBuildResponse {
+  string task_id = 1;
+  Building building = 2;
+  ResourceBag resources = 3;
+}
+
+message CompleteBuildRequest {
+  AuthContext auth = 1;
+  string task_id = 2;
+}
+
+message CompleteBuildResponse {
+  Building building = 1;
+  ResourceBag resources = 2;
+}
+
+message SpeedUpBuildRequest {
+  AuthContext auth = 1;
+  string task_id = 2;
+  int32 gem_budget_limit = 3;
+}
+
+message SpeedUpBuildResponse {
+  string task_id = 1;
+  int32 gems_spent = 2;
+  bool completed = 3;
+  ResourceBag resources = 4;
+}
+
+message WorldTile {
+  int32 x = 1;
+  int32 y = 2;
+  string tile_type = 3;
+  string owner_player_id = 4;
+  int32 level = 5;
+}
+
+message QueryWorldTilesRequest {
+  AuthContext auth = 1;
+  int32 x = 2;
+  int32 y = 3;
+  int32 radius = 4;
+}
+
+message QueryWorldTilesResponse {
+  int64 server_time_ms = 1;
+  repeated WorldTile tiles = 2;
+}
+
+message SquadUnit {
+  string hero_id = 1;
+  int32 units = 2;
+}
+
+message StartMarchRequest {
+  AuthContext auth = 1;
+  int32 target_x = 2;
+  int32 target_y = 3;
+  string march_type = 4;
+  repeated SquadUnit squad = 5;
+}
+
+message StartMarchResponse {
+  string march_id = 1;
+  int64 depart_at_ms = 2;
+  int64 arrive_at_ms = 3;
+}
+
+message CreateRallyRequest {
+  AuthContext auth = 1;
+  int32 target_x = 2;
+  int32 target_y = 3;
+  int32 join_window_sec = 4;
+  string rally_type = 5;
+}
+
+message CreateRallyResponse {
+  string rally_id = 1;
+  string leader_player_id = 2;
+  int64 close_at_ms = 3;
+}
+
+message Alliance {
+  string alliance_id = 1;
+  string name = 2;
+  string tag = 3;
+  string leader_player_id = 4;
+  int32 member_count = 5;
+  int64 power = 6;
+}
+
+message CreateAllianceRequest {
+  AuthContext auth = 1;
+  string name = 2;
+  string tag = 3;
+  string language_code = 4;
+}
+
+message SearchAlliancesRequest {
+  AuthContext auth = 1;
+  string query = 2;
+}
+
+message SearchAlliancesResponse {
+  repeated Alliance alliances = 1;
+}
+
+message JoinAllianceRequest {
+  AuthContext auth = 1;
+  string alliance_id = 2;
+}
+
+message JoinAllianceResponse {
+  string status = 1;
+}
+
+message RankingEntry {
+  int32 rank = 1;
+  string player_id = 2;
+  string nickname = 3;
+  int64 power = 4;
+  string alliance_tag = 5;
+}
+
+message QueryPowerRankingRequest {
+  AuthContext auth = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message QueryPowerRankingResponse {
+  repeated RankingEntry entries = 1;
+}
+
+message ShopPurchaseRequest {
+  AuthContext auth = 1;
+  string sku = 2;
+  int32 quantity = 3;
+  string idempotency_key = 4;
+}
+
+message GrantedItem {
+  string item_code = 1;
+  int32 qty = 2;
+}
+
+message ShopPurchaseResponse {
+  string order_id = 1;
+  int32 gems_spent = 2;
+  repeated GrantedItem granted_items = 3;
+  ResourceBag resources = 4;
+}
+
+message BattlePassClaimRequest {
+  AuthContext auth = 1;
+  string season_id = 2;
+  int32 tier = 3;
+  bool premium_track = 4;
+}
+
+message BattlePassClaimResponse {
+  string season_id = 1;
+  int32 tier = 2;
+  repeated GrantedItem rewards = 3;
+}
+
+service PlayerService {
+  rpc SyncState (SyncStateRequest) returns (SyncStateResponse);
+}
+
+service HeroService {
+  rpc ListHeroes (ListHeroesRequest) returns (ListHeroesResponse);
+  rpc LevelUpHero (HeroActionRequest) returns (HeroActionResponse);
+  rpc StarUpHero (HeroActionRequest) returns (HeroActionResponse);
+  rpc AscendHero (HeroActionRequest) returns (HeroActionResponse);
+}
+
+service BuildingService {
+  rpc StartBuild (StartBuildRequest) returns (StartBuildResponse);
+  rpc CompleteBuild (CompleteBuildRequest) returns (CompleteBuildResponse);
+  rpc SpeedUpBuild (SpeedUpBuildRequest) returns (SpeedUpBuildResponse);
+}
+
+service WorldService {
+  rpc QueryTiles (QueryWorldTilesRequest) returns (QueryWorldTilesResponse);
+  rpc StartMarch (StartMarchRequest) returns (StartMarchResponse);
+  rpc CreateRally (CreateRallyRequest) returns (CreateRallyResponse);
+}
+
+service AllianceService {
+  rpc CreateAlliance (CreateAllianceRequest) returns (Alliance);
+  rpc SearchAlliances (SearchAlliancesRequest) returns (SearchAlliancesResponse);
+  rpc JoinAlliance (JoinAllianceRequest) returns (JoinAllianceResponse);
+}
+
+service RankingService {
+  rpc QueryPowerRanking (QueryPowerRankingRequest) returns (QueryPowerRankingResponse);
+}
+
+service EconomyService {
+  rpc Purchase (ShopPurchaseRequest) returns (ShopPurchaseResponse);
+  rpc ClaimBattlePassTier (BattlePassClaimRequest) returns (BattlePassClaimResponse);
+}
+

@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:4000 https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com;">
+<title>Infinit War (Guerra Infinita)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="menu">
+<main class="menu-container">
+    <h1>Infinit War</h1>
+    <p class="subtitle">Escolha seu elemento e entre na arena.</p>
+
+    <div class="auth-box">
+        <p id="authStatus" class="auth-status">Conta: nao vinculada</p>
+        <div class="auth-actions">
+            <button type="button" id="googleLoginBtn" class="oauth-btn google">Vincular Google</button>
+            <button type="button" id="facebookLoginBtn" class="oauth-btn facebook">Vincular Facebook</button>
+            <button type="button" id="logoutBtn" class="oauth-btn logout">Desvincular</button>
+        </div>
+    </div>
+
+    <label class="field-label" for="nickname">Nickname</label>
+    <input type="text" id="nickname" placeholder="Digite seu nickname" maxlength="16" autocomplete="off">
+
+    <h2>Escolha seu elemento</h2>
+    <div class="elements" role="group" aria-label="Selecao de elemento">
+        <button type="button" class="element-btn is-selected" data-element="fire">Fogo</button>
+        <button type="button" class="element-btn" data-element="water">Agua</button>
+        <button type="button" class="element-btn" data-element="earth">Terra</button>
+    </div>
+
+    <button type="button" id="startGameBtn" class="start-btn">Entrar na Arena</button>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
+<script src="api/config.js" defer></script>
+<script src="api/client.js" defer></script>
+<script src="auth/firebase-config.js" defer></script>
+<script src="auth/auth.js" defer></script>
+<script src="main.js" defer></script>
+</body>
+</html>

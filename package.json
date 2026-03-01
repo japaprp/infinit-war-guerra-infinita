@@ -1,0 +1,45 @@
+﻿{
+  "name": "infinit-war-guerra-infinita",
+  "version": "1.0.0",
+  "description": "Infinit War (Guerra Infinita) - strategy survival prototype",
+  "main": "electron/main.js",
+  "author": "Yago Fellipe Amorim",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "electron .",
+    "start": "electron .",
+    "build:win": "electron-builder --win nsis",
+    "check:env": "powershell -ExecutionPolicy Bypass -File scripts/check-env.ps1",
+    "github:protect:main": "powershell -ExecutionPolicy Bypass -File scripts/setup-branch-protection.ps1 -Branch main",
+    "backend:dev": "npm --prefix backend run dev",
+    "backend:grpc": "npm --prefix backend run dev:grpc"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.infinitwar.guerrainfinita",
+    "productName": "Infinit War (Guerra Infinita)",
+    "files": [
+      "**/*",
+      "!dist/**",
+      "!node_modules/.cache/**",
+      "!assets/references/**"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

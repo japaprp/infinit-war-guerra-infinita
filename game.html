@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:4000;">
+<title>Abrigo - Infinit War (Guerra Infinita)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="game">
+<div id="loadingScreen" class="loading-screen" aria-live="polite">
+    <div class="loading-card">
+        <p class="loading-kicker">Abrindo sessao de batalha</p>
+        <h1>Infinit War</h1>
+        <p id="loadingStatusText">Iniciando sistemas...</p>
+        <div class="loading-bar">
+            <div id="loadingBarFill"></div>
+        </div>
+        <small id="loadingPercentText">0%</small>
+    </div>
+</div>
+
+<div class="top-bar">
+    <div class="top-player">
+        <div class="avatar-badge">IW</div>
+        <div>
+            <strong id="playerName">Jogador</strong>
+            <small id="playerElement">Elemento</small>
+        </div>
+    </div>
+    <div class="resource-row">
+        <span class="resource">Poder <b id="powerValue">0</b></span>
+        <span class="resource">Ouro <b id="goldValue">0</b></span>
+        <span class="resource">Prata <b id="silverValue">0</b></span>
+        <span class="resource">Madeira <b id="woodValue">0</b></span>
+        <span class="resource">Alimento <b id="foodValue">0</b></span>
+        <span class="resource">Energia <b id="energyValue">0</b></span>
+        <span class="resource gem">Gemas <b id="gemValue">0</b></span>
+    </div>
+</div>
+
+<div id="hud">
+    <div id="lifeBar" aria-label="Vida do jogador">
+        <div id="lifeFill"></div>
+    </div>
+    <div id="staminaBar" aria-label="Folego do jogador">
+        <div id="staminaFill"></div>
+    </div>
+    <small id="stateHint">Shift: correr | H: cura | M: mapa | P: pausa</small>
+</div>
+
+<aside class="left-rail">
+    <button class="rail-btn" id="toggleMapBtn">MAP</button>
+    <button class="rail-btn" id="focusMissionBtn">MIS</button>
+    <button class="rail-btn" id="openHeroesRailBtn">BAG</button>
+    <button class="rail-btn" id="focusPvpBtn">PVP</button>
+</aside>
+
+<aside class="right-rail">
+    <button class="rail-btn hot">
+        <span>VS</span>
+        <small id="vsTimer">8d 3h</small>
+    </button>
+    <button class="rail-btn">
+        <span>BNS</span>
+        <small id="bonusTimer">25d 10h</small>
+    </button>
+    <button class="rail-btn" id="openShopBtn">
+        <span>SHOP</span>
+        <small>Raro</small>
+    </button>
+    <button class="rail-btn">
+        <span>MAIL</span>
+        <small>42</small>
+    </button>
+</aside>
+
+<div class="mission-toast">
+    <strong>Missao principal:</strong>
+    <span id="missionText">Colete recursos no mapa e elimine monstros.</span>
+    <small id="unlockProgressText">0/10 para novo heroi</small>
+</div>
+
+<div class="interaction-hint" id="interactionHint">
+    <strong>[E]</strong> <span id="collectHintText">Coletar recurso</span>
+    <strong>[F]</strong> <span id="fightHintText">Atacar monstro</span>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<section class="minimap-panel" id="minimapPanel" aria-hidden="false">
+    <header>
+        <strong>Mapa Tatico</strong>
+        <small>[M]</small>
+    </header>
+    <canvas id="minimapCanvas" width="180" height="140"></canvas>
+</section>
+
+<div class="quick-actions">
+    <button id="quickHealBtn">Cura Rapida [H]</button>
+    <button id="toggleAutoCollectBtn">Auto-Coleta: OFF</button>
+    <button id="toggleAutoHuntBtn">Auto-Caca: OFF</button>
+    <button id="returnVillageBtn">Voltar para Vila</button>
+</div>
+
+<div id="pauseBadge" class="pause-badge" hidden>Jogo pausado [P]</div>
+
+<section class="vertical-slice-panel" id="verticalSlicePanel">
+    <header>
+        <strong>Vertical Slice</strong>
+        <small>Construcao -> PvE -> Upgrade</small>
+    </header>
+    <p id="verticalSliceStatus">Passo 1/4: iniciar construcao do quartel.</p>
+    <div class="slice-steps" id="verticalSliceSteps"></div>
+    <div class="slice-actions">
+        <button id="sliceStartBuildBtn">1) Iniciar construcao</button>
+        <button id="sliceCompleteBuildBtn">2) Concluir construcao</button>
+        <button id="sliceFightPveBtn">3) Lutar PvE</button>
+        <button id="sliceUpgradeHeroBtn">4) Evoluir heroi</button>
+        <button id="sliceClaimRewardBtn">Reivindicar recompensa</button>
+    </div>
+</section>
+
+<nav class="bottom-nav">
+    <button class="nav-btn" id="toggleHeroes">Heroi</button>
+    <button class="nav-btn center">Construir</button>
+    <button class="nav-btn">Mundo</button>
+</nav>
+
+<section class="hero-panel" id="heroPanel" aria-hidden="true">
+    <header class="hero-panel-head">
+        <h2>Esquadrao de Herois</h2>
+        <div class="hero-panel-actions">
+            <button id="saveSquadBtn" class="close-btn">Salvar</button>
+            <button id="closeHeroPanel" class="close-btn">Fechar</button>
+        </div>
+    </header>
+
+    <div class="squad-slots" id="squadSlots"></div>
+
+    <article class="hero-detail" id="heroDetail">
+        <div class="hero-portrait" id="heroPortrait">L</div>
+        <div class="hero-meta">
+            <h3 id="heroName">Lucas</h3>
+            <p id="heroWeapon">Arma: Sentenca Flamejante</p>
+            <p id="heroStats">ATQ 0 | DEF 0 | Unidades 0</p>
+            <div class="skill-row" id="heroSkills"></div>
+        </div>
+    </article>
+
+    <div class="hero-currency">
+        <span>QB Bronze: <b id="bronzeShardValue">0</b></span>
+        <span>QB Prata: <b id="silverShardValue">0</b></span>
+        <span>QB Ouro: <b id="goldShardValue">0</b></span>
+    </div>
+
+    <div class="hero-tabs" id="heroTabs"></div>
+    <article class="hero-tab-content" id="heroTabContent"></article>
+
+    <div class="hero-roster" id="heroRoster"></div>
+</section>
+
+<section class="shop-panel" id="shopPanel" aria-hidden="true">
+    <header class="shop-header">
+        <h2>Loja Virtual</h2>
+        <button id="closeShopBtn" class="close-btn">Fechar</button>
+    </header>
+    <p class="shop-subtitle">Pecas especificas para herois raros (tier ouro)</p>
+    <div class="shop-grid" id="shopGrid"></div>
+</section>
+
+<div id="systemFeed" class="system-feed"></div>
+
+<script src="entities/player.js"></script>
+<script src="engine/ui.js"></script>
+<script src="api/config.js"></script>
+<script src="api/client.js"></script>
+<script src="engine/game.js"></script>
+</body>
+</html>

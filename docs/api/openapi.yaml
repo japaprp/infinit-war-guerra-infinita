@@ -1,0 +1,764 @@
+﻿openapi: 3.0.3
+info:
+  title: Infinit War (Guerra Infinita) - Core API
+  version: 1.0.0
+  description: |
+    API central para servicos de jogador, herois, construcao, mapa mundial, aliancas,
+    ranking, monetizacao e passe de batalha.
+servers:
+  - url: https://api.infinitwar.example.com
+    description: Production
+  - url: https://staging-api.infinitwar.example.com
+    description: Staging
+security:
+  - BearerAuth: []
+tags:
+  - name: Auth
+  - name: Player
+  - name: Heroes
+  - name: Buildings
+  - name: World
+  - name: Alliances
+  - name: Rankings
+  - name: Shop
+  - name: BattlePass
+
+paths:
+  /v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login com provider externo
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Sessao criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/player/me:
+    get:
+      tags: [Player]
+      summary: Perfil do jogador logado
+      responses:
+        '200':
+          description: Perfil atual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerProfile'
+
+  /v1/player/sync:
+    post:
+      tags: [Player]
+      summary: Sincroniza estado do cliente com snapshot autoritativo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncStateRequest'
+      responses:
+        '200':
+          description: Snapshot consolidado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStateResponse'
+
+  /v1/heroes:
+    get:
+      tags: [Heroes]
+      summary: Lista de herois do jogador
+      responses:
+        '200':
+          description: Lista de herois
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  heroes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Hero'
+
+  /v1/heroes/{heroId}/level-up:
+    post:
+      tags: [Heroes]
+      summary: Evolui nivel do heroi
+      parameters:
+        - $ref: '#/components/parameters/HeroId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HeroLevelUpRequest'
+      responses:
+        '200':
+          description: Heroi atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeroActionResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /v1/heroes/{heroId}/star-up:
+    post:
+      tags: [Heroes]
+      summary: Sobe estrela do heroi
+      parameters:
+        - $ref: '#/components/parameters/HeroId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HeroStarUpRequest'
+      responses:
+        '200':
+          description: Heroi atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeroActionResponse'
+
+  /v1/heroes/{heroId}/ascend:
+    post:
+      tags: [Heroes]
+      summary: Ascende heroi
+      parameters:
+        - $ref: '#/components/parameters/HeroId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HeroAscendRequest'
+      responses:
+        '200':
+          description: Heroi ascendido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeroActionResponse'
+
+  /v1/buildings:
+    get:
+      tags: [Buildings]
+      summary: Estado dos edificios da base
+      responses:
+        '200':
+          description: Lista de edificios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  buildings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Building'
+
+  /v1/buildings/start:
+    post:
+      tags: [Buildings]
+      summary: Inicia construcao ou upgrade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartBuildRequest'
+      responses:
+        '200':
+          description: Tarefa iniciada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartBuildResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /v1/buildings/complete:
+    post:
+      tags: [Buildings]
+      summary: Finaliza construcao quando timer terminar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteBuildRequest'
+      responses:
+        '200':
+          description: Edificio finalizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteBuildResponse'
+
+  /v1/buildings/queue/speed-up:
+    post:
+      tags: [Buildings]
+      summary: Acelera construcao usando gemas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpeedUpBuildRequest'
+      responses:
+        '200':
+          description: Aceleracao aplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeedUpBuildResponse'
+
+  /v1/world/tiles:
+    get:
+      tags: [World]
+      summary: Consulta tiles de uma janela do mapa
+      parameters:
+        - name: x
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: y
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: radius
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 20 }
+      responses:
+        '200':
+          description: Tiles e entidades visiveis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serverTimeMs:
+                    type: integer
+                    format: int64
+                  tiles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WorldTile'
+
+  /v1/world/marches/start:
+    post:
+      tags: [World]
+      summary: Inicia marcha (coleta/ataque/reforco)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartMarchRequest'
+      responses:
+        '200':
+          description: Marcha criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartMarchResponse'
+
+  /v1/world/rallies:
+    post:
+      tags: [World]
+      summary: Cria rally de alianca
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRallyRequest'
+      responses:
+        '200':
+          description: Rally criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateRallyResponse'
+
+  /v1/alliances:
+    post:
+      tags: [Alliances]
+      summary: Cria alianca
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAllianceRequest'
+      responses:
+        '200':
+          description: Alianca criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alliance'
+    get:
+      tags: [Alliances]
+      summary: Busca aliancas por nome/tag
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Resultado da busca
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alliances:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alliance'
+
+  /v1/alliances/{allianceId}/join:
+    post:
+      tags: [Alliances]
+      summary: Solicita entrada em alianca
+      parameters:
+        - $ref: '#/components/parameters/AllianceId'
+      responses:
+        '200':
+          description: Solicitação registrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [PENDING, APPROVED]
+
+  /v1/rankings/power:
+    get:
+      tags: [Rankings]
+      summary: Ranking global por poder
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 10, maximum: 100, default: 50 }
+      responses:
+        '200':
+          description: Lista paginada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RankingEntry'
+
+  /v1/shop/purchase:
+    post:
+      tags: [Shop]
+      summary: Compra item/pacote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShopPurchaseRequest'
+      responses:
+        '200':
+          description: Compra concluida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopPurchaseResponse'
+
+  /v1/pass/claim:
+    post:
+      tags: [BattlePass]
+      summary: Resgata recompensa de tier do passe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BattlePassClaimRequest'
+      responses:
+        '200':
+          description: Recompensa entregue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BattlePassClaimResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    HeroId:
+      name: heroId
+      in: path
+      required: true
+      schema:
+        type: string
+    AllianceId:
+      name: allianceId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  responses:
+    Unauthorized:
+      description: Token invalido ou expirado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Regra de negocio violada
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+    LoginRequest:
+      type: object
+      required: [provider, idToken]
+      properties:
+        provider:
+          type: string
+          enum: [google, apple, facebook, guest]
+        idToken:
+          type: string
+
+    LoginResponse:
+      type: object
+      required: [accessToken, refreshToken, player]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresInSec: { type: integer }
+        player:
+          $ref: '#/components/schemas/PlayerProfile'
+
+    PlayerProfile:
+      type: object
+      required: [playerId, nickname, level, power, vipLevel, realmId, resources]
+      properties:
+        playerId: { type: string }
+        nickname: { type: string }
+        level: { type: integer }
+        power: { type: integer, format: int64 }
+        vipLevel: { type: integer }
+        realmId: { type: integer }
+        energy:
+          type: object
+          properties:
+            current: { type: integer }
+            max: { type: integer }
+            regenPerMinute: { type: number, format: float }
+        resources:
+          type: object
+          properties:
+            gold: { type: integer, format: int64 }
+            wood: { type: integer, format: int64 }
+            steel: { type: integer, format: int64 }
+            food: { type: integer, format: int64 }
+            gems: { type: integer, format: int64 }
+
+    SyncStateRequest:
+      type: object
+      required: [clientVersion, stateVersion]
+      properties:
+        clientVersion: { type: string }
+        stateVersion: { type: integer, format: int64 }
+        localTelemetry:
+          type: object
+          additionalProperties: true
+
+    SyncStateResponse:
+      type: object
+      required: [serverTimeMs, stateVersion, profile]
+      properties:
+        serverTimeMs: { type: integer, format: int64 }
+        stateVersion: { type: integer, format: int64 }
+        profile:
+          $ref: '#/components/schemas/PlayerProfile'
+        pendingTimers:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimerEntry'
+
+    TimerEntry:
+      type: object
+      properties:
+        id: { type: string }
+        category: { type: string, enum: [BUILD, TRAIN, HEAL, RESEARCH, MARCH] }
+        endAtMs: { type: integer, format: int64 }
+
+    Hero:
+      type: object
+      properties:
+        heroId: { type: string }
+        rarity: { type: string, enum: [COMMON, RARE, EPIC, LEGENDARY] }
+        level: { type: integer }
+        stars: { type: integer }
+        ascension: { type: integer }
+        stats:
+          type: object
+          properties:
+            atk: { type: integer }
+            def: { type: integer }
+            units: { type: integer }
+            power: { type: integer }
+        shardsOwned: { type: integer }
+        skillLevels:
+          type: array
+          items: { type: integer }
+
+    HeroLevelUpRequest:
+      type: object
+      properties:
+        levels:
+          type: integer
+          minimum: 1
+          default: 1
+
+    HeroStarUpRequest:
+      type: object
+      properties:
+        consumeShardSource:
+          type: string
+          enum: [SPECIFIC_ONLY, MIXED]
+
+    HeroAscendRequest:
+      type: object
+      required: [ascensionStoneItemCode]
+      properties:
+        ascensionStoneItemCode: { type: string }
+
+    HeroActionResponse:
+      type: object
+      properties:
+        hero:
+          $ref: '#/components/schemas/Hero'
+        resources:
+          type: object
+          additionalProperties: true
+
+    Building:
+      type: object
+      properties:
+        buildingId: { type: string }
+        buildingType: { type: string }
+        level: { type: integer }
+        slotCode: { type: string }
+        state: { type: string, enum: [IDLE, BUILDING, UPGRADING, DAMAGED] }
+        endAtMs: { type: integer, format: int64 }
+
+    StartBuildRequest:
+      type: object
+      required: [buildingType, slotCode]
+      properties:
+        buildingType: { type: string }
+        slotCode: { type: string }
+        targetLevel: { type: integer }
+
+    StartBuildResponse:
+      type: object
+      properties:
+        taskId: { type: string }
+        building:
+          $ref: '#/components/schemas/Building'
+        costs:
+          type: object
+          additionalProperties: true
+
+    CompleteBuildRequest:
+      type: object
+      required: [taskId]
+      properties:
+        taskId: { type: string }
+
+    CompleteBuildResponse:
+      type: object
+      properties:
+        building:
+          $ref: '#/components/schemas/Building'
+        rewards:
+          type: object
+          additionalProperties: true
+
+    SpeedUpBuildRequest:
+      type: object
+      required: [taskId]
+      properties:
+        taskId: { type: string }
+        gemBudgetLimit: { type: integer }
+
+    SpeedUpBuildResponse:
+      type: object
+      properties:
+        taskId: { type: string }
+        gemsSpent: { type: integer }
+        completed: { type: boolean }
+
+    WorldTile:
+      type: object
+      properties:
+        x: { type: integer }
+        y: { type: integer }
+        tileType: { type: string, enum: [EMPTY, CITY, RESOURCE, ENEMY, EVENT] }
+        ownerPlayerId: { type: string, nullable: true }
+        level: { type: integer, nullable: true }
+        metadata:
+          type: object
+          additionalProperties: true
+
+    StartMarchRequest:
+      type: object
+      required: [targetX, targetY, marchType, squad]
+      properties:
+        targetX: { type: integer }
+        targetY: { type: integer }
+        marchType: { type: string, enum: [GATHER, ATTACK, REINFORCE] }
+        squad:
+          type: array
+          items:
+            type: object
+            properties:
+              heroId: { type: string }
+              units: { type: integer }
+
+    StartMarchResponse:
+      type: object
+      properties:
+        marchId: { type: string }
+        departAtMs: { type: integer, format: int64 }
+        arriveAtMs: { type: integer, format: int64 }
+
+    CreateRallyRequest:
+      type: object
+      required: [targetX, targetY, joinWindowSec]
+      properties:
+        targetX: { type: integer }
+        targetY: { type: integer }
+        joinWindowSec: { type: integer, minimum: 60, maximum: 1800 }
+        rallyType: { type: string, enum: [PVP, PVE_BOSS] }
+
+    CreateRallyResponse:
+      type: object
+      properties:
+        rallyId: { type: string }
+        leaderPlayerId: { type: string }
+        closeAtMs: { type: integer, format: int64 }
+
+    CreateAllianceRequest:
+      type: object
+      required: [name, tag]
+      properties:
+        name: { type: string, minLength: 3, maxLength: 32 }
+        tag: { type: string, minLength: 2, maxLength: 8 }
+        languageCode: { type: string, example: pt-BR }
+
+    Alliance:
+      type: object
+      properties:
+        allianceId: { type: string }
+        name: { type: string }
+        tag: { type: string }
+        leaderPlayerId: { type: string }
+        memberCount: { type: integer }
+        power: { type: integer, format: int64 }
+
+    RankingEntry:
+      type: object
+      properties:
+        rank: { type: integer }
+        playerId: { type: string }
+        nickname: { type: string }
+        power: { type: integer, format: int64 }
+        allianceTag: { type: string, nullable: true }
+
+    ShopPurchaseRequest:
+      type: object
+      required: [sku, quantity, idempotencyKey]
+      properties:
+        sku: { type: string }
+        quantity: { type: integer, minimum: 1 }
+        idempotencyKey: { type: string }
+
+    ShopPurchaseResponse:
+      type: object
+      properties:
+        orderId: { type: string }
+        gemsSpent: { type: integer }
+        grantedItems:
+          type: array
+          items:
+            type: object
+            properties:
+              itemCode: { type: string }
+              qty: { type: integer }
+
+    BattlePassClaimRequest:
+      type: object
+      required: [seasonId, tier, premiumTrack]
+      properties:
+        seasonId: { type: string }
+        tier: { type: integer }
+        premiumTrack: { type: boolean }
+
+    BattlePassClaimResponse:
+      type: object
+      properties:
+        seasonId: { type: string }
+        tier: { type: integer }
+        rewards:
+          type: array
+          items:
+            type: object
+            properties:
+              itemCode: { type: string }
+              qty: { type: integer }
+
+

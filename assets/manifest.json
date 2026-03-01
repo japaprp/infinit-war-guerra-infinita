@@ -1,0 +1,29 @@
+﻿{
+  "map": {
+    "terrain": "assets/map/terrain_grass_dark.png",
+    "roads": "assets/map/roads_dirt.png",
+    "trees": "assets/map/trees_atlas.png",
+    "buildings": "assets/map/buildings_atlas.png"
+  },
+  "heroes": {
+    "lucas": "assets/heroes/lucas_portrait.png",
+    "kai": "assets/heroes/kai_portrait.png",
+    "megan": "assets/heroes/megan_portrait.png",
+    "cyrus": "assets/heroes/cyrus_portrait.png",
+    "quinn": "assets/heroes/quinn_portrait.png",
+    "corleone": "assets/heroes/corleone_portrait.png",
+    "ivy": "assets/heroes/ivy_portrait.png"
+  },
+  "weapons": {
+    "flame_sentence": "assets/weapons/flame_sentence.png",
+    "dual_blades": "assets/weapons/dual_blades.png",
+    "guardian_hammer": "assets/weapons/guardian_hammer.png"
+  },
+  "icons": {
+    "gold": "assets/ui/icon_gold.png",
+    "silver": "assets/ui/icon_silver.png",
+    "wood": "assets/ui/icon_wood.png",
+    "food": "assets/ui/icon_food.png",
+    "gem": "assets/ui/icon_gem.png"
+  }
+}

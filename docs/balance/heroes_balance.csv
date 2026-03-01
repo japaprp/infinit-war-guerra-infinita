@@ -1,0 +1,11 @@
+﻿hero_id,rarity,role,atk_base,def_base,units_base,atk_growth,def_growth,units_growth,skill_coef,star2_shards,star3_shards,star4_shards,star5_shards,ascension_stone,item_shard_code
+lucas,legendary,dps,15440,14304,503,188.0,152.0,5.8,1.15,60,93,144,223,asc_stone_gold,shard_lucas
+kai,epic,assassin,12990,11120,422,171.0,120.0,5.2,1.10,45,70,108,167,asc_stone_epic,shard_kai
+megan,epic,tank,10620,13880,410,140.0,178.0,4.6,1.08,45,70,108,167,asc_stone_epic,shard_megan
+cyrus,legendary,ranged,14100,12200,460,176.0,140.0,5.4,1.13,60,93,144,223,asc_stone_gold,shard_cyrus
+quinn,rare,duelist,12030,10950,390,146.0,118.0,4.4,1.04,30,47,73,113,asc_stone_rare,shard_quinn
+corleone,legendary,bruiser,16500,12000,540,196.0,134.0,6.2,1.17,60,93,144,223,asc_stone_gold,shard_corleone
+ivy,rare,archer,9800,10200,370,122.0,109.0,4.1,1.03,30,47,73,113,asc_stone_rare,shard_ivy
+azra,common,support,8800,9400,350,108.0,102.0,3.8,1.00,20,31,48,74,asc_stone_common,shard_azra
+doran,epic,tank,11200,14600,430,145.0,184.0,4.9,1.09,45,70,108,167,asc_stone_epic,shard_doran
+lina,legendary,mage,15020,11650,445,190.0,131.0,5.3,1.14,60,93,144,223,asc_stone_gold,shard_lina

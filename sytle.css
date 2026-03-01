@@ -1,0 +1,145 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #111;
+    font-family: Arial;
+}
+
+canvas {
+    display: none;
+}
+
+#menu {
+    position: absolute;
+    width: 100%;
+    height: 100vh;
+    background: #111;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+button {
+    padding: 15px 40px;
+    margin: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    background: orange;
+    border: none;
+    border-radius: 5px;
+}
+
+button:hover {
+    background: red;
+}
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* ===== MENU ===== */
+
+body.menu {
+    background: linear-gradient(135deg, #111, #1e1e1e);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.menu-container {
+    text-align: center;
+}
+
+.menu-container h1 {
+    font-size: 50px;
+    margin-bottom: 20px;
+}
+
+.menu-container button {
+    display: block;
+    width: 250px;
+    padding: 15px;
+    margin: 10px auto;
+    font-size: 18px;
+    background: #ff5500;
+    border: none;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.menu-container button:hover {
+    background: #ff2200;
+    transform: scale(1.05);
+}
+
+/* ===== JOGO ===== */
+
+canvas {
+    display: block;
+    background: #0f0f0f;
+}
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* MENU */
+body.menu {
+    background: #111;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.menu-container {
+    text-align: center;
+}
+
+.menu-container input {
+    padding: 10px;
+    margin: 10px;
+}
+
+.elements button {
+    margin: 5px;
+}
+
+.menu-container button {
+    padding: 12px;
+    margin-top: 15px;
+    cursor: pointer;
+}
+
+/* HUD */
+#hud {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: white;
+}
+
+#lifeBar {
+    width: 200px;
+    height: 20px;
+    background: #444;
+    margin-top: 5px;
+}
+
+#lifeFill {
+    width: 100%;
+    height: 100%;
+    background: red;
+}
+
+/* CANVAS */
+canvas {
+    background: #0f0f0f;
+    display: block;
+}
