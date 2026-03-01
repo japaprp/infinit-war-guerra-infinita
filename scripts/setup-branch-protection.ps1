@@ -2,7 +2,7 @@ param(
     [string]$Owner = "",
     [string]$Repo = "",
     [string]$Branch = "main",
-    [string]$RequiredCheck = "Backend Integration / integration-tests",
+    [string]$RequiredCheck = "integration-tests",
     [switch]$RequireCodeOwnerReviews,
     [int]$Approvals = 1
 )
