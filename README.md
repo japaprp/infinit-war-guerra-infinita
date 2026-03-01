@@ -91,6 +91,9 @@ Depois de conectar este projeto em um repositório GitHub:
   - Ou sem `origin` configurado localmente:
   - `powershell -ExecutionPolicy Bypass -File scripts/setup-branch-protection.ps1 -Owner <owner> -Repo <repo> -Branch main`
 
+- Publicar tudo em 1 comando (cria repo no GitHub, configura origin, faz push e aplica proteção):
+  - `npm run github:publish`
+
 Script usado:
 
 - `scripts/setup-branch-protection.ps1`

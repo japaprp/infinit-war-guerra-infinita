@@ -11,6 +11,7 @@
     "build:win": "electron-builder --win nsis",
     "check:env": "powershell -ExecutionPolicy Bypass -File scripts/check-env.ps1",
     "github:protect:main": "powershell -ExecutionPolicy Bypass -File scripts/setup-branch-protection.ps1 -Branch main",
+    "github:publish": "powershell -ExecutionPolicy Bypass -File scripts/publish-github.ps1 -Branch main",
     "backend:dev": "npm --prefix backend run dev",
     "backend:grpc": "npm --prefix backend run dev:grpc"
   },
