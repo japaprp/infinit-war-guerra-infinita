@@ -124,12 +124,14 @@
 
 <section class="convoy-dock" aria-label="Frota de expedição">
   <div class="convoy-heading"><strong>FROTA DE EXPEDIÇÃO</strong><span>3 VIATURAS + 1 VIP</span></div>
-  <div class="convoy-grid">
-    <button class="convoy-card" type="button" data-vehicle="1"><span class="vehicle-art"><i></i></span><span class="convoy-meta"><b>ALFA</b><small>Esquadrão 01 · 5 vagas</small><em>PRONTO</em></span></button>
-    <button class="convoy-card" type="button" data-vehicle="2"><span class="vehicle-art"><i></i></span><span class="convoy-meta"><b>BRAVO</b><small>Esquadrão 02 · 5 vagas</small><em>PRONTO</em></span></button>
-    <button class="convoy-card" type="button" data-vehicle="3"><span class="vehicle-art"><i></i></span><span class="convoy-meta"><b>CHARLIE</b><small>Esquadrão 03 · 5 vagas</small><em>PRONTO</em></span></button>
-    <button class="convoy-card convoy-vip" type="button" data-vehicle="vip"><span class="vehicle-art"><i></i></span><span class="convoy-meta"><b>VIP · FORTALEZA</b><small>Esquadrão especial · 5 vagas</small><em>ELITE</em></span></button>
+  <div class="convoy-grid" id="convoyGrid">
+    <button class="convoy-card" type="button" data-vehicle="alpha" aria-pressed="false"><span class="vehicle-art"><i></i></span><span class="convoy-meta"><b>ALFA</b><small data-vehicle-count="alpha">0/5 heróis</small><em>PADRÃO</em></span></button>
+    <button class="convoy-card" type="button" data-vehicle="bravo" aria-pressed="false"><span class="vehicle-art"><i></i></span><span class="convoy-meta"><b>BRAVO</b><small data-vehicle-count="bravo">0/5 heróis</small><em>PADRÃO</em></span></button>
+    <button class="convoy-card" type="button" data-vehicle="charlie" aria-pressed="false"><span class="vehicle-art"><i></i></span><span class="convoy-meta"><b>CHARLIE</b><small data-vehicle-count="charlie">0/5 heróis</small><em>PADRÃO</em></span></button>
+    <button class="convoy-card convoy-vip" type="button" data-vehicle="vip" aria-pressed="false"><span class="vehicle-art"><i></i></span><span class="convoy-meta"><b>VIP · FORTALEZA</b><small data-vehicle-count="vip">0/5 heróis</small><em>VIP</em></span></button>
   </div>
+  <div class="vehicle-formation-head"><strong id="activeVehicleTitle">ESQUADRÃO ALFA</strong><span>Selecione um herói e toque em Escalar</span></div>
+  <div class="vehicle-formation-slots" id="vehicleFormationSlots" aria-live="polite"></div>
 </section>
 <section class="city-chat" aria-label="Comunicador da aliança">
   <div class="city-chat-title"><span>COMUNICADOR</span><b>ALIANÇA</b></div>
@@ -174,6 +176,7 @@
     <div class="hero-tabs" id="heroTabs"></div>
     <article class="hero-tab-content" id="heroTabContent"></article>
 
+    <p class="roster-assignment-hint">Use “Veículo” para escalar no esquadrão selecionado ou “Usar” para o esquadrão principal.</p>
     <div class="hero-roster" id="heroRoster"></div>
 </section>
 
