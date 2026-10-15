@@ -96,6 +96,25 @@
     <canvas id="minimapCanvas" width="180" height="140"></canvas>
 </section>
 
+<section class="expedition-panel" id="expeditionPanel" aria-label="Expedicoes do mapa">
+    <header>
+        <strong>Expedicoes</strong>
+        <small id="expeditionSlots">0/3 vagas</small>
+    </header>
+    <p id="expeditionStatus" role="status">Conectando ao servidor...</p>
+    <div class="expedition-start">
+        <label for="expeditionResource">Recurso de destino</label>
+        <select id="expeditionResource">
+            <option value="gold">Ouro · +500</option>
+            <option value="wood">Madeira · +800</option>
+            <option value="steel">Aco · +300</option>
+            <option value="food">Alimento · +1.000</option>
+        </select>
+        <button id="startExpeditionBtn" type="button">Enviar expedicao · 60 s</button>
+    </div>
+    <div id="expeditionList" class="expedition-list" aria-live="polite"></div>
+</section>
+
 <div class="quick-actions">
     <button id="quickHealBtn">Cura Rapida [H]</button>
     <button id="toggleAutoCollectBtn">Auto-Coleta: OFF</button>
