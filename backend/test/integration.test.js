@@ -208,6 +208,16 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         await server.stop();
         server = await bootServer({ redisEnabled: false });
 
+        // The same key must recover the persisted receipt even after backend restart.
+        const sameKeyAfterRestart = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
+            token, headers: { "x-idempotency-key": "exp-claim-1" },
+            body: { expeditionId: start.body.expeditionId, idempotencyKey: "exp-claim-1" }
+        });
+        assert.equal(sameKeyAfterRestart.status, 200);
+        assert.equal(sameKeyAfterRestart.body.alreadyClaimed, true);
+        assert.deepEqual(sameKeyAfterRestart.body.rewards, first.body.rewards);
+        assert.deepEqual(sameKeyAfterRestart.body.resources, first.body.resources);
+
         const second = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
             token, headers: { "x-idempotency-key": "exp-claim-2" },
             body: { expeditionId: start.body.expeditionId, idempotencyKey: "exp-claim-2" }
