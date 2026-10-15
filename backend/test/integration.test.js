@@ -214,9 +214,9 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
             body: { expeditionId: start.body.expeditionId, idempotencyKey: "exp-claim-1" }
         });
         assert.equal(sameKeyAfterRestart.status, 200);
-        assert.equal(sameKeyAfterRestart.body.alreadyClaimed, true);
-        assert.deepEqual(sameKeyAfterRestart.body.rewards, first.body.rewards);
-        assert.deepEqual(sameKeyAfterRestart.body.resources, first.body.resources);
+        // Same-key retries replay the original response byte-for-byte in shape;
+        // "alreadyClaimed" is reserved for a different key against a claimed expedition.
+        assert.deepEqual(sameKeyAfterRestart.body, first.body);
 
         const second = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
             token, headers: { "x-idempotency-key": "exp-claim-2" },
