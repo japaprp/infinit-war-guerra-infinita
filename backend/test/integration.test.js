@@ -159,6 +159,42 @@ test("v1 endpoints: heroes and buildings flow", async () => {
     }
 });
 
+test("expedition reward is server-timed, persisted, and claimable only once", async () => {
+    await fs.rm(dbPath, { force: true });
+    const server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", { body: { platform: "guest", externalId: "it_expedition_1" } });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+        const start = await api(server.baseUrl, "POST", "/v1/expeditions/start", { token, body: { destinationId: "grey-forest", objectiveId: "explore" } });
+        assert.equal(start.status, 200);
+        assert.equal(start.body.resources.energy, 85);
+        assert.ok(start.body.expeditionId);
+        const early = await api(server.baseUrl, "POST", "/v1/expeditions/claim", { token, body: { expeditionId: start.body.expeditionId, idempotencyKey: "early-claim" } });
+        assert.equal(early.status, 409);
+        const db = await readDb();
+        db.users["guest:it_expedition_1"].v1.expedition.active.endsAtMs = Date.now() - 1;
+        await writeDb(db);
+        const first = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
+            token, headers: { "x-idempotency-key": "exp-claim-1" },
+            body: { expeditionId: start.body.expeditionId, idempotencyKey: "exp-claim-1" }
+        });
+        assert.equal(first.status, 200);
+        assert.ok(first.body.rewards.gold > 0);
+        assert.equal(first.body.resources.gold, first.body.rewards.gold);
+        assert.equal(first.body.resources.energy, 85);
+        const second = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
+            token, headers: { "x-idempotency-key": "exp-claim-2" },
+            body: { expeditionId: start.body.expeditionId, idempotencyKey: "exp-claim-2" }
+        });
+        assert.equal(second.status, 409);
+        const persisted = await readDb();
+        assert.equal(persisted.users["guest:it_expedition_1"].v1.expedition.claimedIds.filter(id => id === start.body.expeditionId).length, 1);
+    } finally {
+        await server.stop();
+    }
+});
+
 test("legacy shop receipt can be consumed only once", async () => {
     await fs.rm(dbPath, { force: true });
 
