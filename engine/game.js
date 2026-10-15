@@ -51,7 +51,8 @@ const heroTemplates = [
     { id: "cyrus", unlockOrder: 4, tier: "gold", name: "Cyrus", icon: "C", weapon: "Canhao Tatico", baseStats: { atk: 14100, def: 12200, troops: 460 }, skills: ["Bombardeio", "Mira de Elite", "Pressao"] },
     { id: "quinn", unlockOrder: 5, tier: "bronze", name: "Quinn", icon: "Q", weapon: "Rapieira Celeste", baseStats: { atk: 12030, def: 10950, troops: 390 }, skills: ["Perfurar", "Danca", "Finta"] },
     { id: "corleone", unlockOrder: 6, tier: "gold", name: "Corleone", icon: "R", weapon: "Punho Executor", baseStats: { atk: 16500, def: 12000, troops: 540 }, skills: ["Execucao", "Pressao", "Dominio"] },
-    { id: "ivy", unlockOrder: 7, tier: "bronze", name: "Ivy", icon: "I", weapon: "Arco Verde", baseStats: { atk: 9800, def: 10200, troops: 370 }, skills: ["Seta Tripla", "Camuflagem", "Pico Critico"] }
+    { id: "ivy", unlockOrder: 7, tier: "bronze", name: "Ivy", icon: "I", weapon: "Arco Verde", baseStats: { atk: 9800, def: 10200, troops: 370 }, skills: ["Seta Tripla", "Camuflagem", "Pico Critico"] },
+    { id: "luis", unlockOrder: 8, tier: "gold", name: "Luís", icon: "L", portrait: "assets/characters/hero_recruit.png", weapon: "Fuzil de Patrulha", baseStats: { atk: 14800, def: 13200, troops: 485 }, skills: ["Avanco Tatico", "Fogo de Cobertura", "Ultima Resistencia"] }
 ];
 
 function migrateLegacyStorage() {
@@ -1287,7 +1288,10 @@ function renderSquad() {
                 return `<button class="squad-slot ${selectedClass}" data-slot-index="${index}"><span class="emoji">+</span><strong>Vazio</strong></button>`;
             }
             const heroTemplate = getHeroTemplate(heroId);
-            return `<button class="squad-slot ${selectedClass}" data-slot-index="${index}"><span class="emoji">${heroTemplate.icon}</span><strong>${heroTemplate.name}</strong></button>`;
+            const portrait = heroTemplate.portrait
+                ? `<img class="hero-mini-portrait" src="${heroTemplate.portrait}" alt="" onerror="this.remove();">`
+                : heroTemplate.icon;
+            return `<button class="squad-slot ${selectedClass}" data-slot-index="${index}"><span class="emoji">${portrait}</span><strong>${heroTemplate.name}</strong></button>`;
         })
         .join("");
 }
@@ -1303,8 +1307,11 @@ function renderRoster() {
             const tierClass = `tier-${hero.tier}`;
             const unlockText = heroState.unlocked ? `Poder ${formatCompact(runtimeHero.power)}` : `Bloqueado`;
             const assignButton = heroState.unlocked ? `<button class="assign-btn" data-action="assign-hero" data-hero-id="${hero.id}">Usar</button>` : `<button class="assign-btn" disabled>Bloqueado</button>`;
+            const portrait = hero.portrait
+                ? `<img class="hero-card-portrait" src="${hero.portrait}" alt="Retrato de ${hero.name}" onerror="this.remove();">`
+                : hero.icon;
             return `<article class="hero-card ${tierClass} ${isActive} ${lockClass}" data-hero-id="${hero.id}">
-                <div class="top"><span>${hero.icon}</span><small>${unlockText}</small></div>
+                <div class="top"><span class="hero-card-avatar">${portrait}</span><small>${unlockText}</small></div>
                 <span class="name">${hero.name}</span>
                 <span class="weapon">${hero.weapon}</span>
                 <div class="stars">${stars}</div>
@@ -1364,7 +1371,13 @@ function renderTabContent() {
 
 function updateHeroDetail() {
     const hero = getHeroRuntime(state.selectedHeroId);
-    heroDetail.portrait.innerText = hero.template.icon;
+    if (hero.template.portrait) {
+        heroDetail.portrait.innerHTML = `<img class="hero-detail-portrait" src="${hero.template.portrait}" alt="Retrato de ${hero.template.name}" onerror="this.remove(); this.parentElement.textContent='${hero.template.icon}';">`;
+        heroDetail.portrait.classList.add("has-portrait");
+    } else {
+        heroDetail.portrait.textContent = hero.template.icon;
+        heroDetail.portrait.classList.remove("has-portrait");
+    }
     heroDetail.name.innerText = `${hero.template.name} (${tierLabel(hero.template.tier)})`;
     heroDetail.weapon.innerText = `Arma: ${hero.template.weapon}`;
     heroDetail.stats.innerText = `ATQ ${hero.atk.toLocaleString("pt-BR")} | DEF ${hero.def.toLocaleString("pt-BR")} | Unidades ${hero.troops}`;
@@ -1818,7 +1831,7 @@ function gameLoop(currentTime) {
 
     drawVillage();
     player.draw(ctx, camera.x, camera.y);
-    updateHUD(player, selectedElement.name);
+    updateHUD(player, "Comandante");
     updateStaminaHud();
     updateInteractionHint();
     drawMinimap();
