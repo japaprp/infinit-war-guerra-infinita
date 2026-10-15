@@ -39,9 +39,10 @@ O checkout local não ficou disponível nesta sessão porque o ambiente não con
 
 - **Código remoto:** alterações enviadas para a branch de feature; a `main` permanece sem merge.
 - **Testes locais:** não executados, pois o ambiente de execução não conseguiu clonar o repositório.
-- **CI anterior:** o workflow de integração passou no commit anterior às alterações de interface e ao novo teste de reinicialização. Esse resultado não substitui a execução do workflow para o head atual.
+- **CI no commit de implementação `76512c6`:** aprovado. O passo `node --check engine/game.js && node --check api/client.js` passou e a suíte de integração concluiu **7 testes, 7 aprovados, 0 falhas, 0 ignorados**.
+- **Teste de reinicialização:** passou no backend; após reiniciar o servidor, a expedição manteve o mesmo `departAtMs` e `arriveAtMs`, e o tempo restante diminuiu.
 - **Validação de navegador/dispositivo:** ainda pendente; não há alegação de teste manual real da interface.
-- **Pendente antes de considerar concluído:** confirmar o workflow no head atual, resolver falhas se existirem e validar a experiência visual em execução.
+- **Pendente antes de considerar concluído:** validar a experiência visual em execução: iniciar, esperar, resgatar, confirmar o HUD e fechar/reabrir a aplicação.
 - **Segurança antes de multiplayer público:** a autenticação ainda contém fluxos de protótipo; validar tokens reais de provedores, limites de requisição e atomicidade/concorrência da persistência.
 - **Balanceamento:** duração e recompensas atuais são valores de protótipo e precisam de avaliação de economia.
 
@@ -55,5 +56,5 @@ O checkout local não ficou disponível nesta sessão porque o ambiente não con
 - [x] Teste de integração para persistência do timestamp após reiniciar o backend.
 - [x] Interface conectada à API para iniciar, acompanhar e resgatar expedições.
 - [x] Rotas de expedição desenhadas no mapa e no minimapa.
-- [ ] Workflow de CI verde no head mais recente.
+- [x] Workflow de CI verde no commit de implementação verificado (7/7 testes; 0 falhas).
 - [ ] Teste real em navegador/dispositivo: iniciar, esperar, resgatar, confirmar saldo e fechar/reabrir.
