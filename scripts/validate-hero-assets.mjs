@@ -5,7 +5,8 @@ import { resolve } from "node:path";
 const root = process.cwd();
 const gamePath = resolve(root, "engine/game.js");
 const manifestPath = resolve(root, "assets/manifest.json");
-const manifestText = readFileSync(manifestPath, "utf8").replace(/^\\uFEFF/, "");
+const rawManifestText = readFileSync(manifestPath, "utf8");
+const manifestText = rawManifestText.startsWith(String.fromCharCode(0xfeff)) ? rawManifestText.slice(1) : rawManifestText;
 const manifest = JSON.parse(manifestText);
 const game = readFileSync(gamePath, "utf8");
 
