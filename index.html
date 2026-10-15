@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#111a1c">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:4000 https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:4000;">
 <title>Guerra Infinita — Sobrevivência</title>
 <link rel="stylesheet" href="style.css">
 </head>
@@ -12,32 +12,34 @@
 <main class="war-entry">
   <div class="entry-skyline" aria-hidden="true"></div>
   <header class="entry-topline">
-    <div class="entry-brand"><span class="brand-mark">GI</span><span>GUERRA <b>INFINITA</b><small>OPERAÇÃO: RENASCER</small></span></div>
-    <span class="server-status"><i></i> SERVIDOR DE TESTE</span>
+    <div class="entry-brand"><span class="brand-mark">GI</span><span>GUERRA <b>INFINITA</b><small>SOBREVIVA. RECONSTRUA.</small></span></div>
   </header>
-
   <section class="entry-content">
     <div class="entry-copy">
-      <p class="entry-eyebrow">A CIVILIZAÇÃO CAIU. SUA BASE NÃO.</p>
-      <h1>RECONSTRUA.<br><em>RECRUTE.</em><br>RESISTA.</h1>
-      <p class="entry-description">Reúna sobreviventes, fortaleça seu abrigo e lidere seus heróis em um mundo tomado pelo caos.</p>
-      <div class="entry-features"><span>⌂ BASE ESTRATÉGICA</span><span>✚ ESQUADRÃO DE HERÓIS</span><span>⚔ EXPEDIÇÕES</span></div>
-      <label class="entry-nick-label" for="nickname">IDENTIFICAÇÃO DO COMANDANTE</label>
-      <input type="text" id="nickname" placeholder="Digite seu nome de comandante" maxlength="16" autocomplete="nickname" value="Yago">
-      <button type="button" id="startGameBtn" class="entry-start-btn"><span>ENTRAR NO ABRIGO</span><b>➜</b></button>
-      <p class="entry-auth-note">Acesso de teste · entre direto no abrigo, sem escolher elementos ou vincular conta.</p>
+      <p class="entry-eyebrow">O MUNDO MUDOU. SUA HISTÓRIA COMEÇA AQUI.</p>
+      <h1>GUERRA<br><em>INFINITA</em></h1>
+      <p class="entry-description">Reúna sobreviventes, construa sua base e prepare seu esquadrão.</p>
+      <div class="entry-login">
+        <label class="entry-nick-label" for="email">ENTRE COM SEU E-MAIL</label>
+        <input type="email" id="email" placeholder="voce@exemplo.com" autocomplete="email" inputmode="email" maxlength="254" required>
+        <label class="entry-nick-label entry-nick-secondary" for="nickname">NOME DO COMANDANTE <span>(opcional)</span></label>
+        <input type="text" id="nickname" placeholder="Como quer ser chamado?" maxlength="16" autocomplete="nickname">
+        <button type="button" id="startGameBtn" class="entry-start-btn"><span>CONFIRMAR E ENTRAR</span><b>➜</b></button>
+        <div class="entry-divider"><span>OU</span></div>
+        <button type="button" id="googleLoginBtn" class="entry-google-btn"><span class="google-mark">G</span> CONTINUAR COM GOOGLE</button>
+        <p id="entryMessage" class="entry-auth-note" role="status">Versão de teste: o acesso por e-mail fica salvo apenas neste dispositivo.</p>
+      </div>
     </div>
     <div class="entry-art" aria-hidden="true">
       <div class="entry-sun"></div><div class="entry-smoke smoke-one"></div><div class="entry-smoke smoke-two"></div>
       <div class="entry-ridge ridge-back"></div><div class="entry-ridge ridge-front"></div>
       <div class="entry-ruins"><span></span><span></span><span></span><span></span><span></span></div>
-      <div class="entry-ground"></div>
-      <div class="entry-hero-shadow"></div>
-      <img class="entry-hero" src="assets/characters/hero_recruit.png" alt="Comandante sobrevivente" onerror="this.style.display='none'">
-      <div class="entry-art-label"><b>UNIDADE 08</b><span>SOBREVIVENTE · CLASSE DE ASSALTO</span></div>
+      <div class="entry-ground"></div><div class="entry-hero-shadow"></div>
+      <img class="entry-hero" src="assets/characters/hero_recruit.png" alt="Sobrevivente em equipamento tático" onerror="this.style.display='none'">
+      <div class="entry-art-label"><b>GUERRA INFINITA</b><span>RECONSTRUA SUA BASE</span></div>
     </div>
   </section>
-  <footer class="entry-footer"><span>UM MUNDO EM RUÍNAS. UMA ÚLTIMA CHANCE.</span><span>BUILD DE DESENVOLVIMENTO · PROGRESSO LOCAL</span></footer>
+  <footer class="entry-footer"><span>UM MUNDO EM RUÍNAS. UMA NOVA CHANCE.</span><span>VERSÃO DE DESENVOLVIMENTO</span></footer>
 </main>
 <script src="main.js" defer></script>
 </body>
