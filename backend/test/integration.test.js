@@ -11,6 +11,7 @@ process.env.IWAR_DB_PATH = dbPath;
 const { createApp } = await import("../src/app.js");
 const { initializeRepository, getRepositoryMode } = await import("../src/repositories/dbRepository.js");
 const { initializeRedis } = await import("../src/services/redisService.js");
+const { startMarch, collectMarch } = await import("../src/services/v1StubService.js");
 
 const baseEnv = {
     PORT: 0,
@@ -143,6 +144,110 @@ test("v1 endpoints: heroes and buildings flow", async () => {
     } finally {
         await server.stop();
     }
+});
+
+test("server owns resource balances across v1 sync and legacy save APIs", async () => {
+    await fs.rm(dbPath, { force: true });
+
+    const server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_authoritative_resources" }
+        });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+        const original = login.body.player.resources;
+
+        const sync = await api(server.baseUrl, "POST", "/v1/player/sync", {
+            token,
+            body: { snapshot: { gold: 999999999, wood: 999999999, steel: 999999999, food: 999999999, energy: 999999999 } }
+        });
+        assert.equal(sync.status, 200);
+        assert.equal(sync.body.profile.resources.gold, original.gold);
+        assert.equal(sync.body.profile.resources.wood, original.wood);
+        assert.equal(sync.body.profile.resources.steel, original.steel);
+        assert.equal(sync.body.profile.resources.food, original.food);
+        assert.equal(sync.body.profile.energy.current, 120);
+
+        const legacyWrite = await api(server.baseUrl, "PUT", "/player/state", {
+            token,
+            body: {
+                state: {
+                    resources: { gold: 999999999, silver: 999999999, wood: 999999999, food: 999999999, gems: 999999999, energy: 999999999 },
+                    mission: { completed: [] }
+                }
+            }
+        });
+        assert.equal(legacyWrite.status, 200);
+
+        const legacyRead = await api(server.baseUrl, "GET", "/player/state", { token });
+        assert.equal(legacyRead.status, 200);
+        assert.equal(legacyRead.body.state.resources.gold, original.gold);
+        assert.equal(legacyRead.body.state.resources.silver, original.steel);
+        assert.equal(legacyRead.body.state.resources.wood, original.wood);
+        assert.equal(legacyRead.body.state.resources.food, original.food);
+        assert.equal(legacyRead.body.state.resources.gems, original.gems);
+        assert.equal(legacyRead.body.state.resources.energy, 120);
+    } finally {
+        await server.stop();
+    }
+});
+
+test("march API enforces server-selected resource and timer", async () => {
+    await fs.rm(dbPath, { force: true });
+
+    const server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_march_api" }
+        });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+
+        const invalid = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            body: { resourceType: "diamonds", durationMs: 1, reward: 999999999 }
+        });
+        assert.equal(invalid.status, 400);
+
+        const started = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            body: { resourceType: "food", durationMs: 1, reward: 999999999 }
+        });
+        assert.equal(started.status, 200);
+        assert.equal(started.body.march.resourceType, "food");
+        assert.equal(started.body.march.arriveAtMs - started.body.march.departAtMs, 60000);
+        assert.equal(started.body.march.status, "MARCHING");
+
+        const tooEarly = await api(server.baseUrl, "POST", "/v1/world/marches/collect", {
+            token,
+            body: { marchId: started.body.march.marchId }
+        });
+        assert.equal(tooEarly.status, 409);
+        assert.match(tooEarly.body.message, /not arrived/i);
+    } finally {
+        await server.stop();
+    }
+});
+
+test("march rewards are timed, server-calculated and collected only once", () => {
+    const user = { profile: { displayName: "march_test" }, economy: { gems: 4210 } };
+    const beforeFood = 55000;
+    const started = startMarch(user, { resourceType: "food", durationMs: 1, reward: 999999999 }, 1000);
+    assert.equal(started.march.arriveAtMs, 61000);
+    assert.equal(started.march.status, "MARCHING");
+
+    const early = collectMarch(user, started.march.marchId, 60999);
+    assert.equal(early.error.status, 409);
+
+    const collected = collectMarch(user, started.march.marchId, 61000);
+    assert.equal(collected.rewards.food, 1000);
+    assert.equal(collected.resources.food, beforeFood + 1000);
+    assert.equal(collected.march.status, "COLLECTED");
+
+    const duplicate = collectMarch(user, started.march.marchId, 62000);
+    assert.equal(duplicate.error.status, 409);
+    assert.equal(user.v1.resources.food, beforeFood + 1000);
 });
 
 test("legacy shop receipt can be consumed only once", async () => {
