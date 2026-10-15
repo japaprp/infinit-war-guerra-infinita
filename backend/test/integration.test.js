@@ -373,7 +373,7 @@ test("v1 player sync ignores forged client resource snapshots", async () => {
         assert.equal(sync.body.profile.resources.wood, 567);
         assert.equal(sync.body.profile.resources.steel, 89);
         assert.equal(sync.body.profile.resources.food, 4321);
-        assert.equal(sync.body.profile.resources.energy, 42);
+        assert.equal(sync.body.profile.energy.current, 42);
 
         const persisted = await readDb();
         const saved = persisted.users["guest:it_forged_snapshot_1"].v1.resources;
