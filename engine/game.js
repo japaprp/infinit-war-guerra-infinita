@@ -1911,7 +1911,8 @@ window.addEventListener("keyup", (event) => {
 
 setInterval(() => {
     renderTimers();
-    renderVerticalSlicePanel();
+    const clock = document.getElementById("cityClock");
+    if (clock) clock.textContent = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }, 1000);
 
 function gameLoop(currentTime) {
