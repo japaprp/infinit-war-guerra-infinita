@@ -187,7 +187,7 @@ test("v1 sync ignores client-supplied resource balances", async () => {
         assert.equal(forgedSync.body.profile.resources.wood, 0);
         assert.equal(forgedSync.body.profile.resources.steel, 0);
         assert.equal(forgedSync.body.profile.resources.food, 0);
-        assert.equal(forgedSync.body.profile.energy.energy, 100);
+        assert.equal(forgedSync.body.profile.energy.current, 100);
 
         const profile = await api(server.baseUrl, "GET", "/v1/player/me", { token });
         assert.equal(profile.status, 200);
@@ -195,7 +195,7 @@ test("v1 sync ignores client-supplied resource balances", async () => {
         assert.equal(profile.body.resources.wood, 0);
         assert.equal(profile.body.resources.steel, 0);
         assert.equal(profile.body.resources.food, 0);
-        assert.equal(profile.body.energy.energy, 100);
+        assert.equal(profile.body.energy.current, 100);
     } finally {
         await server.stop();
     }
