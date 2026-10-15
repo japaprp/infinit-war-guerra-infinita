@@ -111,7 +111,8 @@ function buildDefaultV1(gems = 4210) {
         pass: {
             seasonId: "season_1",
             claimed: {}
-        }
+        },
+        marches: []
     };
 }
 
@@ -305,7 +306,8 @@ function buildUserFromRow(row) {
             heroes: [],
             buildings: [],
             alliances: v1Meta?.alliances && typeof v1Meta.alliances === "object" ? v1Meta.alliances : defaults.alliances,
-            pass: v1Meta?.pass && typeof v1Meta.pass === "object" ? v1Meta.pass : defaults.pass
+            pass: v1Meta?.pass && typeof v1Meta.pass === "object" ? v1Meta.pass : defaults.pass,
+            marches: Array.isArray(v1Meta?.marches) ? v1Meta.marches : []
         }
     };
 }
@@ -679,7 +681,8 @@ async function syncNormalizedTables(db) {
                         energyRegenPerMinute: safeNumber(resources.energyRegenPerMinute, defaults.resources.energyRegenPerMinute)
                     },
                     alliances: user?.v1?.alliances || { allianceId: "", name: "", tag: "" },
-                    pass: user?.v1?.pass || { seasonId: "season_1", claimed: {} }
+                    pass: user?.v1?.pass || { seasonId: "season_1", claimed: {} },
+                    marches: Array.isArray(user?.v1?.marches) ? user.v1.marches : []
                 },
                 createdAt: safeNumber(user?.createdAt, Date.now()),
                 updatedAt: safeNumber(user?.updatedAt, Date.now())

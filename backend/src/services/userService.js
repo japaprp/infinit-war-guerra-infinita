@@ -97,9 +97,13 @@ export function ensureV1State(user) {
             pass: {
                 seasonId: "season_1",
                 claimed: {}
-            }
+            },
+            marches: []
         };
     }
+
+    // Keep older saves compatible with the persisted expedition system.
+    if (!Array.isArray(user.v1.marches)) user.v1.marches = [];
 
     // Keep gems authoritative in one source.
     if (!user.economy) user.economy = { gems: 4210 };
