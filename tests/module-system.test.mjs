@@ -58,4 +58,10 @@ test("original prototype module catalog is structurally valid without claiming r
         "equipped modules need a shared guard before duplicate consumption");
     assert.ok(source.includes("item.id !== chip.id && !isChipEquipped(item.id)"),
         "evolution must not consume copies equipped on another hero");
+    assert.ok(source.includes("A physical module may only be equipped by one hero at a time."),
+        "one physical module cannot grant bonuses to multiple heroes simultaneously");
+    assert.ok(source.includes("const seenEquippedChipIds = new Set();"),
+        "save loading must discard duplicate equipped references");
+    assert.ok(source.includes("definition?.stat !== stat || seenEquippedChipIds.has(chipId)"),
+        "save loading must reject missing, mismatched, or duplicate module references");
 });
