@@ -1268,6 +1268,19 @@ function drawMonster(monster) {
     ctx.fillText(`Lv ${monster.level}`, x - 16, y - 21);
 }
 
+function applyAuthoritativeResources(resources, energySnapshot = null) {
+    if (!resources || typeof resources !== "object") return false;
+    if (Number.isFinite(resources.gold)) state.resources.gold = resources.gold;
+    if (Number.isFinite(resources.steel)) state.resources.silver = resources.steel;
+    if (Number.isFinite(resources.silver)) state.resources.silver = resources.silver;
+    if (Number.isFinite(resources.wood)) state.resources.wood = resources.wood;
+    if (Number.isFinite(resources.food)) state.resources.food = resources.food;
+    if (Number.isFinite(resources.gems)) state.resources.gems = resources.gems;
+    const energy = Number.isFinite(resources.energy) ? resources.energy : energySnapshot?.current;
+    if (Number.isFinite(energy)) state.resources.energy = energy;
+    return true;
+}
+
 function renderResources() {
     ui.powerValue.textContent = formatCompact(getSquadPower());
     ui.goldValue.textContent = formatCompact(state.resources.gold);
@@ -1575,13 +1588,7 @@ async function collectExpedition(marchId) {
     renderExpeditions();
     try {
         const result = await api.collectMarchV1(marchId);
-        if (result.resources) {
-            state.resources.gold = result.resources.gold;
-            state.resources.silver = result.resources.steel;
-            state.resources.wood = result.resources.wood;
-            state.resources.food = result.resources.food;
-            state.resources.gems = result.resources.gems;
-            state.resources.energy = result.resources.energy;
+        if (applyAuthoritativeResources(result.resources)) {
             renderAll();
             saveState();
         }
@@ -1649,6 +1656,14 @@ async function pullStateFromBackend() {
     try {
         const remote = await api.pullState();
         if (!remote || !remote.state || !remote.state.resources) {
+            if (api.getPlayerMeV1) {
+                const profile = await api.getPlayerMeV1();
+                if (profile && applyAuthoritativeResources(profile.resources, profile.energy)) {
+                    renderAll();
+                    saveState();
+                    pushFeed("Recursos sincronizados com o servidor.");
+                }
+            }
             return;
         }
 
