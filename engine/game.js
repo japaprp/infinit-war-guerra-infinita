@@ -1500,6 +1500,10 @@ async function pullStateFromBackend() {
         // Merge controlado para evitar sobrescrever estrutura em runtime.
         state.resources = { ...state.resources, ...(remote.state.resources || {}) };
         state.genericShards = { ...state.genericShards, ...(remote.state.genericShards || {}) };
+        state.inventory = {
+            equipment: Array.isArray(remote.state.inventory?.equipment) ? remote.state.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : state.inventory.equipment,
+            chests: Array.isArray(remote.state.inventory?.chests) ? remote.state.inventory.chests.slice(0, 100) : state.inventory.chests
+        };
         state.selectedHeroId = remote.state.selectedHeroId || state.selectedHeroId;
         state.activeHeroTab = remote.state.activeHeroTab || state.activeHeroTab;
         state.activeSquadSlot = Number.isFinite(remote.state.activeSquadSlot) ? remote.state.activeSquadSlot : state.activeSquadSlot;
