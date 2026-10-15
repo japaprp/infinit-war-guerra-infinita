@@ -1,3 +1,31 @@
+/* Simple, restrained entry form */
+.entry-copy h1 { font-size:clamp(38px,5.2vw,66px); line-height:.98; letter-spacing:-.035em; }
+.entry-eyebrow { letter-spacing:.12em; line-height:1.6; }
+.entry-description { margin-bottom:22px; }
+.entry-login { width:100%; max-width:390px; padding:18px; border:1px solid #d4c7a533; border-radius:5px; background:#0b1212d9; box-shadow:0 10px 28px #0002; }
+.entry-login .entry-nick-label { margin:0 0 7px; }
+.entry-login input { display:block; width:100%; max-width:none; min-height:46px; margin:0 0 14px; border:1px solid #b7b7a94a; border-radius:3px; background:#111817; color:#f5f2e9; font-size:15px; }
+.entry-login input::placeholder { color:#8f9991; }
+.entry-nick-secondary { margin-top:3px !important; }
+.entry-nick-secondary span { color:#8f9991; font-weight:400; letter-spacing:normal; }
+.entry-start-btn { max-width:none; min-height:48px; margin-top:4px; border-radius:3px; box-shadow:none; }
+.entry-divider { display:flex; align-items:center; gap:12px; margin:15px 0; color:#849087; font-size:10px; letter-spacing:.15em; }
+.entry-divider::before,.entry-divider::after { content:""; flex:1; height:1px; background:#ffffff20; }
+.entry-google-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; min-height:46px; padding:10px; border:1px solid #d9ded633; border-radius:3px; background:#f4f4f0; color:#202522; font-size:12px; font-weight:800; letter-spacing:.06em; cursor:pointer; }
+.entry-google-btn:hover { background:#fff; }
+.google-mark { display:grid; place-items:center; width:21px; height:21px; border-radius:50%; background:#fff; color:#4285f4; font-size:15px; font-weight:900; }
+.entry-auth-note { margin:12px 0 0; line-height:1.5; }
+.entry-art-label { bottom:20px; }
+@media(max-width:760px) {
+  .entry-content { padding-top:18px; }
+  .entry-copy { max-width:500px; margin:auto; width:100%; }
+  .entry-copy h1 { font-size:clamp(38px,11vw,56px); margin:10px 0 12px; }
+  .entry-description { font-size:13px; margin:0 0 16px; }
+  .entry-login { padding:15px; }
+  .entry-art { min-height:250px; }
+  .entry-hero { height:300px; }
+  .entry-footer { flex-wrap:wrap; }
+}
 
 /* Original survival-strategy entry screen */
 body.entry-screen { min-height:100vh; overflow-x:hidden; background:#101719; color:#f1eee6; font-family:Arial,Helvetica,sans-serif; }
