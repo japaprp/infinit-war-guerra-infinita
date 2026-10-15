@@ -18,7 +18,7 @@
 4. **Recuperação do temporizador:** `GET /v1/world/marches` e `pendingTimers` em `/v1/player/sync` expõem as marchas ativas para reidratar o estado após reabrir o jogo.\n5. **Temporizador e recompensa:** `POST /v1/world/marches/collect` só permite resgate após a chegada e marca a marcha como coletada antes de devolver a recompensa. Resgates repetidos são recusados.
 6. **Recompensas iniciais de protótipo:** cada marcha dura 60 segundos; ouro concede 500, madeira 800, aço 300 e comida 1.000. Duração e recompensa são definidas pelo servidor, não pelo cliente.
 7. **Persistência MySQL:** as marchas são incluídas nos metadados do jogador para manter o temporizador entre reinicializações.
-8. **Cliente API:** adicionados `startMarchV1()` e `collectMarchV1()` em `api/client.js`.
+8. **Cliente API:** adicionados `listMarchesV1()`, `startMarchV1()` e `collectMarchV1()` em `api/client.js`.
 9. **Testes:** adicionados testes de API para tentativas de alterar saldos, validação do temporizador e teste determinístico da recompensa/resgate único.
 
 ## Comandos de validação
