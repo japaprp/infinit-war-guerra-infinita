@@ -71,7 +71,7 @@ export function createLegacyRoutes(env, runtime = {}) {
         user.state = state;
         user.updatedAt = Date.now();
 
-        if (!user.economy) user.economy = { gems: 4210 };
+        if (!user.economy) user.economy = { gems: 0 };
         if (state.resources && Number.isFinite(state.resources.gems)) {
             state.resources.gems = user.economy.gems;
         }
