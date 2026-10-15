@@ -131,6 +131,12 @@ const ui = {
     stateHint: document.getElementById("stateHint"),
     minimapPanel: document.getElementById("minimapPanel"),
     minimapCanvas: document.getElementById("minimapCanvas"),
+    expeditionPanel: document.getElementById("expeditionPanel"),
+    expeditionResource: document.getElementById("expeditionResource"),
+    startExpeditionBtn: document.getElementById("startExpeditionBtn"),
+    expeditionList: document.getElementById("expeditionList"),
+    expeditionStatus: document.getElementById("expeditionStatus"),
+    expeditionSlots: document.getElementById("expeditionSlots"),
     quickHealBtn: document.getElementById("quickHealBtn"),
     toggleAutoCollectBtn: document.getElementById("toggleAutoCollectBtn"),
     toggleAutoHuntBtn: document.getElementById("toggleAutoHuntBtn"),
@@ -336,6 +342,9 @@ const state = loadState();
 const runtime = {
     resourceNodes: [],
     monsters: [],
+    marches: [],
+    serverTimeOffsetMs: 0,
+    expeditionBusy: false,
     auto: {
         collectEnabled: false,
         huntEnabled: false,
@@ -1391,6 +1400,210 @@ function formatTimer(msLeft) {
     return `${hours}h ${minutes}m`;
 }
 
+const EXPEDITION_RESOURCES = {
+    gold: { label: "Ouro", color: "#f4c56c", fallbackReward: 500 },
+    wood: { label: "Madeira", color: "#a47b4c", fallbackReward: 800 },
+    steel: { label: "Aco", color: "#b8c8dc", fallbackReward: 300 },
+    food: { label: "Alimento", color: "#8fc66c", fallbackReward: 1000 }
+};
+
+function getServerNowMs() {
+    return Date.now() + runtime.serverTimeOffsetMs;
+}
+
+function updateServerTime(serverTimeMs) {
+    if (Number.isFinite(serverTimeMs)) {
+        runtime.serverTimeOffsetMs = serverTimeMs - Date.now();
+    }
+}
+
+function formatCountdown(msLeft) {
+    const totalSeconds = Math.ceil(Math.max(0, msLeft) / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function getMarchCacheKey() {
+    const owner = authSession && authSession.uid ? authSession.uid : "guest";
+    return `iwar_marches_cache_v1:${encodeURIComponent(owner)}`;
+}
+
+function restoreCachedMarches() {
+    try {
+        const cached = JSON.parse(localStorage.getItem(getMarchCacheKey()) || "[]");
+        runtime.marches = Array.isArray(cached) ? cached : [];
+    } catch {
+        runtime.marches = [];
+    }
+}
+
+function cacheMarches() {
+    try {
+        localStorage.setItem(getMarchCacheKey(), JSON.stringify(runtime.marches));
+    } catch {
+        // O servidor continua sendo a fonte de verdade; o cache e apenas visual.
+    }
+}
+
+async function refreshMarches({ silent = false } = {}) {
+    const api = getApiClient();
+    if (!api || !api.hasToken || !api.hasToken() || !api.listMarchesV1) {
+        renderExpeditions();
+        return;
+    }
+
+    try {
+        const result = await api.listMarchesV1();
+        updateServerTime(result.serverTimeMs);
+        runtime.marches = Array.isArray(result.marches) ? result.marches : [];
+        cacheMarches();
+    } catch (error) {
+        if (!silent) pushFeed(`Expedicoes indisponiveis: ${error.message}`);
+    }
+    renderExpeditions();
+}
+
+function renderExpeditions() {
+    if (!ui.expeditionPanel || !ui.expeditionList) return;
+
+    const api = getApiClient();
+    const hasApiSession = Boolean(api && api.hasToken && api.hasToken());
+    const activeMarches = runtime.marches.filter((march) => march.status === "MARCHING");
+    const recentCollected = runtime.marches
+        .filter((march) => march.status === "COLLECTED")
+        .sort((a, b) => (b.collectedAtMs || b.arriveAtMs || 0) - (a.collectedAtMs || a.arriveAtMs || 0))
+        .slice(0, 1);
+    const visibleMarches = [...activeMarches, ...recentCollected]
+        .sort((a, b) => (b.departAtMs || 0) - (a.departAtMs || 0));
+
+    if (ui.expeditionSlots) ui.expeditionSlots.textContent = `${activeMarches.length}/3 vagas`;
+    if (ui.expeditionStatus) {
+        if (!hasApiSession) {
+            ui.expeditionStatus.textContent = "Sessao do servidor necessaria para enviar ou resgatar.";
+        } else if (activeMarches.length === 0) {
+            ui.expeditionStatus.textContent = "Escolha um recurso para enviar uma expedicao de 60 segundos.";
+        } else {
+            ui.expeditionStatus.textContent = `${activeMarches.length} expedicao(oes) ativa(s). Rotas indicadas no mapa.`;
+        }
+    }
+    if (ui.startExpeditionBtn) {
+        ui.startExpeditionBtn.disabled = !hasApiSession || runtime.expeditionBusy || activeMarches.length >= 3;
+    }
+
+    ui.expeditionList.replaceChildren();
+    if (visibleMarches.length === 0) {
+        const empty = document.createElement("small");
+        empty.className = "expedition-empty";
+        empty.textContent = "Nenhuma expedicao ativa.";
+        ui.expeditionList.appendChild(empty);
+        return;
+    }
+
+    visibleMarches.forEach((march) => {
+        const config = EXPEDITION_RESOURCES[march.resourceType] || { label: "Recurso", fallbackReward: 0 };
+        const isCollected = march.status === "COLLECTED";
+        const remainingMs = (march.arriveAtMs || 0) - getServerNowMs();
+        const isReady = !isCollected && remainingMs <= 0;
+        const reward = Number.isFinite(march.rewardAmount) ? march.rewardAmount
+            : Number.isFinite(march.reward) ? march.reward : config.fallbackReward;
+        const card = document.createElement("article");
+        card.className = `expedition-card${isReady ? " is-ready" : ""}${isCollected ? " is-collected" : ""}`;
+
+        const title = document.createElement("strong");
+        title.textContent = `${config.label} · ${isCollected ? "resgatada" : isReady ? "pronta para resgate" : "em andamento"}`;
+        const details = document.createElement("small");
+        details.textContent = isCollected
+            ? `Recompensa recebida: +${reward} ${config.label}`
+            : isReady
+                ? `Recompensa: +${reward} ${config.label}`
+                : `Chegada em ${formatCountdown(remainingMs)} · +${reward} ${config.label}`;
+        card.append(title, details);
+
+        if (!isCollected) {
+            const collectButton = document.createElement("button");
+            collectButton.type = "button";
+            collectButton.dataset.collectMarch = march.marchId;
+            collectButton.textContent = isReady ? "Resgatar recompensa" : "Expedicao em curso";
+            collectButton.disabled = !hasApiSession || !isReady || runtime.expeditionBusy;
+            card.appendChild(collectButton);
+        }
+        ui.expeditionList.appendChild(card);
+    });
+}
+
+async function startExpedition() {
+    const api = getApiClient();
+    if (!api || !api.hasToken || !api.hasToken() || !api.startMarchV1) {
+        pushFeed("Conecte a sessao ao servidor antes de iniciar expedicoes.");
+        renderExpeditions();
+        return;
+    }
+    if (runtime.expeditionBusy) return;
+
+    runtime.expeditionBusy = true;
+    renderExpeditions();
+    try {
+        const resourceType = ui.expeditionResource ? ui.expeditionResource.value : "gold";
+        const result = await api.startMarchV1({ resourceType });
+        updateServerTime(result.serverTimeMs);
+        await refreshMarches({ silent: true });
+        const config = EXPEDITION_RESOURCES[resourceType] || { label: "recurso" };
+        pushFeed(`Expedicao enviada para coletar ${config.label}; retorno em 60 segundos.`);
+    } catch (error) {
+        pushFeed(`Nao foi possivel iniciar a expedicao: ${error.message}`);
+    } finally {
+        runtime.expeditionBusy = false;
+        renderExpeditions();
+    }
+}
+
+async function collectExpedition(marchId) {
+    const api = getApiClient();
+    if (!api || !api.hasToken || !api.hasToken() || !api.collectMarchV1) {
+        pushFeed("Conecte a sessao ao servidor para resgatar a recompensa.");
+        renderExpeditions();
+        return;
+    }
+    if (runtime.expeditionBusy) return;
+
+    runtime.expeditionBusy = true;
+    renderExpeditions();
+    try {
+        const result = await api.collectMarchV1(marchId);
+        await pullStateFromBackend();
+        await refreshMarches({ silent: true });
+        const rewardEntries = Object.entries(result.rewards || {});
+        const rewardText = rewardEntries.map(([resourceType, amount]) => {
+            const config = EXPEDITION_RESOURCES[resourceType] || { label: resourceType };
+            return `+${amount} ${config.label}`;
+        }).join(", ");
+        pushFeed(`Expedicao resgatada: ${rewardText || "recompensa recebida"}. Saldo atualizado pelo servidor.`);
+    } catch (error) {
+        pushFeed(`Resgate nao concluido: ${error.message}`);
+        await refreshMarches({ silent: true });
+    } finally {
+        runtime.expeditionBusy = false;
+        renderExpeditions();
+    }
+}
+
+function bindExpeditionActions() {
+    if (ui.startExpeditionBtn) {
+        ui.startExpeditionBtn.addEventListener("click", () => {
+            void startExpedition();
+        });
+    }
+    if (ui.expeditionList) {
+        ui.expeditionList.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-collect-march]");
+            if (button && button.dataset.collectMarch) {
+                void collectExpedition(button.dataset.collectMarch);
+            }
+        });
+    }
+}
+
 function renderTimers() {
     ui.vsTimer.textContent = formatTimer(state.events.vsEndsAt - Date.now());
     ui.bonusTimer.textContent = formatTimer(state.events.bonusEndsAt - Date.now());
@@ -1411,6 +1624,7 @@ function renderAll() {
     updateInteractionHint();
     renderAutomationButtons();
     renderVerticalSlicePanel();
+    renderExpeditions();
 }
 
 async function pullStateFromBackend() {
@@ -1454,6 +1668,8 @@ async function pullStateFromBackend() {
 }
 
 function bindUiActions() {
+    bindExpeditionActions();
+
     ui.heroRoster.addEventListener("click", (event) => {
         const assignButton = event.target.closest("[data-action='assign-hero']");
         if (assignButton) {
@@ -1718,8 +1934,37 @@ function drawVillage() {
     drawRoads();
     drawTrees();
     villageBuildings.forEach(drawBuilding);
+    drawExpeditionRoutes();
     runtime.resourceNodes.forEach(drawResourceNode);
     runtime.monsters.forEach(drawMonster);
+}
+
+function drawExpeditionRoutes() {
+    runtime.marches.filter((march) => march.status === "MARCHING" && march.destination).forEach((march) => {
+        const config = EXPEDITION_RESOURCES[march.resourceType];
+        if (!config) return;
+        const startX = player.x - camera.x;
+        const startY = player.y - camera.y;
+        const targetX = march.destination.x - camera.x;
+        const targetY = march.destination.y - camera.y;
+        ctx.save();
+        ctx.strokeStyle = config.color;
+        ctx.globalAlpha = 0.72;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([7, 7]);
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(targetX, targetY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(targetX, targetY, 15, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = config.color;
+        ctx.font = "bold 11px Trebuchet MS";
+        ctx.fillText("EXP", targetX + 18, targetY - 12);
+        ctx.restore();
+    });
 }
 
 function drawMinimap() {
@@ -1745,6 +1990,24 @@ function drawMinimap() {
         if (!monster.alive) return;
         minimapCtx.fillStyle = "#dc6565";
         minimapCtx.fillRect(monster.x * scaleX, monster.y * scaleY, 2, 2);
+    });
+
+    runtime.marches.filter((march) => march.status === "MARCHING" && march.destination).forEach((march) => {
+        const config = EXPEDITION_RESOURCES[march.resourceType];
+        if (!config) return;
+        const targetX = march.destination.x * scaleX;
+        const targetY = march.destination.y * scaleY;
+        minimapCtx.strokeStyle = config.color;
+        minimapCtx.globalAlpha = 0.75;
+        minimapCtx.beginPath();
+        minimapCtx.moveTo(player.x * scaleX, player.y * scaleY);
+        minimapCtx.lineTo(targetX, targetY);
+        minimapCtx.stroke();
+        minimapCtx.fillStyle = config.color;
+        minimapCtx.beginPath();
+        minimapCtx.arc(targetX, targetY, 3.5, 0, Math.PI * 2);
+        minimapCtx.fill();
+        minimapCtx.globalAlpha = 1;
     });
 
     minimapCtx.strokeStyle = "#e5c07f";
@@ -1798,6 +2061,7 @@ window.addEventListener("keyup", (event) => {
 setInterval(() => {
     renderTimers();
     renderVerticalSlicePanel();
+    renderExpeditions();
 }, 1000);
 
 function gameLoop(currentTime) {
@@ -1827,6 +2091,8 @@ function gameLoop(currentTime) {
 }
 
 async function bootstrapGame() {
+    restoreCachedMarches();
+    renderExpeditions();
     setLoadingProgress(6, "Lendo progresso local...");
     await waitFrame();
 
@@ -1850,6 +2116,7 @@ async function bootstrapGame() {
     saveState();
     setLoadingProgress(92, "Sincronizando progresso...");
     await pullStateFromBackend();
+    await refreshMarches({ silent: true });
 
     renderAll();
     setLoadingProgress(100, "Arena pronta.");
