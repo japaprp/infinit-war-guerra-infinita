@@ -15,9 +15,9 @@ const PUZZLES_PER_HERO = 10;
 const EQUIPMENT_DROP_CHANCE = 0.2;
 const CHEST_DROP_CHANCE = 0.1;
 const EXPEDITION_DESTINATIONS = [
-    { id: "grey-forest", label: "Floresta Cinzenta", region: "Floresta", rewardMultiplier: 1, objectiveIds: ["explore", "hunt", "gather"] },
-    { id: "old-ruins", label: "Ruínas Antigas", region: "Ruínas", rewardMultiplier: 1.25, objectiveIds: ["explore", "hunt"] },
-    { id: "ash-marsh", label: "Pântano das Cinzas", region: "Pântano", rewardMultiplier: 1.45, objectiveIds: ["hunt", "gather"] }
+    { id: "grey-forest", label: "Floresta Cinzenta", region: "Floresta", x: 900, y: 620, rewardMultiplier: 1, objectiveIds: ["explore", "hunt", "gather"] },
+    { id: "old-ruins", label: "Ruínas Antigas", region: "Ruínas", x: 2180, y: 900, rewardMultiplier: 1.25, objectiveIds: ["explore", "hunt"] },
+    { id: "ash-marsh", label: "Pântano das Cinzas", region: "Pântano", x: 2840, y: 1780, rewardMultiplier: 1.45, objectiveIds: ["hunt", "gather"] }
 ];
 const EXPEDITION_OBJECTIVES = [
     { id: "explore", label: "Explorar região", description: "Mapear trilhas e descobrir recursos", rewardMultiplier: 1 },
@@ -2008,10 +2008,36 @@ function drawTrees() {
     }
 }
 
+function drawExpeditionDestinations() {
+    EXPEDITION_DESTINATIONS.forEach((destination) => {
+        const x = destination.x - camera.x;
+        const y = destination.y - camera.y;
+        if (x < -100 || y < -100 || x > canvas.width + 100 || y > canvas.height + 100) return;
+        const selected = destination.id === state.expedition.destinationId;
+        ctx.save();
+        ctx.globalAlpha = selected ? 1 : 0.72;
+        ctx.strokeStyle = selected ? "#f4c56c" : "#9ab0c7";
+        ctx.fillStyle = selected ? "#f4c56c" : "#7188a3";
+        ctx.lineWidth = selected ? 3 : 2;
+        ctx.beginPath();
+        ctx.arc(x, y, selected ? 24 : 17, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, selected ? 8 : 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#f3f7ff";
+        ctx.font = "bold 12px Trebuchet MS";
+        ctx.textAlign = "center";
+        ctx.fillText(destination.label, x, y - 31);
+        ctx.restore();
+    });
+}
+
 function drawVillage() {
     drawTerrain();
     drawRoads();
     drawTrees();
+    drawExpeditionDestinations();
     villageBuildings.forEach(drawBuilding);
     runtime.resourceNodes.forEach(drawResourceNode);
     runtime.monsters.forEach(drawMonster);
@@ -2040,6 +2066,14 @@ function drawMinimap() {
         if (!monster.alive) return;
         minimapCtx.fillStyle = "#dc6565";
         minimapCtx.fillRect(monster.x * scaleX, monster.y * scaleY, 2, 2);
+    });
+
+    EXPEDITION_DESTINATIONS.forEach((destination) => {
+        const selected = destination.id === state.expedition.destinationId;
+        minimapCtx.fillStyle = selected ? "#f4c56c" : "#9ab0c7";
+        minimapCtx.beginPath();
+        minimapCtx.arc(destination.x * scaleX, destination.y * scaleY, selected ? 4 : 2.5, 0, Math.PI * 2);
+        minimapCtx.fill();
     });
 
     minimapCtx.strokeStyle = "#e5c07f";
