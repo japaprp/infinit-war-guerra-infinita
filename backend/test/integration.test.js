@@ -195,6 +195,16 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.equal(first.body.resources.steel, first.body.rewards.steel);
         assert.equal(first.body.resources.food, first.body.rewards.food);
         assert.equal(first.body.resources.energy, 85);
+
+        // Simulate a lost HTTP response: retry with the same idempotency key.
+        const sameKeyRetry = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
+            token, headers: { "x-idempotency-key": "exp-claim-1" },
+            body: { expeditionId: start.body.expeditionId, idempotencyKey: "exp-claim-1" }
+        });
+        assert.equal(sameKeyRetry.status, 200);
+        assert.deepEqual(sameKeyRetry.body.rewards, first.body.rewards);
+        assert.deepEqual(sameKeyRetry.body.resources, first.body.resources);
+
         await server.stop();
         server = await bootServer({ redisEnabled: false });
 
