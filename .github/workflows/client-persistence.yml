@@ -8,7 +8,7 @@ on:
 jobs:
   browser-persistence:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -19,11 +19,14 @@ jobs:
         with:
           node-version: 24
 
+      - name: Install backend runtime dependencies
+        run: npm --prefix backend install --no-package-lock --omit=dev
+
       - name: Install free Playwright test dependency
         run: npm install --no-save --no-package-lock --omit=dev playwright@1.55.0
 
       - name: Install Chromium and system dependencies
         run: npx playwright install --with-deps chromium
 
-      - name: Run real-browser persistence test
-        run: node --test tests/client-persistence.test.mjs
+      - name: Run real-browser persistence and backend recovery tests
+        run: node --test tests/client-persistence.test.mjs tests/client-backend-recovery.test.mjs
