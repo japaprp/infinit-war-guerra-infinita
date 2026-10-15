@@ -1106,6 +1106,12 @@ function equipChip(chipId) {
     saveState();
 }
 
+function isChipEquipped(chipId) {
+    return Object.values(state.heroes || {}).some((hero) =>
+        Object.values(hero.equippedChips || {}).includes(chipId)
+    );
+}
+
 function upgradeChip(chipId) {
     const chip = state.inventory.chips.find((item) => item.id === chipId);
     const definition = chip && CHIP_CATALOG.find((item) => item.id === chip.typeId);
@@ -1117,9 +1123,12 @@ function upgradeChip(chipId) {
         pushFeed("Este módulo já atingiu o nível máximo.");
         return;
     }
-    const duplicates = state.inventory.chips.filter((item) => item.typeId === chip.typeId && item.id !== chip.id);
+    // Módulos equipados em qualquer herói não podem ser consumidos como cópias.
+    const duplicates = state.inventory.chips.filter((item) =>
+        item.typeId === chip.typeId && item.id !== chip.id && !isChipEquipped(item.id)
+    );
     if (duplicates.length < definition.upgradeCopies) {
-        pushFeed(`Evolução exige ${definition.upgradeCopies} cópias adicionais. Disponíveis: ${duplicates.length}.`);
+        pushFeed(`Evolução exige ${definition.upgradeCopies} cópias adicionais não equipadas. Disponíveis: ${duplicates.length}.`);
         return;
     }
     const consumeIds = new Set(duplicates.slice(0, definition.upgradeCopies).map((item) => item.id));
@@ -1635,7 +1644,7 @@ function renderTabContent() {
             const definition = CHIP_CATALOG.find((item) => item.id === chip.typeId);
             const equipped = hero.heroState.equippedChips?.[definition?.stat] === chip.id;
             const pct = definition ? definition.basePct + (chip.level - 1) * 9.6 : 0;
-            const copies = chips.filter((item) => item.typeId === chip.typeId && item.id !== chip.id).length;
+            const copies = chips.filter((item) => item.typeId === chip.typeId && item.id !== chip.id && !isChipEquipped(item.id)).length;
             return `<article class="inventory-item"><span><strong>${chip.name} · Nv.${chip.level}</strong><small>${chip.role} · ${chip.rarityLabel} · +${pct.toLocaleString("pt-BR")}% ${definition?.statLabel || ""} · cópias extras: ${copies}</small></span><div><button class="inline-action" data-action="equip-chip" data-chip-id="${chip.id}" ${equipped ? "disabled" : ""}>${equipped ? "Equipado" : "Equipar"}</button><button class="inline-action" data-action="upgrade-chip" data-chip-id="${chip.id}" ${chip.level >= CHIP_MAX_LEVEL || copies < (definition?.upgradeCopies || 999) ? "disabled" : ""}>Evoluir (${definition?.upgradeCopies || "—"} cópias)</button></div></article>`;
         }).join("") : "<p>Nenhum módulo no inventário. Encontre um Baú de Módulos em baús de explorador.</p>";
         const moduleChests = state.inventory.chests.filter((chest) => chest.type === "module");
