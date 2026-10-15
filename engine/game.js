@@ -1547,6 +1547,10 @@ async function startExpedition() {
         const resourceType = ui.expeditionResource ? ui.expeditionResource.value : "gold";
         const result = await api.startMarchV1({ resourceType });
         updateServerTime(result.serverTimeMs);
+        if (result.march) {
+            runtime.marches = [result.march, ...runtime.marches.filter((march) => march.marchId !== result.march.marchId)];
+            cacheMarches();
+        }
         await refreshMarches({ silent: true });
         const config = EXPEDITION_RESOURCES[resourceType] || { label: "recurso" };
         pushFeed(`Expedicao enviada para coletar ${config.label}; retorno em 60 segundos.`);
@@ -1571,7 +1575,16 @@ async function collectExpedition(marchId) {
     renderExpeditions();
     try {
         const result = await api.collectMarchV1(marchId);
-        await pullStateFromBackend();
+        if (result.resources) {
+            state.resources.gold = result.resources.gold;
+            state.resources.silver = result.resources.steel;
+            state.resources.wood = result.resources.wood;
+            state.resources.food = result.resources.food;
+            state.resources.gems = result.resources.gems;
+            state.resources.energy = result.resources.energy;
+            renderAll();
+            saveState();
+        }
         await refreshMarches({ silent: true });
         const rewardEntries = Object.entries(result.rewards || {});
         const rewardText = rewardEntries.map(([resourceType, amount]) => {
