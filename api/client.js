@@ -22,10 +22,11 @@
         localStorage.setItem(TOKEN_KEY, token);
     };
 
-    const request = async (method, path, body, tokenOverride) => {
+    const request = async (method, path, body, tokenOverride, extraHeaders = {}) => {
         const token = tokenOverride || getToken();
         const headers = {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            ...extraHeaders
         };
 
         if (token) {
@@ -90,6 +91,10 @@
     const getPlayerMeV1 = async () => request("GET", "/v1/player/me");
     const syncPlayerV1 = async ({ clientVersion = "0.1.0", stateVersion = 0 }) =>
         request("POST", "/v1/player/sync", { clientVersion, stateVersion });
+    const startExpeditionV1 = async ({ destinationId, objectiveId }) =>
+        request("POST", "/v1/expeditions/start", { destinationId, objectiveId });
+    const claimExpeditionV1 = async ({ expeditionId, idempotencyKey }) =>
+        request("POST", "/v1/expeditions/claim", { expeditionId, idempotencyKey }, undefined, { "X-Idempotency-Key": idempotencyKey });
     const listHeroesV1 = async () => request("GET", "/v1/heroes");
     const levelUpHeroV1 = async (heroId, levels = 1) => request("POST", `/v1/heroes/${heroId}/level-up`, { levels });
     const listBuildingsV1 = async () => request("GET", "/v1/buildings");
@@ -111,6 +116,8 @@
         loginV1,
         getPlayerMeV1,
         syncPlayerV1,
+        startExpeditionV1,
+        claimExpeditionV1,
         listHeroesV1,
         levelUpHeroV1,
         listBuildingsV1,
