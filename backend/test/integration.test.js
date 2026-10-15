@@ -161,7 +161,7 @@ test("v1 endpoints: heroes and buildings flow", async () => {
 
 test("expedition reward is server-timed, persisted, and claimable only once", async () => {
     await fs.rm(dbPath, { force: true });
-    const server = await bootServer({ redisEnabled: false });
+    let server = await bootServer({ redisEnabled: false });
     try {
         const login = await api(server.baseUrl, "POST", "/v1/auth/login", { body: { platform: "guest", externalId: "it_expedition_1" } });
         assert.equal(login.status, 200);
@@ -183,6 +183,9 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.ok(first.body.rewards.gold > 0);
         assert.equal(first.body.resources.gold, first.body.rewards.gold);
         assert.equal(first.body.resources.energy, 85);
+        await server.stop();
+        server = await bootServer({ redisEnabled: false });
+
         const second = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
             token, headers: { "x-idempotency-key": "exp-claim-2" },
             body: { expeditionId: start.body.expeditionId, idempotencyKey: "exp-claim-2" }
