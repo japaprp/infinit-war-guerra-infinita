@@ -1,39 +1,52 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:4000 https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com;">
-<title>Infinit War (Guerra Infinita)</title>
+<meta name="theme-color" content="#111a1c">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:4000 https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com;">
+<title>Guerra Infinita — Sobrevivência</title>
 <link rel="stylesheet" href="style.css">
 </head>
-<body class="menu">
-<main class="menu-container">
-    <h1>Infinit War</h1>
-    <p class="subtitle">Escolha seu elemento e entre na arena.</p>
+<body class="entry-screen">
+<main class="war-entry">
+  <div class="entry-skyline" aria-hidden="true"></div>
+  <header class="entry-topline">
+    <div class="entry-brand"><span class="brand-mark">GI</span><span>GUERRA <b>INFINITA</b><small>OPERAÇÃO: RENASCER</small></span></div>
+    <span class="server-status"><i></i> SERVIDOR DE TESTE</span>
+  </header>
 
-    <div class="auth-box">
-        <p id="authStatus" class="auth-status">Conta: nao vinculada</p>
+  <section class="entry-content">
+    <div class="entry-copy">
+      <p class="entry-eyebrow">A CIVILIZAÇÃO CAIU. SUA BASE NÃO.</p>
+      <h1>RECONSTRUA.<br><em>RECRUTE.</em><br>RESISTA.</h1>
+      <p class="entry-description">Reúna sobreviventes, fortaleça seu abrigo e lidere seus heróis em um mundo tomado pelo caos.</p>
+      <div class="entry-features"><span>⌂ BASE ESTRATÉGICA</span><span>✚ ESQUADRÃO DE HERÓIS</span><span>⚔ EXPEDIÇÕES</span></div>
+      <label class="entry-nick-label" for="nickname">IDENTIFICAÇÃO DO COMANDANTE</label>
+      <input type="text" id="nickname" placeholder="Digite seu nome de comandante" maxlength="16" autocomplete="nickname" value="Yago">
+      <button type="button" id="startGameBtn" class="entry-start-btn"><span>ENTRAR NO ABRIGO</span><b>➜</b></button>
+      <p id="authStatus" class="entry-auth-note">Modo de teste local · sem conta necessária</p>
+      <details class="entry-account">
+        <summary>Vincular conta (opcional)</summary>
         <div class="auth-actions">
-            <button type="button" id="googleLoginBtn" class="oauth-btn google">Vincular Google</button>
-            <button type="button" id="facebookLoginBtn" class="oauth-btn facebook">Vincular Facebook</button>
-            <button type="button" id="logoutBtn" class="oauth-btn logout">Desvincular</button>
+          <button type="button" id="googleLoginBtn" class="oauth-btn google">Google</button>
+          <button type="button" id="facebookLoginBtn" class="oauth-btn facebook">Facebook</button>
+          <button type="button" id="logoutBtn" class="oauth-btn logout">Desvincular</button>
         </div>
+      </details>
     </div>
-
-    <label class="field-label" for="nickname">Nickname</label>
-    <input type="text" id="nickname" placeholder="Digite seu nickname" maxlength="16" autocomplete="off">
-
-    <h2>Escolha seu elemento</h2>
-    <div class="elements" role="group" aria-label="Selecao de elemento">
-        <button type="button" class="element-btn is-selected" data-element="fire">Fogo</button>
-        <button type="button" class="element-btn" data-element="water">Agua</button>
-        <button type="button" class="element-btn" data-element="earth">Terra</button>
+    <div class="entry-art" aria-hidden="true">
+      <div class="entry-sun"></div><div class="entry-smoke smoke-one"></div><div class="entry-smoke smoke-two"></div>
+      <div class="entry-ridge ridge-back"></div><div class="entry-ridge ridge-front"></div>
+      <div class="entry-ruins"><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="entry-ground"></div>
+      <div class="entry-hero-shadow"></div>
+      <img class="entry-hero" src="assets/characters/hero_recruit.png" alt="Comandante sobrevivente" onerror="this.style.display='none'">
+      <div class="entry-art-label"><b>UNIDADE 08</b><span>SOBREVIVENTE · CLASSE DE ASSALTO</span></div>
     </div>
-
-    <button type="button" id="startGameBtn" class="start-btn">Entrar na Arena</button>
+  </section>
+  <footer class="entry-footer"><span>UM MUNDO EM RUÍNAS. UMA ÚLTIMA CHANCE.</span><span>BUILD DE DESENVOLVIMENTO · PROGRESSO LOCAL</span></footer>
 </main>
-
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
 <script src="api/config.js" defer></script>
