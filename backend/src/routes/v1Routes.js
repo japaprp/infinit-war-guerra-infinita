@@ -188,6 +188,15 @@ export function createV1Routes(env, runtime = {}) {
         res.json(queryWorldTiles(user, x, y, radius));
     });
 
+    router.get("/world/marches", async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+
+        ensureV1State(user);
+        res.json({ serverTimeMs: Date.now(), marches: user.v1.marches });
+    });
+
     router.post("/world/marches/start", userLock, async (req, res) => {
         const db = await readDb();
         const user = db.users[req.user.sub];
