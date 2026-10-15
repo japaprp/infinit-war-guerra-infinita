@@ -1831,7 +1831,7 @@ function gameLoop(currentTime) {
 
     drawVillage();
     player.draw(ctx, camera.x, camera.y);
-    updateHUD(player, selectedElement.name);
+    updateHUD(player, "Comandante");
     updateStaminaHud();
     updateInteractionHint();
     drawMinimap();
