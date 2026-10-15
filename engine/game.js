@@ -13,6 +13,12 @@ const LEGACY_ONBOARDING_KEY = "gde_onboarding_seen_v1";
 const INITIAL_UNLOCKED = 1;
 const PUZZLES_PER_HERO = 10;
 const EQUIPMENT_DROP_CHANCE = 0.2;
+const CHEST_DROP_CHANCE = 0.1;
+const CHEST_REWARD_TABLE = [
+    { id: "resources", label: "Recursos", weight: 0.55 },
+    { id: "shards", label: "Fragmentos", weight: 0.3 },
+    { id: "equipment", label: "Equipamento", weight: 0.15 }
+];
 const EQUIPMENT_SLOTS = { weapon: "Arma", armor: "Armadura", boots: "Botas" };
 const EQUIPMENT_RARITIES = [
     { id: "common", label: "Comum", weight: 0.72, multiplier: 1 },
@@ -967,8 +973,7 @@ function equipInventoryItem(itemId) {
     saveState();
 }
 
-function rollEquipmentDrop(monsterLevel) {
-    if (Math.random() >= EQUIPMENT_DROP_CHANCE) return null;
+function createEquipmentItem(monsterLevel) {
     const roll = Math.random();
     let cumulative = 0;
     const rarity = EQUIPMENT_RARITIES.find((entry) => {
@@ -988,6 +993,51 @@ function rollEquipmentDrop(monsterLevel) {
         bonus: baseBonus,
         obtainedAt: Date.now()
     };
+}
+
+function rollEquipmentDrop(monsterLevel) {
+    return Math.random() < EQUIPMENT_DROP_CHANCE ? createEquipmentItem(monsterLevel) : null;
+}
+
+function rollChestReward() {
+    const roll = Math.random();
+    let cumulative = 0;
+    return CHEST_REWARD_TABLE.find((entry) => {
+        cumulative += entry.weight;
+        return roll < cumulative;
+    }) || CHEST_REWARD_TABLE[0];
+}
+
+function openInventoryChest(chestId) {
+    const chestIndex = state.inventory.chests.findIndex((chest) => chest.id === chestId);
+    if (chestIndex < 0) {
+        pushFeed("Baú não encontrado no inventário.");
+        return;
+    }
+    const [chest] = state.inventory.chests.splice(chestIndex, 1);
+    const reward = rollChestReward();
+    if (reward.id === "resources") {
+        const gold = 250 + Math.floor(Math.random() * 751);
+        const silver = 200 + Math.floor(Math.random() * 601);
+        const food = 40 + Math.floor(Math.random() * 81);
+        state.resources.gold += gold;
+        state.resources.silver += silver;
+        state.resources.food += food;
+        pushFeed(`Baú aberto: +${gold} ouro, +${silver} prata e +${food} alimento.`);
+    } else if (reward.id === "shards") {
+        const pool = ["bronze", "silver", "gold"][Math.floor(Math.random() * 3)];
+        const amount = pool === "bronze" ? 3 : pool === "silver" ? 2 : 1;
+        state.genericShards[pool] += amount;
+        state.totalPuzzles += amount;
+        checkHeroUnlocks();
+        pushFeed(`Baú aberto: +${amount} fragmento(s) ${tierLabel(pool).toLowerCase()}.`);
+    } else {
+        const item = createEquipmentItem(8);
+        state.inventory.equipment.push(item);
+        pushFeed(`Baú aberto: ${item.name} (+${item.bonus}).`);
+    }
+    renderAll();
+    saveState();
 }
 
 function upgradeSkill(skillIndex) {
@@ -1220,6 +1270,10 @@ function fightMonster(monster) {
             state.inventory.equipment.push(equipmentDrop);
             pushFeed(`Equipamento encontrado: ${equipmentDrop.name} (+${equipmentDrop.bonus}).`);
         }
+        if (Math.random() < CHEST_DROP_CHANCE) {
+            state.inventory.chests.push({ id: `chest-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type: "explorer", name: "Baú de Explorador", obtainedAt: Date.now() });
+            pushFeed("Você encontrou um Baú de Explorador!");
+        }
 
         if (monster.level >= 45 && Math.random() < 0.4) addPuzzleReward("specific", 1, state.selectedHeroId);
         else if (Math.random() < 0.35) addPuzzleReward("silver", 1);
@@ -1406,6 +1460,9 @@ function renderTabContent() {
                     return `<article class="equip-card"><strong>${label}</strong><small>Nível ${hero.heroState.equipment[slot]} · ${equipped ? `${equipped.name} (+${equipped.bonus} ${bonusLabel})` : "Nenhum item equipado"}</small></article>`;
                 }).join("")}
             </div>
+            <section class="inventory-section"><h3>Baús (${state.inventory.chests.length})</h3>
+                ${state.inventory.chests.length ? state.inventory.chests.map((chest) => `<article class="inventory-item"><span><strong>${chest.name || "Baú de Explorador"}</strong><small>Recompensa aleatória · probabilidades publicadas</small></span><button class="inline-action" data-action="open-chest" data-chest-id="${chest.id}">Abrir</button></article>`).join("") : "<p>Baús podem ser encontrados ao derrotar monstros.</p>"}
+            </section>
             <section class="inventory-section"><h3>Inventário de equipamentos (${state.inventory.equipment.length})</h3>
                 ${state.inventory.equipment.length ? state.inventory.equipment.map((item) => {
                     const isEquipped = hero.heroState.equippedItems?.[item.slot] === item.id;
@@ -1563,6 +1620,7 @@ function bindUiActions() {
         const action = actionTarget.dataset.action;
         if (action === "upgrade-equip") upgradeEquipment(actionTarget.dataset.slot);
         if (action === "equip-item") equipInventoryItem(actionTarget.dataset.itemId);
+        if (action === "open-chest") openInventoryChest(actionTarget.dataset.chestId);
         if (action === "upgrade-skill") upgradeSkill(Number(actionTarget.dataset.skillIndex));
         if (action === "ascend-hero") ascendHero();
         if (action === "level-up-hero") levelUpHero();
