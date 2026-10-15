@@ -43,7 +43,7 @@ test("original art manifest has unique, safe paths and usable dimensions", () =>
     }
 });
 
-test("art validator accepts the preparation state and reports malformed present files", () => {
+test("art validator runs in preparation mode before all images are uploaded", () => {
     const result = spawnSync(process.execPath, ["scripts/validate-art-assets.mjs"], {
         cwd: root,
         encoding: "utf8"
