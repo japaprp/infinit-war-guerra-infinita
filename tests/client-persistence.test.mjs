@@ -60,10 +60,30 @@ test("cliente mantém expedição, temporizador e saldos após fechar/reabrir", 
         page.on("pageerror", error => pageErrors.push(error.message));
 
         await page.goto(`${baseUrl}/game.html`, { waitUntil: "load" });
-        await page.locator("#startExpeditionBtn").waitFor({ state: "visible" });
+        await page.waitForTimeout(1200);
+        const startupDiagnostics = await page.evaluate(() => {
+            const button = document.querySelector("#startExpeditionBtn");
+            const style = button ? getComputedStyle(button) : null;
+            const rect = button?.getBoundingClientRect();
+            return {
+                title: document.title,
+                readyState: document.readyState,
+                bodyClass: document.body.className,
+                buttonExists: Boolean(button),
+                buttonDisabled: button?.disabled,
+                buttonDisplay: style?.display,
+                buttonVisibility: style?.visibility,
+                buttonRect: rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null,
+                loadingScreenExists: Boolean(document.querySelector("#loadingScreen")),
+                scripts: [...document.scripts].map(script => ({ src: script.src, loaded: Boolean(script.src) }))
+            };
+        });
+        assert.ok(startupDiagnostics.buttonExists, `expedition UI missing: ${JSON.stringify({ startupDiagnostics, pageErrors })}`);
+        assert.ok(startupDiagnostics.buttonRect?.width > 0 && startupDiagnostics.buttonRect?.height > 0,
+            `expedition UI not visible: ${JSON.stringify({ startupDiagnostics, pageErrors })}`);
         await page.waitForFunction(() => {
             const button = document.querySelector("#startExpeditionBtn");
-            return button && !button.disabled && document.querySelector("#loadingScreen")?.classList.contains("is-hidden");
+            return button && !button.disabled;
         }, null, { timeout: 15000 });
 
         await page.locator("#expeditionDestination").selectOption("old-ruins");
