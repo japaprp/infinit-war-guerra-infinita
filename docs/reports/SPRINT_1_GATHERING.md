@@ -39,7 +39,8 @@ O checkout local não ficou disponível nesta sessão porque o ambiente não con
 
 - **Código remoto:** alterações enviadas para a branch de feature; a `main` permanece sem merge.
 - **Testes locais:** não executados, pois o ambiente de execução não conseguiu clonar o repositório.
-- **CI no commit de implementação `76512c6`:** aprovado. O passo `node --check engine/game.js && node --check api/client.js` passou e a suíte de integração concluiu **7 testes, 7 aprovados, 0 falhas, 0 ignorados**.
+- **CI no commit de implementação `c01f724`:** aprovado. O passo `node --check engine/game.js && node --check api/client.js` passou e a suíte de integração concluiu **7 testes, 7 aprovados, 0 falhas, 0 ignorados**.
+- **Validação da rota/recompensa:** os testes confirmaram que destino e recompensa prevista são definidos pelo servidor, ignoram valores enviados pelo cliente e permanecem iguais após reiniciar o backend.
 - **Teste de reinicialização:** passou no backend; após reiniciar o servidor, a expedição manteve o mesmo `departAtMs` e `arriveAtMs`, e o tempo restante diminuiu.
 - **Validação de navegador/dispositivo:** ainda pendente; não há alegação de teste manual real da interface.
 - **Pendente antes de considerar concluído:** validar a experiência visual em execução: iniciar, esperar, resgatar, confirmar o HUD e fechar/reabrir a aplicação.
