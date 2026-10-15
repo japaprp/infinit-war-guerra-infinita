@@ -227,6 +227,7 @@ test("idempotency with Redis persists across server restart", async (t) => {
 
         const db = await readDb();
         db.users["guest:it_idem_1"].economy.gems = 1000;
+        db.users["guest:it_idem_1"].v1.resources.gems = 1000;
         await writeDb(db);
 
         const idempotencyKey = "it-idem-redis-001";
