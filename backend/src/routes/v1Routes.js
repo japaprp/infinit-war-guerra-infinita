@@ -21,7 +21,9 @@ import {
     getPowerRanking,
     shopPurchase,
     claimBattlePass,
-    getPlayerMe
+    getPlayerMe,
+    startExpedition,
+    claimExpedition
 } from "../services/v1StubService.js";
 import { createAuthMiddleware } from "../middlewares/authMiddleware.js";
 import { createUserLockMiddleware } from "../middlewares/userLockMiddleware.js";
@@ -81,6 +83,28 @@ export function createV1Routes(env, runtime = {}) {
         if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
 
         const result = syncState(req.user.sub, user, req.body || {});
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.post("/expeditions/start", userLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = startExpedition(user, req.body || {});
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.post("/expeditions/claim", idempotency, userLock, async (req, res) => {
+        const { expeditionId, idempotencyKey } = req.body || {};
+        if (!expeditionId || !idempotencyKey) return res.status(400).json({ code: "BAD_REQUEST", message: "expeditionId and idempotencyKey are required" });
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = claimExpedition(user, { expeditionId });
+        if (asError(res, result)) return;
         await writeDb(db);
         res.json(result);
     });
