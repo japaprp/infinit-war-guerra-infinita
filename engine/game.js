@@ -25,14 +25,17 @@ const EXPEDITION_OBJECTIVES = [
     { id: "gather", label: "Coletar suprimentos", description: "Priorizar alimento e materiais", rewardMultiplier: 1.1 }
 ];
 const CHEST_REWARD_TABLE = [
-    { id: "resources", label: "Recursos", weight: 0.55 },
-    { id: "shards", label: "Fragmentos", weight: 0.3 },
-    { id: "equipment", label: "Equipamento", weight: 0.15 }
+    { id: "resources", label: "Recursos", weight: 0.45 },
+    { id: "shards", label: "Fragmentos", weight: 0.25 },
+    { id: "equipment", label: "Equipamento", weight: 0.15 },
+    { id: "moduleChest", label: "Baú de Módulos", weight: 0.15 }
 ];
 const EQUIPMENT_SLOTS = { weapon: "Arma", armor: "Armadura", boots: "Botas" };
 const CHIP_CATALOG = [
     { id: "assault-module", name: "Módulo de Assalto", role: "Guerreiro", stat: "attackPct", statLabel: "Dano de combate", basePct: 32.6, upgradeCopies: 5, rarity: "Épico", color: "#a56bff" },
-    { id: "gravity-barrier", name: "Barreira Gravitacional", role: "Guerreiro", stat: "hpPct", statLabel: "Vida e proteção", basePct: 6.8, upgradeCopies: 3, rarity: "Épico", color: "#53c7e8" }
+    { id: "gravity-barrier", name: "Barreira Gravitacional", role: "Guerreiro", stat: "hpPct", statLabel: "Vida e proteção", basePct: 6.8, upgradeCopies: 3, rarity: "Épico", color: "#53c7e8" },
+    { id: "recon-array", name: "Matriz de Reconhecimento", role: "Batedor", stat: "attackPct", statLabel: "Dano de combate", basePct: 12, upgradeCopies: 4, rarity: "Raro", color: "#4f9bff" },
+    { id: "supply-core", name: "Núcleo de Suprimentos", role: "Suporte", stat: "hpPct", statLabel: "Vida e proteção", basePct: 10, upgradeCopies: 4, rarity: "Raro", color: "#4f9bff" }
 ];
 const CHIP_MAX_LEVEL = 10;
 // Prototype chest odds are original design values, not a claim about the reference game's full pool.
@@ -288,6 +291,7 @@ function createHeroState(template) {
         stars: 1,
         specificShards: 0,
         equipment: { weapon: 0, armor: 0, boots: 0 },
+        equippedChips: { attackPct: null, hpPct: null },
         skillLevels: [1, 1, 1]
     };
 }
@@ -377,6 +381,7 @@ function loadState() {
                 ...current,
                 equipment: { weapon: 0, armor: 0, boots: 0, ...(current.equipment || {}) },
                 equippedItems: Object.fromEntries(Object.keys(EQUIPMENT_SLOTS).map((slot) => [slot, current.equippedItems?.[slot] || null])),
+                equippedChips: { attackPct: current.equippedChips?.attackPct || null, hpPct: current.equippedChips?.hpPct || null },
                 skillLevels: Array.isArray(current.skillLevels) ? current.skillLevels.slice(0, 3) : [1, 1, 1]
             };
         });
@@ -497,11 +502,18 @@ function getHeroRuntime(heroId) {
     const equipBonusTroops = heroState.equipment.boots * 2 + getEquippedBonus("boots");
     const skillAtkBonus = heroState.skillLevels.reduce((sum, level) => sum + level * 28, 0);
     const skillDefBonus = heroState.skillLevels.reduce((sum, level) => sum + level * 22, 0);
+    const equippedChips = Object.values(heroState.equippedChips || {}).filter(Boolean)
+        .map((chipId) => state.inventory.chips.find((chip) => chip.id === chipId))
+        .filter(Boolean);
+    const chipPct = (stat) => equippedChips.reduce((sum, item) => {
+        const definition = CHIP_CATALOG.find((chip) => chip.id === item.typeId);
+        return sum + (definition?.stat === stat ? definition.basePct + (item.level - 1) * 9.6 : 0);
+    }, 0) / 100;
     const starMultiplier = 1 + (heroState.stars - 1) * 0.08;
 
-    const atk = Math.floor((template.baseStats.atk + equipBonusAtk + skillAtkBonus) * starMultiplier);
+    const atk = Math.floor((template.baseStats.atk + equipBonusAtk + skillAtkBonus) * starMultiplier * (1 + chipPct("attackPct")));
     const def = Math.floor((template.baseStats.def + equipBonusDef + skillDefBonus) * starMultiplier);
-    const troops = Math.floor((template.baseStats.troops + equipBonusTroops) * starMultiplier);
+    const troops = Math.floor((template.baseStats.troops + equipBonusTroops) * starMultiplier * (1 + chipPct("hpPct")));
     const power = atk * 8 + def * 6 + troops * 28 + heroState.level * 3200;
     const skillAverage = heroState.skillLevels.reduce((a, b) => a + b, 0) / 3;
 
