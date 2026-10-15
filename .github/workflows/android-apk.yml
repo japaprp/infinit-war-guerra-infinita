@@ -8,6 +8,7 @@ on:
       - '.github/workflows/android-apk.yml'
       - 'capacitor.config.json'
       - 'scripts/prepare-android-web.mjs'
+      - 'scripts/guest-bootstrap.js'
       - 'index.html'
       - 'game.html'
       - 'main.js'
