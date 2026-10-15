@@ -167,6 +167,16 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         const login = await api(server.baseUrl, "POST", "/v1/auth/login", { body: { platform: "guest", externalId: "it_expedition_1" } });
         assert.equal(login.status, 200);
         const token = login.body.accessToken;
+        const forgedSync = await api(server.baseUrl, "POST", "/v1/player/sync", {
+            token,
+            body: { snapshot: { gold: 999999, wood: 999999, steel: 999999, food: 999999, energy: 1 } }
+        });
+        assert.equal(forgedSync.status, 200);
+        assert.equal(forgedSync.body.profile.resources.gold, 0);
+        assert.equal(forgedSync.body.profile.resources.wood, 0);
+        assert.equal(forgedSync.body.profile.resources.steel, 0);
+        assert.equal(forgedSync.body.profile.resources.food, 0);
+        assert.equal(forgedSync.body.profile.resources.energy, 100);
         const invalid = await api(server.baseUrl, "POST", "/v1/expeditions/start", {
             token, body: { destinationId: "unknown-map", objectiveId: "explore" }
         });
