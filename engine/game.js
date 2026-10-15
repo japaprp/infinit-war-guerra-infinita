@@ -155,7 +155,9 @@ const ui = {
     sliceClaimRewardBtn: document.getElementById("sliceClaimRewardBtn"),
     convoyGrid: document.getElementById("convoyGrid"),
     activeVehicleTitle: document.getElementById("activeVehicleTitle"),
-    vehicleFormationSlots: document.getElementById("vehicleFormationSlots")
+    vehicleFormationSlots: document.getElementById("vehicleFormationSlots"),
+    activeVehicleStatus: document.getElementById("activeVehicleStatus"),
+    vehicleExpeditionBtn: document.getElementById("vehicleExpeditionBtn")
 };
 
 const heroDetail = {
@@ -275,6 +277,12 @@ function createDefaultState() {
             charlie: [null, null, null, null, null],
             vip: [null, null, null, null, null]
         },
+        expeditions: {
+            alpha: { status: "idle", startedAt: 0, endAt: 0, rewards: null },
+            bravo: { status: "idle", startedAt: 0, endAt: 0, rewards: null },
+            charlie: { status: "idle", startedAt: 0, endAt: 0, rewards: null },
+            vip: { status: "idle", startedAt: 0, endAt: 0, rewards: null }
+        },
         totalPuzzles: 0,
         nextUnlockAt: PUZZLES_PER_HERO,
         squad: ["lucas", "kai", "megan", null, null],
@@ -332,7 +340,12 @@ function loadState() {
         const validVehicleIds = ["alpha", "bravo", "charlie", "vip"];
         merged.selectedVehicleId = validVehicleIds.includes(parsed.selectedVehicleId) ? parsed.selectedVehicleId : fallback.selectedVehicleId;
         merged.vehicleSquads = { ...fallback.vehicleSquads, ...(parsed.vehicleSquads || {}) };
+        merged.expeditions = { ...fallback.expeditions, ...(parsed.expeditions || {}) };
         validVehicleIds.forEach((vehicleId) => {
+            const expedition = merged.expeditions[vehicleId];
+            merged.expeditions[vehicleId] = expedition && ["idle", "away", "ready"].includes(expedition.status)
+                ? { status: expedition.status, startedAt: Number(expedition.startedAt) || 0, endAt: Number(expedition.endAt) || 0, rewards: expedition.rewards && typeof expedition.rewards === "object" ? expedition.rewards : null }
+                : { ...fallback.expeditions[vehicleId] };
             const savedSlots = merged.vehicleSquads[vehicleId];
             merged.vehicleSquads[vehicleId] = Array.isArray(savedSlots)
                 ? Array.from({ length: 5 }, (_, index) => savedSlots[index] || null)
@@ -1328,14 +1341,72 @@ function renderSquad() {
         .join("");
 }
 
+const EXPEDITION_DURATION_MS = 60 * 1000;
+
 function getVehicleLabel(vehicleId) {
     return ({ alpha: "ALFA", bravo: "BRAVO", charlie: "CHARLIE", vip: "VIP · FORTALEZA" })[vehicleId] || "ALFA";
+}
+
+function getExpeditionRewards(vehicleId) {
+    const count = state.vehicleSquads[vehicleId].filter(Boolean).length;
+    return { gold: 2500 + count * 500, silver: 1800 + count * 300, wood: 1400 + count * 250, food: 30 + count * 10 };
+}
+
+function startVehicleExpedition(vehicleId) {
+    const expedition = state.expeditions[vehicleId];
+    if (!expedition || expedition.status !== "idle") return;
+    const heroCount = state.vehicleSquads[vehicleId].filter(Boolean).length;
+    if (heroCount === 0) {
+        pushFeed("Escalone pelo menos um herói na viatura " + getVehicleLabel(vehicleId) + " antes de partir.");
+        return;
+    }
+    const now = Date.now();
+    state.expeditions[vehicleId] = { status: "away", startedAt: now, endAt: now + EXPEDITION_DURATION_MS, rewards: getExpeditionRewards(vehicleId) };
+    pushFeed("Viatura " + getVehicleLabel(vehicleId) + " partiu para uma expedição de 60 segundos com " + heroCount + " herói(s).");
+    renderAll();
+    saveState();
+}
+
+function claimVehicleExpedition(vehicleId) {
+    const expedition = state.expeditions[vehicleId];
+    if (!expedition || expedition.status !== "ready") return;
+    const rewards = expedition.rewards || { gold: 0, silver: 0, wood: 0, food: 0 };
+    Object.keys(rewards).forEach((resource) => {
+        if (Object.prototype.hasOwnProperty.call(state.resources, resource)) state.resources[resource] += Math.max(0, Number(rewards[resource]) || 0);
+    });
+    state.expeditions[vehicleId] = { status: "idle", startedAt: 0, endAt: 0, rewards: null };
+    pushFeed("Expedição " + getVehicleLabel(vehicleId) + " resgatada: +" + formatCompact(rewards.gold) + " ouro, +" + formatCompact(rewards.silver) + " prata, +" + formatCompact(rewards.wood) + " madeira e +" + rewards.food + " alimento.");
+    renderAll();
+    saveState();
+}
+
+function refreshExpeditionStates() {
+    const now = Date.now();
+    let changed = false;
+    Object.keys(state.expeditions).forEach((vehicleId) => {
+        const expedition = state.expeditions[vehicleId];
+        if (expedition.status === "away" && expedition.endAt > 0 && now >= expedition.endAt) {
+            expedition.status = "ready";
+            changed = true;
+            pushFeed("Expedição " + getVehicleLabel(vehicleId) + " concluída. A recompensa está pronta para resgate.");
+        }
+    });
+    if (changed) saveState();
 }
 
 function assignHeroToVehicle(heroId) {
     const heroState = state.heroes[heroId];
     if (!heroState || !heroState.unlocked) return;
     const vehicleId = state.selectedVehicleId;
+    if (state.expeditions[vehicleId].status !== "idle") {
+        pushFeed("A formação fica bloqueada enquanto a expedição estiver em andamento ou aguardando resgate.");
+        return;
+    }
+    const alreadyAssigned = Object.keys(state.vehicleSquads).some((otherVehicleId) => otherVehicleId !== vehicleId && state.vehicleSquads[otherVehicleId].includes(heroId));
+    if (alreadyAssigned) {
+        pushFeed(getHeroTemplate(heroId).name + " já está escalado em outra viatura.");
+        return;
+    }
     const slots = state.vehicleSquads[vehicleId];
     if (slots.includes(heroId)) {
         pushFeed(getHeroTemplate(heroId).name + " já está escalado na viatura " + getVehicleLabel(vehicleId) + ".");
@@ -1363,12 +1434,30 @@ function renderConvoyFleet() {
         const countLabel = card.querySelector("[data-vehicle-count]");
         if (countLabel) countLabel.textContent = count + "/5 heróis";
     });
-    ui.activeVehicleTitle.textContent = "ESQUADRÃO " + getVehicleLabel(state.selectedVehicleId);
-    ui.vehicleFormationSlots.innerHTML = state.vehicleSquads[state.selectedVehicleId]
+    const vehicleId = state.selectedVehicleId;
+    const expedition = state.expeditions[vehicleId];
+    const locked = expedition.status !== "idle";
+    ui.activeVehicleTitle.textContent = "ESQUADRÃO " + getVehicleLabel(vehicleId);
+    if (expedition.status === "away") {
+        ui.activeVehicleStatus.textContent = "EM MISSÃO · " + formatTimer(expedition.endAt - Date.now());
+        ui.vehicleExpeditionBtn.textContent = "Em expedição";
+        ui.vehicleExpeditionBtn.disabled = true;
+    } else if (expedition.status === "ready") {
+        ui.activeVehicleStatus.textContent = "RECOMPENSA DISPONÍVEL";
+        ui.vehicleExpeditionBtn.textContent = "Resgatar recompensa";
+        ui.vehicleExpeditionBtn.disabled = false;
+    } else {
+        ui.activeVehicleStatus.textContent = "PRONTA PARA PARTIR · 60s";
+        ui.vehicleExpeditionBtn.textContent = "Enviar expedição";
+        ui.vehicleExpeditionBtn.disabled = false;
+    }
+    ui.vehicleExpeditionBtn.dataset.vehicleId = vehicleId;
+    ui.vehicleFormationSlots.innerHTML = state.vehicleSquads[vehicleId]
         .map((heroId, index) => {
             if (!heroId) return '<div class="vehicle-hero-slot empty"><span class="slot-name">Vaga ' + (index + 1) + ' · livre</span></div>';
             const hero = getHeroTemplate(heroId);
-            return '<div class="vehicle-hero-slot"><span class="slot-name" title="' + hero.name + '">' + (index + 1) + '. ' + hero.name + '</span><button type="button" data-remove-vehicle-hero="' + index + '" aria-label="Remover ' + hero.name + ' da viatura">×</button></div>';
+            const removeControl = locked ? "" : '<button type="button" data-remove-vehicle-hero="' + index + '" aria-label="Remover ' + hero.name + ' da viatura">×</button>';
+            return '<div class="vehicle-hero-slot"><span class="slot-name" title="' + hero.name + '">' + (index + 1) + '. ' + hero.name + '</span>' + removeControl + '</div>';
         }).join("");
 }
 
@@ -1488,6 +1577,7 @@ function renderTimers() {
 }
 
 function renderAll() {
+    refreshExpeditionStates();
     renderResources();
     renderMission();
     renderTimers();
@@ -1525,6 +1615,8 @@ async function pullStateFromBackend() {
         state.totalPuzzles = Number.isFinite(remote.state.totalPuzzles) ? remote.state.totalPuzzles : state.totalPuzzles;
         state.nextUnlockAt = Number.isFinite(remote.state.nextUnlockAt) ? remote.state.nextUnlockAt : state.nextUnlockAt;
         state.squad = Array.isArray(remote.state.squad) ? remote.state.squad.slice(0, 5) : state.squad;
+        state.vehicleSquads = { ...state.vehicleSquads, ...(remote.state.vehicleSquads || {}) };
+        state.expeditions = { ...state.expeditions, ...(remote.state.expeditions || {}) };
         state.mission = { ...state.mission, ...(remote.state.mission || {}) };
         state.events = { ...state.events, ...(remote.state.events || {}) };
         state.buildings = { ...state.buildings, ...(remote.state.buildings || {}) };
@@ -1545,6 +1637,12 @@ async function pullStateFromBackend() {
 }
 
 function bindUiActions() {
+    ui.vehicleExpeditionBtn.addEventListener("click", () => {
+        const vehicleId = ui.vehicleExpeditionBtn.dataset.vehicleId;
+        if (state.expeditions[vehicleId].status === "ready") claimVehicleExpedition(vehicleId);
+        else startVehicleExpedition(vehicleId);
+    });
+
     ui.convoyGrid.addEventListener("click", (event) => {
         const card = event.target.closest("[data-vehicle]");
         if (!card) return;
@@ -1559,7 +1657,7 @@ function bindUiActions() {
         if (!removeButton) return;
         const slotIndex = Number(removeButton.dataset.removeVehicleHero);
         const heroId = state.vehicleSquads[state.selectedVehicleId][slotIndex];
-        if (!heroId) return;
+        if (!heroId || state.expeditions[state.selectedVehicleId].status !== "idle") return;
         state.vehicleSquads[state.selectedVehicleId][slotIndex] = null;
         pushFeed(getHeroTemplate(heroId).name + " removido da viatura " + getVehicleLabel(state.selectedVehicleId) + ".");
         renderAll();
