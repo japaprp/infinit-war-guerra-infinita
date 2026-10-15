@@ -175,6 +175,10 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.equal(start.status, 200);
         assert.equal(start.body.resources.energy, 85);
         assert.ok(start.body.expeditionId);
+        const statusAfterStart = await api(server.baseUrl, "GET", "/v1/expeditions/status", { token });
+        assert.equal(statusAfterStart.status, 200);
+        assert.equal(statusAfterStart.body.active.expeditionId, start.body.expeditionId);
+        assert.equal(statusAfterStart.body.active.destinationId, "grey-forest");
         const duplicateStart = await api(server.baseUrl, "POST", "/v1/expeditions/start", {
             token, body: { destinationId: "grey-forest", objectiveId: "explore" }
         });
@@ -196,6 +200,10 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.equal(first.body.resources.steel, first.body.rewards.steel);
         assert.equal(first.body.resources.food, first.body.rewards.food);
         assert.equal(first.body.resources.energy, 85);
+        const statusAfterClaim = await api(server.baseUrl, "GET", "/v1/expeditions/status", { token });
+        assert.equal(statusAfterClaim.status, 200);
+        assert.equal(statusAfterClaim.body.active, null);
+        assert.ok(statusAfterClaim.body.claimedIds.includes(start.body.expeditionId));
 
         // Simulate a lost HTTP response: retry with the same idempotency key.
         const sameKeyRetry = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
