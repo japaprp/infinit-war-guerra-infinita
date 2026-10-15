@@ -1502,6 +1502,8 @@ body.game { background:#101817; color:#f2e9d3; }
 .convoy-vip .convoy-meta em { color:#e8c46e; }
 .vehicle-formation-head { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:8px 2px 5px; color:#e7d4a8; font-size:9px; letter-spacing:.08em; }
 .vehicle-formation-head span { color:#aebbb0; font-size:8px; letter-spacing:0; }
+.vehicle-expedition-btn { width:100%; margin-top:7px; padding:7px 10px; border:1px solid #d7b66b99; border-radius:6px; background:linear-gradient(135deg,#5d754d,#263a2b); color:#f2e9d3; font-size:10px; font-weight:900; cursor:pointer; }
+.vehicle-expedition-btn:disabled { opacity:.65; cursor:wait; }
 .vehicle-formation-slots { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; }
 .vehicle-hero-slot { display:flex; align-items:center; justify-content:space-between; gap:3px; min-width:0; min-height:30px; padding:5px 6px; border:1px solid #83948755; border-radius:5px; background:#101916; color:#dfe6d9; font-size:9px; }
 .vehicle-hero-slot.empty { color:#84938a; border-style:dashed; }
@@ -1557,6 +1559,7 @@ body.game { background:#101817; color:#f2e9d3; }
   .vehicle-formation-slots { gap:3px; }
   .vehicle-hero-slot { min-height:25px; padding:3px 4px; font-size:7px; }
   .vehicle-hero-slot button { font-size:9px; padding:0 2px; }
+  .vehicle-expedition-btn { margin-top:5px; padding:6px; font-size:9px; }
   .city-chat { display:none; }
   .bottom-nav { bottom:0; }
 }
