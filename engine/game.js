@@ -164,7 +164,12 @@ const ui = {
     sliceCompleteBuildBtn: document.getElementById("sliceCompleteBuildBtn"),
     sliceFightPveBtn: document.getElementById("sliceFightPveBtn"),
     sliceUpgradeHeroBtn: document.getElementById("sliceUpgradeHeroBtn"),
-    sliceClaimRewardBtn: document.getElementById("sliceClaimRewardBtn")
+    sliceClaimRewardBtn: document.getElementById("sliceClaimRewardBtn"),
+    expeditionPanel: document.getElementById("expeditionPanel"),
+    expeditionStatus: document.getElementById("expeditionStatus"),
+    expeditionMapLabel: document.getElementById("expeditionMapLabel"),
+    startExpeditionBtn: document.getElementById("startExpeditionBtn"),
+    claimExpeditionBtn: document.getElementById("claimExpeditionBtn")
 };
 
 const heroDetail = {
@@ -285,6 +290,7 @@ function createDefaultState() {
             heroUpgraded: false,
             rewardClaimed: false
         },
+        expedition: { id: null, active: false, startedAt: null, endsAt: null, rewardClaimed: true, completedCount: 0 },
         heroes: Object.fromEntries(heroTemplates.map((template) => [template.id, createHeroState(template)]))
     };
 }
@@ -321,6 +327,10 @@ function loadState() {
         merged.mission = { ...fallback.mission, ...(parsed.mission || {}) };
         merged.buildings = { ...fallback.buildings, ...(parsed.buildings || {}) };
         merged.verticalSlice = { ...fallback.verticalSlice, ...(parsed.verticalSlice || {}) };
+        merged.expedition = { ...fallback.expedition, ...(parsed.expedition || {}) };
+        if (merged.expedition.active && (!Number.isFinite(merged.expedition.endsAt) || !merged.expedition.id)) {
+            merged.expedition = { ...fallback.expedition, completedCount: Math.max(0, Number(merged.expedition.completedCount) || 0) };
+        }
         merged.heroes = { ...fallback.heroes, ...(parsed.heroes || {}) };
         merged.squad = Array.isArray(parsed.squad) ? parsed.squad.slice(0, 5) : fallback.squad;
         merged.buildQueue = Array.isArray(parsed.buildQueue) ? parsed.buildQueue.slice(0, 2) : fallback.buildQueue;
@@ -1525,6 +1535,72 @@ function renderTimers() {
     ui.bonusTimer.textContent = formatTimer(state.events.bonusEndsAt - Date.now());
 }
 
+function renderExpeditionPanel() {
+    if (!ui.expeditionPanel || !ui.expeditionStatus || !ui.startExpeditionBtn || !ui.claimExpeditionBtn) return;
+    const expedition = state.expedition;
+    if (expedition.active) {
+        const remaining = Math.max(0, expedition.endsAt - Date.now());
+        ui.expeditionStatus.textContent = remaining > 0
+            ? `Expedição em andamento · retorno em ${formatTimer(remaining)}. O progresso é salvo automaticamente.`
+            : "Expedição concluída! Resgate sua recompensa para atualizar o saldo.";
+        ui.startExpeditionBtn.disabled = true;
+        ui.claimExpeditionBtn.disabled = remaining > 0 || expedition.rewardClaimed;
+        ui.claimExpeditionBtn.textContent = expedition.rewardClaimed ? "Recompensa resgatada" : "Resgatar recompensa";
+        return;
+    }
+    ui.expeditionStatus.textContent = expedition.completedCount > 0
+        ? `Última expedição concluída. Expedições resgatadas: ${expedition.completedCount}.`
+        : "Expedição disponível: duração de 60 segundos, custo de 15 de energia.";
+    ui.startExpeditionBtn.disabled = state.resources.energy < VERTICAL_SLICE_ENERGY_COST;
+    ui.claimExpeditionBtn.disabled = true;
+    ui.claimExpeditionBtn.textContent = "Resgatar recompensa";
+}
+
+function startExpedition() {
+    if (state.expedition.active && !state.expedition.rewardClaimed) {
+        pushFeed("Conclua e resgate a expedição atual antes de iniciar outra.");
+        return;
+    }
+    if (state.resources.energy < VERTICAL_SLICE_ENERGY_COST) {
+        pushFeed("Energia insuficiente para iniciar a expedição.");
+        return;
+    }
+    state.resources.energy -= VERTICAL_SLICE_ENERGY_COST;
+    const now = Date.now();
+    state.expedition = {
+        ...state.expedition,
+        id: `exp-${now}-${Math.random().toString(36).slice(2, 9)}`,
+        active: true,
+        startedAt: now,
+        endsAt: now + 60000,
+        rewardClaimed: false
+    };
+    pushFeed("Expedição iniciada na Floresta Cinzenta. Retorno em 60 segundos.");
+    renderAll();
+    saveState();
+}
+
+function claimExpeditionReward() {
+    const expedition = state.expedition;
+    if (!expedition.active || expedition.rewardClaimed || !Number.isFinite(expedition.endsAt) || Date.now() < expedition.endsAt) {
+        pushFeed("A recompensa da expedição ainda não está disponível.");
+        return;
+    }
+    const squadPower = getSquadPower();
+    const gold = 250 + Math.floor(squadPower / 1800);
+    const silver = 180 + Math.floor(squadPower / 2400);
+    const food = 35 + Math.floor(squadPower / 12000);
+    expedition.rewardClaimed = true;
+    expedition.active = false;
+    expedition.completedCount += 1;
+    state.resources.gold += gold;
+    state.resources.silver += silver;
+    state.resources.food += food;
+    pushFeed(`Expedição resgatada: +${gold} ouro, +${silver} prata e +${food} alimento.`);
+    renderAll();
+    saveState();
+}
+
 function renderAll() {
     renderResources();
     renderMission();
@@ -1540,6 +1616,7 @@ function renderAll() {
     updateInteractionHint();
     renderAutomationButtons();
     renderVerticalSlicePanel();
+    renderExpeditionPanel();
 }
 
 async function pullStateFromBackend() {
@@ -1571,6 +1648,9 @@ async function pullStateFromBackend() {
         state.events = { ...state.events, ...(remote.state.events || {}) };
         state.buildings = { ...state.buildings, ...(remote.state.buildings || {}) };
         state.verticalSlice = { ...state.verticalSlice, ...(remote.state.verticalSlice || {}) };
+        if (remote.state.expedition && typeof remote.state.expedition === "object") {
+            state.expedition = { ...state.expedition, ...remote.state.expedition };
+        }
         state.buildQueue = Array.isArray(remote.state.buildQueue) ? remote.state.buildQueue.slice(0, 2) : state.buildQueue;
         state.heroes = { ...state.heroes, ...(remote.state.heroes || {}) };
 
@@ -1647,6 +1727,9 @@ function bindUiActions() {
     ui.closeShopBtn.addEventListener("click", () => {
         closeShopPanel();
     });
+
+    if (ui.startExpeditionBtn) ui.startExpeditionBtn.addEventListener("click", startExpedition);
+    if (ui.claimExpeditionBtn) ui.claimExpeditionBtn.addEventListener("click", claimExpeditionReward);
 
     ui.saveSquadBtn.addEventListener("click", () => {
         saveState();
@@ -1933,6 +2016,7 @@ window.addEventListener("keyup", (event) => {
 setInterval(() => {
     renderTimers();
     renderVerticalSlicePanel();
+    renderExpeditionPanel();
 }, 1000);
 
 function gameLoop(currentTime) {
