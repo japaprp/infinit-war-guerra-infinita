@@ -15,7 +15,7 @@
 1. **Autoridade do servidor:** `syncState()` não aplica mais valores de recursos recebidos em snapshots do cliente.
 2. **Compatibilidade legada:** `GET /player/state` retorna os recursos canônicos do servidor; `PUT /player/state` preserva os campos de progresso enviados, mas substitui o saldo de recursos pelo saldo mantido no servidor.
 3. **Expedições persistidas:** `POST /v1/world/marches/start` valida o tipo de recurso, cria uma marcha persistida e limita a três marchas simultâneas.
-4. **Temporizador e recompensa:** `POST /v1/world/marches/collect` só permite resgate após a chegada e marca a marcha como coletada antes de devolver a recompensa. Resgates repetidos são recusados.
+4. **Recuperação do temporizador:** `GET /v1/world/marches` e `pendingTimers` em `/v1/player/sync` expõem as marchas ativas para reidratar o estado após reabrir o jogo.\n5. **Temporizador e recompensa:** `POST /v1/world/marches/collect` só permite resgate após a chegada e marca a marcha como coletada antes de devolver a recompensa. Resgates repetidos são recusados.
 5. **Recompensas iniciais de protótipo:** cada marcha dura 60 segundos; ouro concede 500, madeira 800, aço 300 e comida 1.000. Duração e recompensa são definidas pelo servidor, não pelo cliente.
 6. **Persistência MySQL:** as marchas são incluídas nos metadados do jogador para manter o temporizador entre reinicializações.
 7. **Cliente API:** adicionados `startMarchV1()` e `collectMarchV1()` em `api/client.js`.
