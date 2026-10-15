@@ -10,7 +10,7 @@ const STORAGE_KEY = "iwar_village_state_v1";
 const LEGACY_STORAGE_KEY = "gde_village_state_v4";
 const ONBOARDING_KEY = "iwar_onboarding_seen_v1";
 const LEGACY_ONBOARDING_KEY = "gde_onboarding_seen_v1";
-const INITIAL_UNLOCKED = 3;
+const INITIAL_UNLOCKED = 1;
 const PUZZLES_PER_HERO = 10;
 const AUTH_SESSION_KEY = "iwar_auth_session";
 const LEGACY_AUTH_SESSION_KEY = "gde_auth_session";
@@ -246,14 +246,15 @@ function createHeroState(template) {
 
 function createDefaultState() {
     return {
-        resources: { gold: 1200000, silver: 800000, wood: 600000, food: 120, energy: 120, gems: 4210 },
+        resources: { gold: 0, silver: 0, wood: 0, food: 0, energy: 100, gems: 0 },
+        inventory: { equipment: [], chests: [] },
         genericShards: { bronze: 0, silver: 0, gold: 0 },
         selectedHeroId: "lucas",
         activeHeroTab: "atributos",
         activeSquadSlot: 0,
         totalPuzzles: 0,
         nextUnlockAt: PUZZLES_PER_HERO,
-        squad: ["lucas", "kai", "megan", null, null],
+        squad: ["lucas", null, null, null, null],
         mission: { monsters: 0, monstersTarget: 3 },
         events: {
             vsEndsAt: Date.now() + 8 * 24 * 3600 * 1000 + 3 * 3600 * 1000,
