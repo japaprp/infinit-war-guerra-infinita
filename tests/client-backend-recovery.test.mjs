@@ -75,7 +75,7 @@ function startStaticServer(backendBaseUrl) {
             const url = new URL(req.url || "/", "http://127.0.0.1");
             // Same-origin test proxy avoids browser CORS/preflight differences while
             // forwarding real authenticated requests to the ephemeral backend.
-            if (url.pathname.startsWith("/v1/") || url.pathname.startsWith("/player/")) {
+            if (url.pathname.startsWith("/v1/") || url.pathname.startsWith("/player/") || url.pathname.startsWith("/auth/")) {
                 const chunks = [];
                 for await (const chunk of req) chunks.push(chunk);
                 const requestBody = chunks.length ? Buffer.concat(chunks) : undefined;
