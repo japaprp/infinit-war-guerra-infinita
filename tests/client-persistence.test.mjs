@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { chromium } from "playwright";
 
-const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const root = resolve(fileURLToPath(new URL("../game.html", import.meta.url)), "..");
 const mimeTypes = {
     ".html": "text/html; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
@@ -19,6 +19,7 @@ function createStaticServer() {
     return createServer(async (req, res) => {
         try {
             const url = new URL(req.url || "/", "http://127.0.0.1");
+            if (url.pathname.endsWith(".html")) process.stdout.write(`browser-test request: ${url.pathname}\\n`);
             const pathname = decodeURIComponent(url.pathname === "/" ? "/game.html" : url.pathname);
             const filePath = resolve(root, "." + pathname);
             if (filePath !== root && !filePath.startsWith(root + sep)) {
@@ -78,7 +79,7 @@ test("cliente mantém expedição, temporizador e saldos após fechar/reabrir", 
                 scripts: [...document.scripts].map(script => ({ src: script.src, loaded: Boolean(script.src) }))
             };
         });
-        assert.ok(startupDiagnostics.buttonExists, `expedition UI missing: ${JSON.stringify({ startupDiagnostics, pageErrors })}`);
+        assert.ok(startupDiagnostics.buttonExists, `expedition UI missing: ${JSON.stringify({ responseStatus: initialResponse?.status(), finalUrl: page.url(), startupDiagnostics, pageErrors })}`);
         assert.ok(startupDiagnostics.buttonRect?.width > 0 && startupDiagnostics.buttonRect?.height > 0,
             `expedition UI not visible: ${JSON.stringify({ startupDiagnostics, pageErrors })}`);
         await page.waitForFunction(() => {
