@@ -12,6 +12,13 @@ const ONBOARDING_KEY = "iwar_onboarding_seen_v1";
 const LEGACY_ONBOARDING_KEY = "gde_onboarding_seen_v1";
 const INITIAL_UNLOCKED = 1;
 const PUZZLES_PER_HERO = 10;
+const EQUIPMENT_DROP_CHANCE = 0.2;
+const EQUIPMENT_SLOTS = { weapon: "Arma", armor: "Armadura", boots: "Botas" };
+const EQUIPMENT_RARITIES = [
+    { id: "common", label: "Comum", weight: 0.72, multiplier: 1 },
+    { id: "rare", label: "Raro", weight: 0.23, multiplier: 1.6 },
+    { id: "epic", label: "Épico", weight: 0.05, multiplier: 2.5 }
+];
 const AUTH_SESSION_KEY = "iwar_auth_session";
 const LEGACY_AUTH_SESSION_KEY = "gde_auth_session";
 const ACTION_COOLDOWNS = {
@@ -300,6 +307,10 @@ function loadState() {
 
         merged.resources = { ...fallback.resources, ...(parsed.resources || {}) };
         merged.genericShards = { ...fallback.genericShards, ...(parsed.genericShards || {}) };
+        merged.inventory = {
+            equipment: Array.isArray(parsed.inventory?.equipment) ? parsed.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : [],
+            chests: Array.isArray(parsed.inventory?.chests) ? parsed.inventory.chests.slice(0, 100) : []
+        };
         merged.events = { ...fallback.events, ...(parsed.events || {}) };
         merged.mission = { ...fallback.mission, ...(parsed.mission || {}) };
         merged.buildings = { ...fallback.buildings, ...(parsed.buildings || {}) };
@@ -313,7 +324,8 @@ function loadState() {
             merged.heroes[template.id] = {
                 ...createHeroState(template),
                 ...current,
-                equipment: { weapon: 1, armor: 1, boots: 1, ...(current.equipment || {}) },
+                equipment: { weapon: 0, armor: 0, boots: 0, ...(current.equipment || {}) },
+                equippedItems: Object.fromEntries(Object.keys(EQUIPMENT_SLOTS).map((slot) => [slot, current.equippedItems?.[slot] || null])),
                 skillLevels: Array.isArray(current.skillLevels) ? current.skillLevels.slice(0, 3) : [1, 1, 1]
             };
         });
@@ -424,9 +436,14 @@ function tierLabel(tier) {
 function getHeroRuntime(heroId) {
     const template = getHeroTemplate(heroId);
     const heroState = state.heroes[heroId];
-    const equipBonusAtk = heroState.equipment.weapon * 64;
-    const equipBonusDef = heroState.equipment.armor * 57;
-    const equipBonusTroops = heroState.equipment.boots * 2;
+    const ownedItems = Array.isArray(state.inventory?.equipment) ? state.inventory.equipment : [];
+    const getEquippedBonus = (slot) => {
+        const itemId = heroState.equippedItems?.[slot];
+        return itemId ? (ownedItems.find((item) => item.id === itemId)?.bonus || 0) : 0;
+    };
+    const equipBonusAtk = heroState.equipment.weapon * 64 + getEquippedBonus("weapon");
+    const equipBonusDef = heroState.equipment.armor * 57 + getEquippedBonus("armor");
+    const equipBonusTroops = heroState.equipment.boots * 2 + getEquippedBonus("boots");
     const skillAtkBonus = heroState.skillLevels.reduce((sum, level) => sum + level * 28, 0);
     const skillDefBonus = heroState.skillLevels.reduce((sum, level) => sum + level * 22, 0);
     const starMultiplier = 1 + (heroState.stars - 1) * 0.08;
@@ -936,6 +953,43 @@ function upgradeEquipment(slot) {
     saveState();
 }
 
+function equipInventoryItem(itemId) {
+    const item = state.inventory.equipment.find((entry) => entry.id === itemId);
+    if (!item || !EQUIPMENT_SLOTS[item.slot]) {
+        pushFeed("Equipamento não encontrado no inventário.");
+        return;
+    }
+    const hero = state.heroes[state.selectedHeroId];
+    if (!hero?.unlocked) return;
+    hero.equippedItems = { ...(hero.equippedItems || {}), [item.slot]: item.id };
+    pushFeed(`${item.name} equipado em ${getHeroTemplate(state.selectedHeroId).name}.`);
+    renderAll();
+    saveState();
+}
+
+function rollEquipmentDrop(monsterLevel) {
+    if (Math.random() >= EQUIPMENT_DROP_CHANCE) return null;
+    const roll = Math.random();
+    let cumulative = 0;
+    const rarity = EQUIPMENT_RARITIES.find((entry) => {
+        cumulative += entry.weight;
+        return roll < cumulative;
+    }) || EQUIPMENT_RARITIES[0];
+    const slots = Object.keys(EQUIPMENT_SLOTS);
+    const slot = slots[Math.floor(Math.random() * slots.length)];
+    const baseBonus = Math.max(1, Math.floor((5 + monsterLevel * 0.6) * rarity.multiplier));
+    const names = { weapon: "Lâmina", armor: "Couraça", boots: "Grevas" };
+    return {
+        id: `gear-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        slot,
+        rarity: rarity.id,
+        rarityLabel: rarity.label,
+        name: `${names[slot]} ${rarity.label}`,
+        bonus: baseBonus,
+        obtainedAt: Date.now()
+    };
+}
+
 function upgradeSkill(skillIndex) {
     const hero = getHeroRuntime(state.selectedHeroId);
     const currentLevel = hero.heroState.skillLevels[skillIndex];
@@ -1161,6 +1215,12 @@ function fightMonster(monster) {
         state.resources.silver += silverGain;
         state.mission.monsters += 1;
 
+        const equipmentDrop = rollEquipmentDrop(monster.level);
+        if (equipmentDrop) {
+            state.inventory.equipment.push(equipmentDrop);
+            pushFeed(`Equipamento encontrado: ${equipmentDrop.name} (+${equipmentDrop.bonus}).`);
+        }
+
         if (monster.level >= 45 && Math.random() < 0.4) addPuzzleReward("specific", 1, state.selectedHeroId);
         else if (Math.random() < 0.35) addPuzzleReward("silver", 1);
 
@@ -1339,10 +1399,21 @@ function renderTabContent() {
                 <div class="stat-item"><span>Unidades</span><strong>${hero.troops.toLocaleString("pt-BR")}</strong><em>${tierLabel(hero.template.tier)}</em></div>
             </div>
             <div class="equip-grid">
-                <button class="equip-card" data-action="upgrade-equip" data-slot="weapon">Arma Nv.${hero.heroState.equipment.weapon}<small>+ATQ</small></button>
-                <button class="equip-card" data-action="upgrade-equip" data-slot="armor">Armadura Nv.${hero.heroState.equipment.armor}<small>+DEF</small></button>
-                <button class="equip-card" data-action="upgrade-equip" data-slot="boots">Botas Nv.${hero.heroState.equipment.boots}<small>+Unidades</small></button>
+                ${Object.entries(EQUIPMENT_SLOTS).map(([slot, label]) => {
+                    const equippedId = hero.heroState.equippedItems?.[slot];
+                    const equipped = state.inventory.equipment.find((item) => item.id === equippedId);
+                    const bonusLabel = slot === "weapon" ? "ATQ" : slot === "armor" ? "DEF" : "Unidades";
+                    return `<article class="equip-card"><strong>${label}</strong><small>Nível ${hero.heroState.equipment[slot]} · ${equipped ? `${equipped.name} (+${equipped.bonus} ${bonusLabel})` : "Nenhum item equipado"}</small></article>`;
+                }).join("")}
             </div>
+            <section class="inventory-section"><h3>Inventário de equipamentos (${state.inventory.equipment.length})</h3>
+                ${state.inventory.equipment.length ? state.inventory.equipment.map((item) => {
+                    const isEquipped = hero.heroState.equippedItems?.[item.slot] === item.id;
+                    const label = EQUIPMENT_SLOTS[item.slot];
+                    const bonusLabel = item.slot === "weapon" ? "ATQ" : item.slot === "armor" ? "DEF" : "Unidades";
+                    return `<article class="inventory-item"><span><strong>${item.name}</strong><small>${label} · ${item.rarityLabel} · +${item.bonus} ${bonusLabel}</small></span><button class="inline-action" data-action="equip-item" data-item-id="${item.id}" ${isEquipped ? "disabled" : ""}>${isEquipped ? "Equipado" : "Equipar"}</button></article>`;
+                }).join("") : "<p>Derrote monstros para ter a chance de encontrar equipamentos.</p>"}
+            </section>
             <button class="inline-action" data-action="level-up-hero">Subir nivel (custo: ${foodCost} alimento)</button>
         `;
         return;
@@ -1487,6 +1558,7 @@ function bindUiActions() {
         if (!actionTarget) return;
         const action = actionTarget.dataset.action;
         if (action === "upgrade-equip") upgradeEquipment(actionTarget.dataset.slot);
+        if (action === "equip-item") equipInventoryItem(actionTarget.dataset.itemId);
         if (action === "upgrade-skill") upgradeSkill(Number(actionTarget.dataset.skillIndex));
         if (action === "ascend-hero") ascendHero();
         if (action === "level-up-hero") levelUpHero();
