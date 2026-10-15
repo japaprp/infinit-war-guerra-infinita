@@ -1602,7 +1602,7 @@ function renderExpeditionPanel() {
     ui.claimExpeditionBtn.textContent = "Resgatar recompensa";
 }
 
-function startExpedition() {
+async function startExpedition() {
     if (state.expedition.active && !state.expedition.rewardClaimed) {
         pushFeed("Conclua e resgate a expedição atual antes de iniciar outra.");
         return;
@@ -1617,24 +1617,35 @@ function startExpedition() {
         pushFeed("Esse objetivo não está disponível nesse destino.");
         return;
     }
-    state.resources.energy -= VERTICAL_SLICE_ENERGY_COST;
+    const api = getApiClient();
+    let serverExpedition = null;
+    if (api && api.hasToken && api.hasToken() && typeof api.startExpeditionV1 === "function") {
+        try {
+            serverExpedition = await api.startExpeditionV1({ destinationId: destination.id, objectiveId: objective.id });
+        } catch (error) {
+            pushFeed(`Não foi possível iniciar a expedição no servidor: ${error.message}`);
+            return;
+        }
+    }
     const now = Date.now();
+    state.resources.energy = serverExpedition?.resources?.energy ?? (state.resources.energy - VERTICAL_SLICE_ENERGY_COST);
     state.expedition = {
         ...state.expedition,
-        id: `exp-${now}-${Math.random().toString(36).slice(2, 9)}`,
+        id: serverExpedition?.expeditionId || `exp-${now}-${Math.random().toString(36).slice(2, 9)}`,
         destinationId: destination.id,
         objectiveId: objective.id,
         active: true,
-        startedAt: now,
-        endsAt: now + 60000,
-        rewardClaimed: false
+        startedAt: serverExpedition?.startedAtMs || now,
+        endsAt: serverExpedition?.endsAtMs || now + 60000,
+        rewardClaimed: false,
+        serverAuthoritative: Boolean(serverExpedition)
     };
     pushFeed(`Expedição iniciada: ${destination.label} — ${objective.label}.`);
     renderAll();
     saveState();
 }
 
-function claimExpeditionReward() {
+async function claimExpeditionReward() {
     const expedition = state.expedition;
     if (!expedition.active || expedition.rewardClaimed || expedition.claimedIds.includes(expedition.id) || !Number.isFinite(expedition.endsAt) || Date.now() < expedition.endsAt) {
         pushFeed("A recompensa da expedição ainda não está disponível ou já foi resgatada.");
@@ -1646,12 +1657,32 @@ function claimExpeditionReward() {
     }
     const destination = getExpeditionDestination();
     const objective = getExpeditionObjective();
-    const multiplier = destination.rewardMultiplier * objective.rewardMultiplier;
-    const squadPower = getSquadPower();
-    const gold = Math.floor((250 + Math.floor(squadPower / 1800)) * multiplier);
-    const silver = Math.floor((180 + Math.floor(squadPower / 2400)) * multiplier);
-    const food = Math.floor((35 + Math.floor(squadPower / 12000)) * (objective.id === "gather" ? multiplier * 1.25 : multiplier));
+    let gold;
+    let silver;
+    let food;
+    const api = getApiClient();
+    if (expedition.serverAuthoritative && api && typeof api.claimExpeditionV1 === "function") {
+        const idempotencyKey = `exp-claim-${expedition.id}`;
+        let result;
+        try {
+            result = await api.claimExpeditionV1({ expeditionId: expedition.id, idempotencyKey });
+        } catch (error) {
+            pushFeed(`O servidor não confirmou o resgate: ${error.message}. O saldo não foi alterado.`);
+            return;
+        }
+        gold = result.rewards.gold;
+        silver = result.rewards.steel;
+        food = result.rewards.food;
+        state.resources.energy = result.resources.energy;
+    } else {
+        const multiplier = destination.rewardMultiplier * objective.rewardMultiplier;
+        const squadPower = getSquadPower();
+        gold = Math.floor((250 + Math.floor(squadPower / 1800)) * multiplier);
+        silver = Math.floor((180 + Math.floor(squadPower / 2400)) * multiplier);
+        food = Math.floor((35 + Math.floor(squadPower / 12000)) * (objective.id === "gather" ? multiplier * 1.25 : multiplier));
+    }
     expedition.claimedIds = [...new Set([...(expedition.claimedIds || []), expedition.id])].slice(-200);
+    expedition.serverAuthoritative = false;
     expedition.rewardClaimed = true;
     expedition.active = false;
     expedition.completedCount += 1;
