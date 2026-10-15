@@ -505,6 +505,9 @@ function getHeroRuntime(heroId) {
     const equippedChips = Object.values(heroState.equippedChips || {}).filter(Boolean)
         .map((chipId) => state.inventory.chips.find((chip) => chip.id === chipId))
         .filter(Boolean);
+    // Original Guerra Infinita prototype progression only. The reference captures show
+    // two before/after values, not a complete level formula; do not present this as verified
+    // Dark War: Survival behavior.
     const chipPct = (stat) => equippedChips.reduce((sum, item) => {
         const definition = CHIP_CATALOG.find((chip) => chip.id === item.typeId);
         return sum + (definition?.stat === stat ? definition.basePct + (item.level - 1) * 9.6 : 0);
@@ -1642,7 +1645,7 @@ function renderTabContent() {
             <section class="inventory-section"><h3>Baús de Módulos (${moduleChests.length})</h3>
             ${moduleChests.length ? moduleChests.map((chest) => `<article class="inventory-item"><span><strong>${chest.name}</strong><small>Recompensas e probabilidades transparentes</small></span><button class="inline-action" data-action="open-chest" data-chest-id="${chest.id}">Abrir</button></article>`).join("") : "<p>Abra um baú de explorador para ter chance de encontrar um Baú de Módulos.</p>"}</section>
             <section class="inventory-section"><h3>Inventário de módulos (${chips.length})</h3>${chipRows}</section>
-            <section class="inventory-section"><h3>Probabilidades · Baú de Módulos</h3><p>Valores de protótipo do Guerra Infinita; não representam o pool completo do jogo de referência.</p><table class="module-odds"><thead><tr><th>Recompensa</th><th>Chance</th></tr></thead><tbody>${oddsRows}</tbody></table><p>Total: ${MODULE_CHEST_ODDS.reduce((sum, item) => sum + item.chance, 0).toLocaleString("pt-BR")}%</p></section>`;
+            <section class="inventory-section"><h3>Probabilidades · Baú de Módulos</h3><p>Chances e progressão são valores provisórios do protótipo original Guerra Infinita. As capturas de referência não comprovam o pool completo nem uma fórmula geral de evolução.</p><table class="module-odds"><thead><tr><th>Recompensa</th><th>Chance</th></tr></thead><tbody>${oddsRows}</tbody></table><p>Total: ${MODULE_CHEST_ODDS.reduce((sum, item) => sum + item.chance, 0).toLocaleString("pt-BR")}%</p></section>`;
         return;
     }
 
