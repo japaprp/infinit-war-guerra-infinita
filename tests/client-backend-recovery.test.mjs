@@ -69,10 +69,32 @@ const mimeTypes = {
     ".svg": "image/svg+xml"
 };
 
-function startStaticServer() {
+function startStaticServer(backendBaseUrl) {
     const server = createServer(async (req, res) => {
         try {
             const url = new URL(req.url || "/", "http://127.0.0.1");
+            // Same-origin test proxy avoids browser CORS/preflight differences while
+            // forwarding real authenticated requests to the ephemeral backend.
+            if (url.pathname.startsWith("/v1/") || url.pathname.startsWith("/player/")) {
+                const chunks = [];
+                for await (const chunk of req) chunks.push(chunk);
+                const requestBody = chunks.length ? Buffer.concat(chunks) : undefined;
+                const upstream = await fetch(`${backendBaseUrl}${url.pathname}${url.search}`, {
+                    method: req.method,
+                    headers: {
+                        authorization: req.headers.authorization || "",
+                        "content-type": req.headers["content-type"] || "application/json",
+                        "x-idempotency-key": req.headers["x-idempotency-key"] || ""
+                    },
+                    body: requestBody
+                });
+                const responseBody = Buffer.from(await upstream.arrayBuffer());
+                res.writeHead(upstream.status, {
+                    "Content-Type": upstream.headers.get("content-type") || "application/json"
+                });
+                res.end(responseBody);
+                return;
+            }
             const pathname = decodeURIComponent(url.pathname === "/" ? "/game.html" : url.pathname);
             const filePath = resolve(webRoot, "." + pathname);
             if (filePath !== webRoot && !filePath.startsWith(webRoot + sep)) {
@@ -82,8 +104,8 @@ function startStaticServer() {
             const body = await readFile(filePath);
             res.writeHead(200, { "Content-Type": mimeTypes[extname(filePath)] || "application/octet-stream" });
             res.end(body);
-        } catch {
-            res.writeHead(404).end("Not found");
+        } catch (error) {
+            res.writeHead(502, { "Content-Type": "application/json" }).end(JSON.stringify({ error: error.message }));
         }
     });
     return new Promise((resolveListen, reject) => {
@@ -105,7 +127,7 @@ async function readSavedState(page) {
 test("cliente autenticado recupera resgate após resposta perdida sem duplicar saldo", { timeout: 150_000 }, async () => {
     await fs.rm(dbPath, { force: true });
     const backend = await startBackend();
-    const web = await startStaticServer();
+    const web = await startStaticServer(backend.baseUrl);
     let browser;
     try {
         const login = await api(backend.baseUrl, "POST", "/v1/auth/login", {
@@ -123,7 +145,7 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
             localStorage.setItem("playerElement", "fire");
             localStorage.setItem("iwar_auth_session", JSON.stringify({ uid: "browser-recovery-user", provider: "guest" }));
             localStorage.setItem("iwar_api_token", authToken);
-        }, { apiBaseUrl: backend.baseUrl, authToken: token });
+        }, { apiBaseUrl: web.baseUrl, authToken: token });
 
         const page = await context.newPage();
         const pageErrors = [];
