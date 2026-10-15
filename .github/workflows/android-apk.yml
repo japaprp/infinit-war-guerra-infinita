@@ -38,7 +38,7 @@ jobs:
           node-version: 22
 
       - name: Install Capacitor tooling
-        run: npm install --no-save --package-lock=false --no-audit --no-fund @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
+        run: npm install --no-save --package-lock=false --no-audit --no-fund --omit=dev @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
 
       - name: Prepare web assets
         run: node scripts/prepare-android-web.mjs
