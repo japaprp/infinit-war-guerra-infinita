@@ -175,17 +175,22 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
 
         // The backend processes the claim, but the browser loses the first response.
         let dropFirstResponse = true;
+        let firstProcessedReceipt = null;
+        let retryReceipt = null;
         await page.route(`${web.baseUrl}/v1/expeditions/claim`, async route => {
             if (route.request().method() !== "POST") {
                 await route.continue();
                 return;
             }
             const response = await route.fetch();
+            const receiptPayload = await response.json();
             if (dropFirstResponse) {
                 dropFirstResponse = false;
+                firstProcessedReceipt = receiptPayload;
                 await route.abort("failed");
                 return;
             }
+            retryReceipt = receiptPayload;
             await route.fulfill({ response });
         });
 
@@ -215,6 +220,9 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
         }, null, { timeout: 15000 });
 
         const claimed = await readSavedState(page);
+        assert.ok(firstProcessedReceipt, "o backend deve ter processado e produzido o primeiro recibo antes da resposta ser descartada");
+        assert.ok(retryReceipt, "a repetição deve recuperar um recibo do backend");
+        assert.deepEqual(retryReceipt, firstProcessedReceipt, "a repetição deve devolver exatamente o mesmo recibo produzido no primeiro processamento");
         assert.ok(claimed.expedition.claimedIds.includes(expeditionId));
         assert.equal(claimed.expedition.completedCount, 1);
         assert.ok(claimed.resources.gold > beforeRetry.gold);
