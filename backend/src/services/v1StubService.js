@@ -32,6 +32,19 @@ export function getPlayerMe(userId, user) {
     return toPlayerProfile(userId, user, 1);
 }
 
+export function getExpeditionStatus(user) {
+    ensureV1State(user);
+    const expedition = user.v1.expedition;
+    return {
+        active: expedition.active ? { ...expedition.active } : null,
+        claimedIds: [...expedition.claimedIds],
+        receipts: { ...expedition.receipts },
+        resources: { ...user.v1.resources },
+        serverTimeMs: nowMs(),
+        stateVersion: user.v1.stateVersion
+    };
+}
+
 export function syncState(userId, user, _request) {
     ensureV1State(user);
 
