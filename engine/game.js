@@ -1727,8 +1727,17 @@ async function pullStateFromBackend() {
             return;
         }
 
-        // Merge controlado para evitar sobrescrever estrutura em runtime.
-        state.resources = { ...state.resources, ...(remote.state.resources || {}) };
+        // A economia principal ainda contém ganhos/gastos legados apenas no cliente.
+        // Não sobrescrever esses saldos com zeros de um snapshot remoto parcial; energia
+        // da expedição é autoritativa no backend e continua sendo sincronizada.
+        state.resources = {
+            ...state.resources,
+            ...(remote.state.resources || {}),
+            gold: state.resources.gold,
+            silver: state.resources.silver,
+            food: state.resources.food,
+            energy: Number.isFinite(remote.state.resources.energy) ? remote.state.resources.energy : state.resources.energy
+        };
         state.genericShards = { ...state.genericShards, ...(remote.state.genericShards || {}) };
         state.inventory = {
             equipment: Array.isArray(remote.state.inventory?.equipment) ? remote.state.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : state.inventory.equipment,
