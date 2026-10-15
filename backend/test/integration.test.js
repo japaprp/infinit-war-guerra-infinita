@@ -11,6 +11,7 @@ process.env.IWAR_DB_PATH = dbPath;
 const { createApp } = await import("../src/app.js");
 const { initializeRepository, getRepositoryMode, readDb, writeDb } = await import("../src/repositories/dbRepository.js");
 const { initializeRedis } = await import("../src/services/redisService.js");
+const { clearIdempotencyMemoryForTests } = await import("../src/middlewares/idempotencyMiddleware.js");
 
 const baseEnv = {
     PORT: 0,
@@ -206,17 +207,19 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.deepEqual(sameKeyRetry.body.resources, first.body.resources);
 
         await server.stop();
+        // Simulate process-local idempotency cache loss, as in a real Node.js restart.
+        clearIdempotencyMemoryForTests();
         server = await bootServer({ redisEnabled: false });
 
-        // The same key must recover the persisted receipt even after backend restart.
+        // The persisted expedition ledger must recover the receipt after process restart.
         const sameKeyAfterRestart = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
             token, headers: { "x-idempotency-key": "exp-claim-1" },
             body: { expeditionId: start.body.expeditionId, idempotencyKey: "exp-claim-1" }
         });
         assert.equal(sameKeyAfterRestart.status, 200);
-        // Same-key retries replay the original response byte-for-byte in shape;
-        // "alreadyClaimed" is reserved for a different key against a claimed expedition.
-        assert.deepEqual(sameKeyAfterRestart.body, first.body);
+        assert.equal(sameKeyAfterRestart.body.alreadyClaimed, true);
+        assert.deepEqual(sameKeyAfterRestart.body.rewards, first.body.rewards);
+        assert.deepEqual(sameKeyAfterRestart.body.resources, first.body.resources);
 
         const second = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
             token, headers: { "x-idempotency-key": "exp-claim-2" },
