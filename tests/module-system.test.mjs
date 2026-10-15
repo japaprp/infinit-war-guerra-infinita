@@ -54,4 +54,8 @@ test("original prototype module catalog is structurally valid without claiming r
     assert.ok(entries.some(({ id }) => id === "gravity-barrier"), "original gravity barrier must exist");
     assert.ok(source.includes("Prototype chest odds are original design values"),
         "prototype odds must remain explicitly separated from reference-game facts");
+    assert.ok(source.includes("function isChipEquipped(chipId)"),
+        "equipped modules need a shared guard before duplicate consumption");
+    assert.ok(source.includes("item.id !== chip.id && !isChipEquipped(item.id)"),
+        "evolution must not consume copies equipped on another hero");
 });
