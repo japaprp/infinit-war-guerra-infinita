@@ -87,9 +87,13 @@ export function ensureV1State(user) {
             pass: {
                 seasonId: "season_1",
                 claimed: {}
-            }
+            },
+            expedition: { active: null, claimedIds: [] }
         };
     }
+
+    user.v1.expedition ||= { active: null, claimedIds: [] };
+    user.v1.expedition.claimedIds = Array.isArray(user.v1.expedition.claimedIds) ? user.v1.expedition.claimedIds : [];
 
     // Keep gems authoritative in one source.
     if (!user.economy) user.economy = { gems: 0 };
