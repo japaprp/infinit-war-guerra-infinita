@@ -303,7 +303,7 @@ function createDefaultState() {
             heroUpgraded: false,
             rewardClaimed: false
         },
-        expedition: { id: null, active: false, startedAt: null, endsAt: null, rewardClaimed: true, completedCount: 0, destinationId: "grey-forest", objectiveId: "explore", claimedIds: [] },
+        expedition: { id: null, active: false, startedAt: null, endsAt: null, rewardClaimed: true, completedCount: 0, destinationId: "grey-forest", objectiveId: "explore", claimedIds: [], appliedReceiptIds: [] },
         heroes: Object.fromEntries(heroTemplates.map((template) => [template.id, createHeroState(template)]))
     };
 }
@@ -344,6 +344,7 @@ function loadState() {
         merged.expedition.destinationId = EXPEDITION_DESTINATIONS.some((item) => item.id === merged.expedition.destinationId) ? merged.expedition.destinationId : fallback.expedition.destinationId;
         merged.expedition.objectiveId = EXPEDITION_OBJECTIVES.some((item) => item.id === merged.expedition.objectiveId) ? merged.expedition.objectiveId : fallback.expedition.objectiveId;
         merged.expedition.claimedIds = Array.isArray(merged.expedition.claimedIds) ? [...new Set(merged.expedition.claimedIds.filter((id) => typeof id === "string"))].slice(-200) : [];
+        merged.expedition.appliedReceiptIds = Array.isArray(merged.expedition.appliedReceiptIds) ? [...new Set(merged.expedition.appliedReceiptIds.filter((id) => typeof id === "string"))].slice(-500) : [];
         if (merged.expedition.active && (!Number.isFinite(merged.expedition.endsAt) || !merged.expedition.id)) {
             merged.expedition = { ...fallback.expedition, completedCount: Math.max(0, Number(merged.expedition.completedCount) || 0) };
         }
@@ -1673,6 +1674,7 @@ async function claimExpeditionReward() {
         gold = result.rewards.gold;
         silver = result.rewards.steel;
         food = result.rewards.food;
+        expedition.appliedReceiptIds = [...new Set([...(expedition.appliedReceiptIds || []), expedition.id])].slice(-500);
         state.resources.energy = result.resources.energy;
     } else {
         const multiplier = destination.rewardMultiplier * objective.rewardMultiplier;
@@ -1734,6 +1736,22 @@ async function pullStateFromBackend() {
                 const status = await api.getExpeditionStatusV1();
                 const active = status?.active;
                 const serverClaimedIds = Array.isArray(status?.claimedIds) ? status.claimedIds : [];
+                const receipts = status?.receipts && typeof status.receipts === "object" ? status.receipts : {};
+                state.expedition.appliedReceiptIds = Array.isArray(state.expedition.appliedReceiptIds) ? state.expedition.appliedReceiptIds : [];
+                for (const [receiptId, receipt] of Object.entries(receipts)) {
+                    if (!receipt || !receipt.rewards || state.expedition.appliedReceiptIds.includes(receiptId)) continue;
+                    const rewards = receipt.rewards;
+                    const amounts = {
+                        gold: Number(rewards.gold),
+                        silver: Number(rewards.steel),
+                        food: Number(rewards.food)
+                    };
+                    if (Object.values(amounts).some((amount) => !Number.isFinite(amount) || amount < 0)) continue;
+                    state.resources.gold += amounts.gold;
+                    state.resources.silver += amounts.silver;
+                    state.resources.food += amounts.food;
+                    state.expedition.appliedReceiptIds = [...state.expedition.appliedReceiptIds, receiptId].slice(-500);
+                }
                 if (active?.expeditionId && Number.isFinite(active.endsAtMs)) {
                     state.expedition = {
                         ...state.expedition,
@@ -1806,6 +1824,10 @@ async function pullStateFromBackend() {
                     ...(Array.isArray(localExpedition.claimedIds) ? localExpedition.claimedIds : []),
                     ...(Array.isArray(remoteExpedition.claimedIds) ? remoteExpedition.claimedIds : [])
                 ])].slice(-200),
+                appliedReceiptIds: [...new Set([
+                    ...(Array.isArray(localExpedition.appliedReceiptIds) ? localExpedition.appliedReceiptIds : []),
+                    ...(Array.isArray(remoteExpedition.appliedReceiptIds) ? remoteExpedition.appliedReceiptIds : [])
+                ])].slice(-500),
                 completedCount: Math.max(
                     Number.isFinite(localExpedition.completedCount) ? localExpedition.completedCount : 0,
                     Number.isFinite(remoteExpedition.completedCount) ? remoteExpedition.completedCount : 0
