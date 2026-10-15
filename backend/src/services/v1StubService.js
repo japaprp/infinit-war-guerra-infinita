@@ -32,26 +32,23 @@ export function getPlayerMe(userId, user) {
     return toPlayerProfile(userId, user, 1);
 }
 
+export function getExpeditionStatus(user) {
+    ensureV1State(user);
+    const expedition = user.v1.expedition;
+    return {
+        active: expedition.active ? { ...expedition.active } : null,
+        claimedIds: [...expedition.claimedIds],
+        receipts: { ...expedition.receipts },
+        resources: { ...user.v1.resources },
+        serverTimeMs: nowMs(),
+        stateVersion: user.v1.stateVersion
+    };
+}
+
 export function syncState(userId, user, _request) {
     ensureV1State(user);
 
-    const snapshot = _request?.snapshot;
-    if (snapshot && typeof snapshot === "object") {
-        const resourceKeys = ["gold", "wood", "steel", "food", "energy"];
-        let changed = false;
-
-        for (const key of resourceKeys) {
-            const next = Number(snapshot[key]);
-            if (Number.isFinite(next) && next >= 0) {
-                user.v1.resources[key] = Math.floor(next);
-                changed = true;
-            }
-        }
-
-        if (changed) {
-            user.v1.stateVersion += 1;
-        }
-    }
+    // Ignore client resource snapshots; only validated server actions may change balances.
 
     if (user.v1.resources.energy > user.v1.resources.energyMax) {
         user.v1.resources.energy = user.v1.resources.energyMax;

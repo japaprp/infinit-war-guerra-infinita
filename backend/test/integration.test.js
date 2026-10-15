@@ -167,6 +167,16 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         const login = await api(server.baseUrl, "POST", "/v1/auth/login", { body: { platform: "guest", externalId: "it_expedition_1" } });
         assert.equal(login.status, 200);
         const token = login.body.accessToken;
+        const forgedSync = await api(server.baseUrl, "POST", "/v1/player/sync", {
+            token,
+            body: { snapshot: { gold: 999999, wood: 999999, steel: 999999, food: 999999, energy: 1 } }
+        });
+        assert.equal(forgedSync.status, 200);
+        assert.equal(forgedSync.body.profile.resources.gold, 0);
+        assert.equal(forgedSync.body.profile.resources.wood, 0);
+        assert.equal(forgedSync.body.profile.resources.steel, 0);
+        assert.equal(forgedSync.body.profile.resources.food, 0);
+        assert.equal(forgedSync.body.profile.energy.current, 100);
         const invalid = await api(server.baseUrl, "POST", "/v1/expeditions/start", {
             token, body: { destinationId: "unknown-map", objectiveId: "explore" }
         });
@@ -175,6 +185,10 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.equal(start.status, 200);
         assert.equal(start.body.resources.energy, 85);
         assert.ok(start.body.expeditionId);
+        const statusAfterStart = await api(server.baseUrl, "GET", "/v1/expeditions/status", { token });
+        assert.equal(statusAfterStart.status, 200);
+        assert.equal(statusAfterStart.body.active.expeditionId, start.body.expeditionId);
+        assert.equal(statusAfterStart.body.active.destinationId, "grey-forest");
         const duplicateStart = await api(server.baseUrl, "POST", "/v1/expeditions/start", {
             token, body: { destinationId: "grey-forest", objectiveId: "explore" }
         });
@@ -196,6 +210,10 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.equal(first.body.resources.steel, first.body.rewards.steel);
         assert.equal(first.body.resources.food, first.body.rewards.food);
         assert.equal(first.body.resources.energy, 85);
+        const statusAfterClaim = await api(server.baseUrl, "GET", "/v1/expeditions/status", { token });
+        assert.equal(statusAfterClaim.status, 200);
+        assert.equal(statusAfterClaim.body.active, null);
+        assert.ok(statusAfterClaim.body.claimedIds.includes(start.body.expeditionId));
 
         // Simulate a lost HTTP response: retry with the same idempotency key.
         const sameKeyRetry = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {

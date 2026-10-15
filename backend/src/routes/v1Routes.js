@@ -22,6 +22,7 @@ import {
     shopPurchase,
     claimBattlePass,
     getPlayerMe,
+    getExpeditionStatus,
     startExpedition,
     claimExpedition
 } from "../services/v1StubService.js";
@@ -85,6 +86,13 @@ export function createV1Routes(env, runtime = {}) {
         const result = syncState(req.user.sub, user, req.body || {});
         await writeDb(db);
         res.json(result);
+    });
+
+    router.get("/expeditions/status", async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        res.json(getExpeditionStatus(user));
     });
 
     router.post("/expeditions/start", userLock, async (req, res) => {
