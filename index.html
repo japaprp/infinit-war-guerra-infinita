@@ -25,15 +25,7 @@
       <label class="entry-nick-label" for="nickname">IDENTIFICAÇÃO DO COMANDANTE</label>
       <input type="text" id="nickname" placeholder="Digite seu nome de comandante" maxlength="16" autocomplete="nickname" value="Yago">
       <button type="button" id="startGameBtn" class="entry-start-btn"><span>ENTRAR NO ABRIGO</span><b>➜</b></button>
-      <p id="authStatus" class="entry-auth-note">Modo de teste local · sem conta necessária</p>
-      <details class="entry-account">
-        <summary>Vincular conta (opcional)</summary>
-        <div class="auth-actions">
-          <button type="button" id="googleLoginBtn" class="oauth-btn google">Google</button>
-          <button type="button" id="facebookLoginBtn" class="oauth-btn facebook">Facebook</button>
-          <button type="button" id="logoutBtn" class="oauth-btn logout">Desvincular</button>
-        </div>
-      </details>
+      <p class="entry-auth-note">Acesso de teste · entre direto no abrigo, sem escolher elementos ou vincular conta.</p>
     </div>
     <div class="entry-art" aria-hidden="true">
       <div class="entry-sun"></div><div class="entry-smoke smoke-one"></div><div class="entry-smoke smoke-two"></div>
@@ -47,12 +39,6 @@
   </section>
   <footer class="entry-footer"><span>UM MUNDO EM RUÍNAS. UMA ÚLTIMA CHANCE.</span><span>BUILD DE DESENVOLVIMENTO · PROGRESSO LOCAL</span></footer>
 </main>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
-<script src="api/config.js" defer></script>
-<script src="api/client.js" defer></script>
-<script src="auth/firebase-config.js" defer></script>
-<script src="auth/auth.js" defer></script>
 <script src="main.js" defer></script>
 </body>
 </html>
