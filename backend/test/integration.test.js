@@ -9,7 +9,7 @@ const dbPath = path.join(tmpDir, "db.json");
 process.env.IWAR_DB_PATH = dbPath;
 
 const { createApp } = await import("../src/app.js");
-const { initializeRepository, getRepositoryMode } = await import("../src/repositories/dbRepository.js");
+const { initializeRepository, getRepositoryMode, readDb, writeDb } = await import("../src/repositories/dbRepository.js");
 const { initializeRedis } = await import("../src/services/redisService.js");
 
 const baseEnv = {
@@ -104,12 +104,26 @@ test("v1 endpoints: heroes and buildings flow", async () => {
 
         const token = login.body.accessToken;
 
+        assert.equal(login.body.player.resources.gold, 0);
+        assert.equal(login.body.player.resources.wood, 0);
+        assert.equal(login.body.player.resources.steel, 0);
+        assert.equal(login.body.player.resources.food, 0);
+        assert.equal(login.body.player.resources.gems, 0);
+
         const heroes = await api(server.baseUrl, "GET", "/v1/heroes", { token });
         assert.equal(heroes.status, 200);
         assert.ok(Array.isArray(heroes.body.heroes));
-        assert.ok(heroes.body.heroes.length >= 2);
-
+        assert.equal(heroes.body.heroes.length, 1);
         const lucasBefore = heroes.body.heroes.find((hero) => hero.heroId === "lucas");
+        assert.ok(lucasBefore);
+
+        // Seed earned resources after validating the fresh-account baseline so the
+        // remainder of this integration test can exercise upgrades/buildings.
+        const db = await readDb();
+        const testUser = db.users["guest:it_slice_1"];
+        testUser.economy.gems = 1000;
+        testUser.v1.resources = { ...testUser.v1.resources, gold: 1000000, wood: 1000000, steel: 1000000, food: 1000000, gems: 1000 };
+        await writeDb(db);
         assert.ok(lucasBefore);
 
         const levelUp = await api(server.baseUrl, "POST", "/v1/heroes/lucas/level-up", {
@@ -162,6 +176,11 @@ test("legacy shop receipt can be consumed only once", async () => {
         assert.ok(session.body.token);
 
         const token = session.body.token;
+
+        // The fresh account starts at zero; grant test-earned gems to cover this purchase.
+        const db = await readDb();
+        db.users["guest:it_legacy_1"].economy.gems = 100;
+        await writeDb(db);
 
         const receipt = await api(server.baseUrl, "POST", "/shop/mock-receipt", {
             token,
