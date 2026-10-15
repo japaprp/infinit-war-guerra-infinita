@@ -137,6 +137,12 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
         await page.locator("#expeditionDestination").selectOption("old-ruins");
         await page.locator("#expeditionObjective").selectOption("hunt");
         await page.locator("#startExpeditionBtn").click();
+        await page.waitForFunction(() => {
+            const raw = localStorage.getItem("iwar_village_state_v1");
+            const payload = raw ? JSON.parse(raw).payload : null;
+            const feed = document.querySelector("#systemFeed")?.innerText || "";
+            return payload?.expedition?.serverAuthoritative === true || feed.includes("Não foi possível iniciar a expedição no servidor");
+        }, null, { timeout: 20000 });
 
         const started = await readSavedState(page);
         assert.equal(started.expedition.serverAuthoritative, true, "expedição deve ter sido iniciada pelo backend");
