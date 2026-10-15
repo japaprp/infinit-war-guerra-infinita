@@ -152,7 +152,10 @@ const ui = {
     sliceCompleteBuildBtn: document.getElementById("sliceCompleteBuildBtn"),
     sliceFightPveBtn: document.getElementById("sliceFightPveBtn"),
     sliceUpgradeHeroBtn: document.getElementById("sliceUpgradeHeroBtn"),
-    sliceClaimRewardBtn: document.getElementById("sliceClaimRewardBtn")
+    sliceClaimRewardBtn: document.getElementById("sliceClaimRewardBtn"),
+    convoyGrid: document.getElementById("convoyGrid"),
+    activeVehicleTitle: document.getElementById("activeVehicleTitle"),
+    vehicleFormationSlots: document.getElementById("vehicleFormationSlots")
 };
 
 const heroDetail = {
@@ -265,6 +268,13 @@ function createDefaultState() {
         selectedHeroId: "lucas",
         activeHeroTab: "atributos",
         activeSquadSlot: 0,
+        selectedVehicleId: "alpha",
+        vehicleSquads: {
+            alpha: ["lucas", "kai", "megan", null, null],
+            bravo: [null, null, null, null, null],
+            charlie: [null, null, null, null, null],
+            vip: [null, null, null, null, null]
+        },
         totalPuzzles: 0,
         nextUnlockAt: PUZZLES_PER_HERO,
         squad: ["lucas", "kai", "megan", null, null],
@@ -319,6 +329,15 @@ function loadState() {
         merged.verticalSlice = { ...fallback.verticalSlice, ...(parsed.verticalSlice || {}) };
         merged.heroes = { ...fallback.heroes, ...(parsed.heroes || {}) };
         merged.squad = Array.isArray(parsed.squad) ? parsed.squad.slice(0, 5) : fallback.squad;
+        const validVehicleIds = ["alpha", "bravo", "charlie", "vip"];
+        merged.selectedVehicleId = validVehicleIds.includes(parsed.selectedVehicleId) ? parsed.selectedVehicleId : fallback.selectedVehicleId;
+        merged.vehicleSquads = { ...fallback.vehicleSquads, ...(parsed.vehicleSquads || {}) };
+        validVehicleIds.forEach((vehicleId) => {
+            const savedSlots = merged.vehicleSquads[vehicleId];
+            merged.vehicleSquads[vehicleId] = Array.isArray(savedSlots)
+                ? Array.from({ length: 5 }, (_, index) => savedSlots[index] || null)
+                : fallback.vehicleSquads[vehicleId].slice();
+        });
         merged.buildQueue = Array.isArray(parsed.buildQueue) ? parsed.buildQueue.slice(0, 2) : fallback.buildQueue;
 
         heroTemplates.forEach((template) => {
@@ -1309,6 +1328,50 @@ function renderSquad() {
         .join("");
 }
 
+function getVehicleLabel(vehicleId) {
+    return ({ alpha: "ALFA", bravo: "BRAVO", charlie: "CHARLIE", vip: "VIP · FORTALEZA" })[vehicleId] || "ALFA";
+}
+
+function assignHeroToVehicle(heroId) {
+    const heroState = state.heroes[heroId];
+    if (!heroState || !heroState.unlocked) return;
+    const vehicleId = state.selectedVehicleId;
+    const slots = state.vehicleSquads[vehicleId];
+    if (slots.includes(heroId)) {
+        pushFeed(getHeroTemplate(heroId).name + " já está escalado na viatura " + getVehicleLabel(vehicleId) + ".");
+        return;
+    }
+    const emptyIndex = slots.findIndex((slot) => !slot);
+    if (emptyIndex < 0) {
+        pushFeed("A viatura " + getVehicleLabel(vehicleId) + " está com as cinco vagas ocupadas. Remova um herói antes de escalar outro.");
+        return;
+    }
+    slots[emptyIndex] = heroId;
+    state.selectedHeroId = heroId;
+    pushFeed(getHeroTemplate(heroId).name + " escalado na viatura " + getVehicleLabel(vehicleId) + " · vaga " + (emptyIndex + 1) + ".");
+    renderAll();
+    saveState();
+}
+
+function renderConvoyFleet() {
+    ui.convoyGrid.querySelectorAll("[data-vehicle]").forEach((card) => {
+        const vehicleId = card.dataset.vehicle;
+        const selected = vehicleId === state.selectedVehicleId;
+        card.classList.toggle("selected", selected);
+        card.setAttribute("aria-pressed", String(selected));
+        const count = state.vehicleSquads[vehicleId].filter(Boolean).length;
+        const countLabel = card.querySelector("[data-vehicle-count]");
+        if (countLabel) countLabel.textContent = count + "/5 heróis";
+    });
+    ui.activeVehicleTitle.textContent = "ESQUADRÃO " + getVehicleLabel(state.selectedVehicleId);
+    ui.vehicleFormationSlots.innerHTML = state.vehicleSquads[state.selectedVehicleId]
+        .map((heroId, index) => {
+            if (!heroId) return '<div class="vehicle-hero-slot empty"><span class="slot-name">Vaga ' + (index + 1) + ' · livre</span></div>';
+            const hero = getHeroTemplate(heroId);
+            return '<div class="vehicle-hero-slot"><span class="slot-name" title="' + hero.name + '">' + (index + 1) + '. ' + hero.name + '</span><button type="button" data-remove-vehicle-hero="' + index + '" aria-label="Remover ' + hero.name + ' da viatura">×</button></div>';
+        }).join("");
+}
+
 function renderRoster() {
     ui.heroRoster.innerHTML = heroTemplates
         .map((hero) => {
@@ -1319,7 +1382,9 @@ function renderRoster() {
             const lockClass = heroState.unlocked ? "" : "locked";
             const tierClass = `tier-${hero.tier}`;
             const unlockText = heroState.unlocked ? `Poder ${formatCompact(runtimeHero.power)}` : `Bloqueado`;
-            const assignButton = heroState.unlocked ? `<button class="assign-btn" data-action="assign-hero" data-hero-id="${hero.id}">Usar</button>` : `<button class="assign-btn" disabled>Bloqueado</button>`;
+            const assignButton = heroState.unlocked
+                ? `<button class="assign-btn" data-action="assign-hero" data-hero-id="${hero.id}">Usar</button><button class="assign-vehicle-btn" data-action="assign-vehicle-hero" data-hero-id="${hero.id}">Veículo</button>`
+                : `<button class="assign-btn" disabled>Bloqueado</button><button class="assign-vehicle-btn" disabled>Bloqueado</button>`;
             const portrait = hero.portrait
                 ? `<img class="hero-card-portrait" src="${hero.portrait}" alt="Retrato de ${hero.name}" onerror="this.remove();">`
                 : hero.icon;
@@ -1427,6 +1492,7 @@ function renderAll() {
     renderMission();
     renderTimers();
     renderSquad();
+    renderConvoyFleet();
     renderRoster();
     renderHeroTabs();
     updateHeroDetail();
@@ -1479,7 +1545,33 @@ async function pullStateFromBackend() {
 }
 
 function bindUiActions() {
+    ui.convoyGrid.addEventListener("click", (event) => {
+        const card = event.target.closest("[data-vehicle]");
+        if (!card) return;
+        state.selectedVehicleId = card.dataset.vehicle;
+        renderConvoyFleet();
+        renderRoster();
+        saveState();
+    });
+
+    ui.vehicleFormationSlots.addEventListener("click", (event) => {
+        const removeButton = event.target.closest("[data-remove-vehicle-hero]");
+        if (!removeButton) return;
+        const slotIndex = Number(removeButton.dataset.removeVehicleHero);
+        const heroId = state.vehicleSquads[state.selectedVehicleId][slotIndex];
+        if (!heroId) return;
+        state.vehicleSquads[state.selectedVehicleId][slotIndex] = null;
+        pushFeed(getHeroTemplate(heroId).name + " removido da viatura " + getVehicleLabel(state.selectedVehicleId) + ".");
+        renderAll();
+        saveState();
+    });
+
     ui.heroRoster.addEventListener("click", (event) => {
+        const vehicleButton = event.target.closest("[data-action='assign-vehicle-hero']");
+        if (vehicleButton) {
+            assignHeroToVehicle(vehicleButton.dataset.heroId);
+            return;
+        }
         const assignButton = event.target.closest("[data-action='assign-hero']");
         if (assignButton) {
             assignHeroToSquad(assignButton.dataset.heroId);
