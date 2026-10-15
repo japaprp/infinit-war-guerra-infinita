@@ -29,7 +29,7 @@ test("module chest odds are valid, transparent and sum to 100%", async () => {
         "the four blue rewards should total 30%");
 });
 
-test("module catalog and upgrade limits retain the observed progression anchors", async () => {
+test("original prototype module catalog is structurally valid without claiming reference-game fidelity", async () => {
     const source = await readFile(SOURCE_URL, "utf8");
     const block = readArrayBlock(source, "CHIP_CATALOG");
     const entries = [...block.matchAll(/\{\s*id:\s*"([^"]+)"[^}]*?name:\s*"([^"]+)"[^}]*?role:\s*"([^"]+)"[^}]*?stat:\s*"([^"]+)"[^}]*?basePct:\s*([0-9.]+)[^}]*?upgradeCopies:\s*(\d+)/gs)]
@@ -48,12 +48,10 @@ test("module catalog and upgrade limits retain the observed progression anchors"
     assert.ok(entries.every(({ basePct, upgradeCopies }) => basePct > 0 && upgradeCopies > 0));
     assert.equal(source.match(/const CHIP_MAX_LEVEL = (\d+);/)?.[1], "10");
 
-    const assault = entries.find(({ id }) => id === "assault-module");
-    const barrier = entries.find(({ id }) => id === "gravity-barrier");
-    assert.ok(assault, "Módulo de Assalto must exist");
-    assert.ok(barrier, "Barreira Gravitacional must exist");
-    assert.equal(assault.basePct + 4 * 9.6, 71, "assault module level-5 reference anchor");
-    assert.equal(assault.basePct + 5 * 9.6, 80.6, "assault module next-level reference anchor");
-    assert.ok(Math.abs(barrier.basePct + 4 * 9.6 - 45.2) < 1e-9, "barrier level-5 reference anchor");
-    assert.ok(Math.abs(barrier.basePct + 5 * 9.6 - 54.8) < 1e-9, "barrier next-level reference anchor");
+    // These are Guerra Infinita prototype values. The screenshots provide two visible
+    // before/after anchors, but do not establish a complete level formula or all level costs.
+    assert.ok(entries.some(({ id }) => id === "assault-module"), "original assault module must exist");
+    assert.ok(entries.some(({ id }) => id === "gravity-barrier"), "original gravity barrier must exist");
+    assert.ok(source.includes("Prototype chest odds are original design values"),
+        "prototype odds must remain explicitly separated from reference-game facts");
 });
