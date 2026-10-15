@@ -1050,7 +1050,15 @@ canvas {
 }
 
 .hero-card-footer {
+    display: flex;
+    gap: 5px;
     margin-top: 8px;
+}
+
+.hero-card-footer .assign-btn,
+.hero-card-footer .assign-vehicle-btn {
+    flex: 1 1 0;
+    min-width: 0;
 }
 
 .assign-btn {
