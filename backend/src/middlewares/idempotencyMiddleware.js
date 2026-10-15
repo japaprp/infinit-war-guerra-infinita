@@ -1,5 +1,10 @@
 ﻿const memoryEntries = new Map();
 
+// Test hook to emulate a fresh Node.js process between integration-test server boots.
+export function clearIdempotencyMemoryForTests() {
+    memoryEntries.clear();
+}
+
 function getFromMemory(key) {
     const row = memoryEntries.get(key);
     if (!row) return null;
