@@ -46,9 +46,14 @@ export function syncState(userId, user, _request) {
         serverTimeMs: nowMs(),
         stateVersion: user.v1.stateVersion,
         profile: toPlayerProfile(userId, user, 1),
-        pendingTimers: user.v1.buildings
-            .filter((b) => b.state !== "IDLE")
-            .map((b) => ({ id: b.taskId, category: "BUILD", endAtMs: b.endAtMs }))
+        pendingTimers: [
+            ...user.v1.buildings
+                .filter((b) => b.state !== "IDLE")
+                .map((b) => ({ id: b.taskId, category: "BUILD", endAtMs: b.endAtMs })),
+            ...user.v1.marches
+                .filter((march) => march.status === "MARCHING")
+                .map((march) => ({ id: march.marchId, category: "MARCH", endAtMs: march.arriveAtMs, resourceType: march.resourceType }))
+        ]
     };
 }
 
