@@ -56,6 +56,12 @@ test("cliente mantém expedição, temporizador e saldos após fechar/reabrir", 
     try {
         browser = await chromium.launch({ headless: true });
         const context = await browser.newContext();
+        // game.html requires a nickname and a local auth-session identity before bootstrapping.
+        await context.addInitScript(() => {
+            localStorage.setItem("playerNick", "Browser Test");
+            localStorage.setItem("playerElement", "fire");
+            localStorage.setItem("iwar_auth_session", JSON.stringify({ uid: "browser-test-user" }));
+        });
         let page = await context.newPage();
         const pageErrors = [];
         page.on("pageerror", error => pageErrors.push(error.message));
