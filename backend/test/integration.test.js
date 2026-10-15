@@ -394,3 +394,95 @@ test("idempotency with Redis persists across server restart", async (t) => {
         await server.stop();
     }
 });
+
+
+test("expedition collection is idempotent during concurrent retries and after restart", async (t) => {
+    await fs.rm(dbPath, { force: true });
+
+    let server = await bootServer({ redisEnabled: true });
+    if (!server.redisClient) {
+        await server.stop();
+        t.skip("Redis nao disponivel para teste de idempotencia de expedicao.");
+        return;
+    }
+
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_march_idempotency" }
+        });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+
+        const started = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            body: { resourceType: "wood" }
+        });
+        assert.equal(started.status, 200);
+        const marchId = started.body.march.marchId;
+
+        const beforeDb = await readDb();
+        const userId = "guest:it_march_idempotency";
+        const user = beforeDb.users[userId];
+        assert.ok(user);
+        const woodBefore = user.v1.resources.wood;
+        const march = user.v1.marches.find((item) => item.marchId === marchId);
+        assert.ok(march);
+        march.arriveAtMs = Date.now() - 1;
+        await writeDb(beforeDb);
+
+        const idempotencyKey = "it-march-collect-once-001";
+        const headers = { "x-idempotency-key": idempotencyKey };
+        const body = { marchId };
+
+        const concurrent = await Promise.all([
+            api(server.baseUrl, "POST", "/v1/world/marches/collect", { token, headers, body }),
+            api(server.baseUrl, "POST", "/v1/world/marches/collect", { token, headers, body })
+        ]);
+
+        assert.ok(concurrent.every((result) => [200, 409].includes(result.status)));
+        const firstSuccess = concurrent.find((result) => result.status === 200);
+        assert.ok(firstSuccess, "at least one concurrent request must complete successfully");
+
+        const retry = await api(server.baseUrl, "POST", "/v1/world/marches/collect", {
+            token,
+            headers,
+            body
+        });
+        assert.equal(retry.status, 200);
+        assert.deepEqual(retry.body.rewards, firstSuccess.body.rewards);
+        assert.deepEqual(retry.body.resources, firstSuccess.body.resources);
+
+        const afterCollect = await readDb();
+        assert.equal(afterCollect.users[userId].v1.resources.wood, woodBefore + 800);
+        assert.equal(
+            afterCollect.users[userId].v1.marches.find((item) => item.marchId === marchId).status,
+            "COLLECTED"
+        );
+
+        await server.stop();
+        server = await bootServer({ redisEnabled: true });
+        assert.ok(server.redisClient, "Redis must be available after the simulated restart");
+
+        const replayAfterRestart = await api(server.baseUrl, "POST", "/v1/world/marches/collect", {
+            token,
+            headers,
+            body
+        });
+        assert.equal(replayAfterRestart.status, 200);
+        assert.deepEqual(replayAfterRestart.body.rewards, firstSuccess.body.rewards);
+        assert.deepEqual(replayAfterRestart.body.resources, firstSuccess.body.resources);
+
+        const changedPayload = await api(server.baseUrl, "POST", "/v1/world/marches/collect", {
+            token,
+            headers,
+            body: { marchId: "different-march" }
+        });
+        assert.equal(changedPayload.status, 409);
+        assert.equal(changedPayload.body.code, "IDEMPOTENCY_KEY_REUSED");
+
+        const finalDb = await readDb();
+        assert.equal(finalDb.users[userId].v1.resources.wood, woodBefore + 800);
+    } finally {
+        await server.stop();
+    }
+});
