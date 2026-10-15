@@ -14,6 +14,12 @@ for (const file of files) {
   if (existsSync(source)) cpSync(source, resolve(webDir, file), { recursive: true });
 }
 
+const guestBootstrapSource = resolve(root, "scripts/guest-bootstrap.js");
+if (!existsSync(guestBootstrapSource)) {
+  throw new Error("Android guest bootstrap script is missing.");
+}
+cpSync(guestBootstrapSource, resolve(webDir, "guest-bootstrap.js"));
+
 for (const directory of directories) {
   const source = resolve(root, directory);
   if (existsSync(source)) cpSync(source, resolve(webDir, directory), { recursive: true });
