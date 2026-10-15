@@ -4,6 +4,6 @@
     const lifeFill = document.getElementById("lifeFill");
 
     playerNameElement.innerText = player.nick;
-    playerElementElement.innerText = `Elemento: ${elementName}`;
+    playerElementElement.innerText = elementName;
     lifeFill.style.width = `${Math.max(0, Math.min(100, player.life))}%`;
 }
