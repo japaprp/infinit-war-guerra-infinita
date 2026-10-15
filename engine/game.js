@@ -14,6 +14,16 @@ const INITIAL_UNLOCKED = 1;
 const PUZZLES_PER_HERO = 10;
 const EQUIPMENT_DROP_CHANCE = 0.2;
 const CHEST_DROP_CHANCE = 0.1;
+const EXPEDITION_DESTINATIONS = [
+    { id: "grey-forest", label: "Floresta Cinzenta", region: "Floresta", rewardMultiplier: 1, objectiveIds: ["explore", "hunt", "gather"] },
+    { id: "old-ruins", label: "Ruínas Antigas", region: "Ruínas", rewardMultiplier: 1.25, objectiveIds: ["explore", "hunt"] },
+    { id: "ash-marsh", label: "Pântano das Cinzas", region: "Pântano", rewardMultiplier: 1.45, objectiveIds: ["hunt", "gather"] }
+];
+const EXPEDITION_OBJECTIVES = [
+    { id: "explore", label: "Explorar região", description: "Mapear trilhas e descobrir recursos", rewardMultiplier: 1 },
+    { id: "hunt", label: "Caçar criaturas", description: "Priorizar ameaças e troféus", rewardMultiplier: 1.2 },
+    { id: "gather", label: "Coletar suprimentos", description: "Priorizar alimento e materiais", rewardMultiplier: 1.1 }
+];
 const CHEST_REWARD_TABLE = [
     { id: "resources", label: "Recursos", weight: 0.55 },
     { id: "shards", label: "Fragmentos", weight: 0.3 },
@@ -169,7 +179,10 @@ const ui = {
     expeditionStatus: document.getElementById("expeditionStatus"),
     expeditionMapLabel: document.getElementById("expeditionMapLabel"),
     startExpeditionBtn: document.getElementById("startExpeditionBtn"),
-    claimExpeditionBtn: document.getElementById("claimExpeditionBtn")
+    claimExpeditionBtn: document.getElementById("claimExpeditionBtn"),
+    expeditionDestination: document.getElementById("expeditionDestination"),
+    expeditionObjective: document.getElementById("expeditionObjective"),
+    expeditionRewardPreview: document.getElementById("expeditionRewardPreview")
 };
 
 const heroDetail = {
@@ -290,7 +303,7 @@ function createDefaultState() {
             heroUpgraded: false,
             rewardClaimed: false
         },
-        expedition: { id: null, active: false, startedAt: null, endsAt: null, rewardClaimed: true, completedCount: 0 },
+        expedition: { id: null, active: false, startedAt: null, endsAt: null, rewardClaimed: true, completedCount: 0, destinationId: "grey-forest", objectiveId: "explore", claimedIds: [] },
         heroes: Object.fromEntries(heroTemplates.map((template) => [template.id, createHeroState(template)]))
     };
 }
@@ -328,6 +341,9 @@ function loadState() {
         merged.buildings = { ...fallback.buildings, ...(parsed.buildings || {}) };
         merged.verticalSlice = { ...fallback.verticalSlice, ...(parsed.verticalSlice || {}) };
         merged.expedition = { ...fallback.expedition, ...(parsed.expedition || {}) };
+        merged.expedition.destinationId = EXPEDITION_DESTINATIONS.some((item) => item.id === merged.expedition.destinationId) ? merged.expedition.destinationId : fallback.expedition.destinationId;
+        merged.expedition.objectiveId = EXPEDITION_OBJECTIVES.some((item) => item.id === merged.expedition.objectiveId) ? merged.expedition.objectiveId : fallback.expedition.objectiveId;
+        merged.expedition.claimedIds = Array.isArray(merged.expedition.claimedIds) ? [...new Set(merged.expedition.claimedIds.filter((id) => typeof id === "string"))].slice(-200) : [];
         if (merged.expedition.active && (!Number.isFinite(merged.expedition.endsAt) || !merged.expedition.id)) {
             merged.expedition = { ...fallback.expedition, completedCount: Math.max(0, Number(merged.expedition.completedCount) || 0) };
         }
@@ -1535,22 +1551,52 @@ function renderTimers() {
     ui.bonusTimer.textContent = formatTimer(state.events.bonusEndsAt - Date.now());
 }
 
+function getExpeditionDestination(destinationId = state.expedition.destinationId) {
+    return EXPEDITION_DESTINATIONS.find((item) => item.id === destinationId) || EXPEDITION_DESTINATIONS[0];
+}
+
+function getExpeditionObjective(objectiveId = state.expedition.objectiveId) {
+    return EXPEDITION_OBJECTIVES.find((item) => item.id === objectiveId) || EXPEDITION_OBJECTIVES[0];
+}
+
+function renderExpeditionOptions() {
+    if (!ui.expeditionDestination || !ui.expeditionObjective) return;
+    const expedition = state.expedition;
+    const destination = getExpeditionDestination();
+    const availableObjectives = EXPEDITION_OBJECTIVES.filter((objective) => destination.objectiveIds.includes(objective.id));
+    if (!ui.expeditionDestination.options.length) {
+        ui.expeditionDestination.innerHTML = EXPEDITION_DESTINATIONS.map((item) => `<option value="${item.id}">${item.label}</option>`).join("");
+    }
+    ui.expeditionDestination.value = destination.id;
+    const objective = availableObjectives.some((item) => item.id === expedition.objectiveId) ? expedition.objectiveId : availableObjectives[0].id;
+    if (!availableObjectives.some((item) => item.id === expedition.objectiveId)) expedition.objectiveId = objective;
+    ui.expeditionObjective.innerHTML = availableObjectives.map((item) => `<option value="${item.id}">${item.label}</option>`).join("");
+    ui.expeditionObjective.value = objective;
+    ui.expeditionDestination.disabled = expedition.active;
+    ui.expeditionObjective.disabled = expedition.active;
+    if (ui.expeditionMapLabel) ui.expeditionMapLabel.textContent = destination.label;
+    if (ui.expeditionRewardPreview) {
+        ui.expeditionRewardPreview.textContent = `${destination.region} · ${getExpeditionObjective().description} · recompensa base x${(destination.rewardMultiplier * getExpeditionObjective().rewardMultiplier).toFixed(2)}`;
+    }
+}
+
 function renderExpeditionPanel() {
     if (!ui.expeditionPanel || !ui.expeditionStatus || !ui.startExpeditionBtn || !ui.claimExpeditionBtn) return;
+    renderExpeditionOptions();
     const expedition = state.expedition;
     if (expedition.active) {
         const remaining = Math.max(0, expedition.endsAt - Date.now());
         ui.expeditionStatus.textContent = remaining > 0
-            ? `Expedição em andamento · retorno em ${formatTimer(remaining)}. O progresso é salvo automaticamente.`
-            : "Expedição concluída! Resgate sua recompensa para atualizar o saldo.";
+            ? `${getExpeditionDestination().label} · ${getExpeditionObjective().label} · retorno em ${formatTimer(remaining)}. O progresso é salvo automaticamente.`
+            : `${getExpeditionDestination().label} concluída! Objetivo: ${getExpeditionObjective().label}. Resgate para atualizar o saldo.`;
         ui.startExpeditionBtn.disabled = true;
-        ui.claimExpeditionBtn.disabled = remaining > 0 || expedition.rewardClaimed;
-        ui.claimExpeditionBtn.textContent = expedition.rewardClaimed ? "Recompensa resgatada" : "Resgatar recompensa";
+        ui.claimExpeditionBtn.disabled = remaining > 0 || expedition.rewardClaimed || expedition.claimedIds.includes(expedition.id);
+        ui.claimExpeditionBtn.textContent = expedition.rewardClaimed || expedition.claimedIds.includes(expedition.id) ? "Recompensa resgatada" : "Resgatar recompensa";
         return;
     }
     ui.expeditionStatus.textContent = expedition.completedCount > 0
         ? `Última expedição concluída. Expedições resgatadas: ${expedition.completedCount}.`
-        : "Expedição disponível: duração de 60 segundos, custo de 15 de energia.";
+        : "Escolha um destino e objetivo no mapa para preparar sua primeira expedição.";
     ui.startExpeditionBtn.disabled = state.resources.energy < VERTICAL_SLICE_ENERGY_COST;
     ui.claimExpeditionBtn.disabled = true;
     ui.claimExpeditionBtn.textContent = "Resgatar recompensa";
@@ -1565,38 +1611,54 @@ function startExpedition() {
         pushFeed("Energia insuficiente para iniciar a expedição.");
         return;
     }
+    const destination = getExpeditionDestination();
+    const objective = getExpeditionObjective();
+    if (!destination.objectiveIds.includes(objective.id)) {
+        pushFeed("Esse objetivo não está disponível nesse destino.");
+        return;
+    }
     state.resources.energy -= VERTICAL_SLICE_ENERGY_COST;
     const now = Date.now();
     state.expedition = {
         ...state.expedition,
         id: `exp-${now}-${Math.random().toString(36).slice(2, 9)}`,
+        destinationId: destination.id,
+        objectiveId: objective.id,
         active: true,
         startedAt: now,
         endsAt: now + 60000,
         rewardClaimed: false
     };
-    pushFeed("Expedição iniciada na Floresta Cinzenta. Retorno em 60 segundos.");
+    pushFeed(`Expedição iniciada: ${destination.label} — ${objective.label}.`);
     renderAll();
     saveState();
 }
 
 function claimExpeditionReward() {
     const expedition = state.expedition;
-    if (!expedition.active || expedition.rewardClaimed || !Number.isFinite(expedition.endsAt) || Date.now() < expedition.endsAt) {
-        pushFeed("A recompensa da expedição ainda não está disponível.");
+    if (!expedition.active || expedition.rewardClaimed || expedition.claimedIds.includes(expedition.id) || !Number.isFinite(expedition.endsAt) || Date.now() < expedition.endsAt) {
+        pushFeed("A recompensa da expedição ainda não está disponível ou já foi resgatada.");
         return;
     }
+    if (!expedition.id || expedition.claimedIds.includes(expedition.id)) {
+        pushFeed("Resgate duplicado bloqueado.");
+        return;
+    }
+    const destination = getExpeditionDestination();
+    const objective = getExpeditionObjective();
+    const multiplier = destination.rewardMultiplier * objective.rewardMultiplier;
     const squadPower = getSquadPower();
-    const gold = 250 + Math.floor(squadPower / 1800);
-    const silver = 180 + Math.floor(squadPower / 2400);
-    const food = 35 + Math.floor(squadPower / 12000);
+    const gold = Math.floor((250 + Math.floor(squadPower / 1800)) * multiplier);
+    const silver = Math.floor((180 + Math.floor(squadPower / 2400)) * multiplier);
+    const food = Math.floor((35 + Math.floor(squadPower / 12000)) * (objective.id === "gather" ? multiplier * 1.25 : multiplier));
+    expedition.claimedIds = [...new Set([...(expedition.claimedIds || []), expedition.id])].slice(-200);
     expedition.rewardClaimed = true;
     expedition.active = false;
     expedition.completedCount += 1;
     state.resources.gold += gold;
     state.resources.silver += silver;
     state.resources.food += food;
-    pushFeed(`Expedição resgatada: +${gold} ouro, +${silver} prata e +${food} alimento.`);
+    pushFeed(`Recompensa de ${destination.label}: +${gold} ouro, +${silver} prata e +${food} alimento.`);
     renderAll();
     saveState();
 }
@@ -1730,6 +1792,21 @@ function bindUiActions() {
 
     if (ui.startExpeditionBtn) ui.startExpeditionBtn.addEventListener("click", startExpedition);
     if (ui.claimExpeditionBtn) ui.claimExpeditionBtn.addEventListener("click", claimExpeditionReward);
+    if (ui.expeditionDestination) ui.expeditionDestination.addEventListener("change", () => {
+        if (state.expedition.active) return;
+        state.expedition.destinationId = EXPEDITION_DESTINATIONS.some((item) => item.id === ui.expeditionDestination.value) ? ui.expeditionDestination.value : "grey-forest";
+        const destination = getExpeditionDestination();
+        if (!destination.objectiveIds.includes(state.expedition.objectiveId)) state.expedition.objectiveId = destination.objectiveIds[0];
+        renderAll();
+        saveState();
+    });
+    if (ui.expeditionObjective) ui.expeditionObjective.addEventListener("change", () => {
+        if (state.expedition.active) return;
+        const destination = getExpeditionDestination();
+        state.expedition.objectiveId = destination.objectiveIds.includes(ui.expeditionObjective.value) ? ui.expeditionObjective.value : destination.objectiveIds[0];
+        renderAll();
+        saveState();
+    });
 
     ui.saveSquadBtn.addEventListener("click", () => {
         saveState();
