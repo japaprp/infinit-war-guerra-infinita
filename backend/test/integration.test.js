@@ -176,7 +176,7 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.equal(forgedSync.body.profile.resources.wood, 0);
         assert.equal(forgedSync.body.profile.resources.steel, 0);
         assert.equal(forgedSync.body.profile.resources.food, 0);
-        assert.equal(forgedSync.body.profile.resources.energy, 100);
+        assert.equal(forgedSync.body.profile.energy.current, 100);
         const invalid = await api(server.baseUrl, "POST", "/v1/expeditions/start", {
             token, body: { destinationId: "unknown-map", objectiveId: "explore" }
         });
