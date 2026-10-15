@@ -111,7 +111,7 @@ test("cliente mantém expedição, temporizador e saldos após fechar/reabrir", 
         page = await context.newPage();
         page.on("pageerror", error => pageErrors.push(error.message));
         await page.goto(`${baseUrl}/game.html`, { waitUntil: "load" });
-        await page.waitForFunction(() => document.querySelector("#loadingScreen")?.classList.contains("is-hidden"), null, { timeout: 15000 });
+        await page.waitForFunction(() => (!document.querySelector("#loadingScreen") || document.querySelector("#loadingScreen").classList.contains("is-hidden")), null, { timeout: 15000 });
 
         const reopened = await readSavedState(page);
         assert.equal(reopened.expedition.id, expeditionId, "o ID da expedição deve sobreviver à reabertura");
@@ -148,7 +148,7 @@ test("cliente mantém expedição, temporizador e saldos após fechar/reabrir", 
         page = await context.newPage();
         page.on("pageerror", error => pageErrors.push(error.message));
         await page.goto(`${baseUrl}/game.html`, { waitUntil: "load" });
-        await page.waitForFunction(() => document.querySelector("#loadingScreen")?.classList.contains("is-hidden"), { timeout: 15000 });
+        await page.waitForFunction(() => (!document.querySelector("#loadingScreen") || document.querySelector("#loadingScreen").classList.contains("is-hidden")), null, { timeout: 15000 });
         const reopenedAfterClaim = await readSavedState(page);
 
         assert.deepEqual({
