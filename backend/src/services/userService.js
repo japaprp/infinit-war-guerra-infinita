@@ -7,7 +7,7 @@ export function ensureUser(db, userId, profile) {
         db.users[userId] = {
             profile,
             state: null,
-            economy: { gems: 4210 },
+            economy: { gems: 0 },
             inventory: {},
             createdAt: Date.now(),
             updatedAt: Date.now()
@@ -35,16 +35,16 @@ export function ensureV1State(user) {
         user.v1 = {
             stateVersion: 1,
             level: 1,
-            power: 12840,
+            power: 0,
             vipLevel: 0,
             resources: {
-                gold: 80000,
-                wood: 60000,
-                steel: 50000,
-                food: 55000,
-                gems: user.economy?.gems || 4210,
-                energy: 120,
-                energyMax: 120,
+                gold: 0,
+                wood: 0,
+                steel: 0,
+                food: 0,
+                gems: user.economy?.gems ?? 0,
+                energy: 100,
+                energyMax: 100,
                 energyRegenPerMinute: 1.2
             },
             heroes: [
@@ -55,16 +55,6 @@ export function ensureV1State(user) {
                     stars: 1,
                     ascension: 0,
                     stats: { atk: 15440, def: 14304, units: 503, power: 211203 },
-                    shardsOwned: 0,
-                    skillLevels: [1, 1, 1]
-                },
-                {
-                    heroId: "kai",
-                    rarity: "EPIC",
-                    level: 1,
-                    stars: 1,
-                    ascension: 0,
-                    stats: { atk: 12990, def: 11120, units: 422, power: 173520 },
                     shardsOwned: 0,
                     skillLevels: [1, 1, 1]
                 }
@@ -102,7 +92,7 @@ export function ensureV1State(user) {
     }
 
     // Keep gems authoritative in one source.
-    if (!user.economy) user.economy = { gems: 4210 };
+    if (!user.economy) user.economy = { gems: 0 };
     user.v1.resources.gems = user.economy.gems;
 }
 
