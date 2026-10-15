@@ -30,6 +30,22 @@ const CHEST_REWARD_TABLE = [
     { id: "equipment", label: "Equipamento", weight: 0.15 }
 ];
 const EQUIPMENT_SLOTS = { weapon: "Arma", armor: "Armadura", boots: "Botas" };
+const CHIP_CATALOG = [
+    { id: "assault-module", name: "Módulo de Assalto", role: "Guerreiro", stat: "attackPct", statLabel: "Dano de combate", basePct: 32.6, upgradeCopies: 5, rarity: "Épico", color: "#a56bff" },
+    { id: "gravity-barrier", name: "Barreira Gravitacional", role: "Guerreiro", stat: "hpPct", statLabel: "Vida e proteção", basePct: 6.8, upgradeCopies: 3, rarity: "Épico", color: "#53c7e8" }
+];
+const CHIP_MAX_LEVEL = 10;
+// Prototype chest odds are original design values, not a claim about the reference game's full pool.
+// The observed 0.2% orange tier and 30% blue subtotal are retained as research anchors.
+const MODULE_CHEST_ODDS = [
+    { id: "legendary", label: "Módulo lendário", chance: 0.2 },
+    { id: "blue-a", label: "Módulo azul: Assalto", chance: 7.5 },
+    { id: "blue-b", label: "Módulo azul: Barreira", chance: 7.5 },
+    { id: "blue-c", label: "Módulo azul: Reconhecimento", chance: 7.5 },
+    { id: "blue-d", label: "Módulo azul: Suprimentos", chance: 7.5 },
+    { id: "purple", label: "Módulo avançado", chance: 30 },
+    { id: "materials", label: "Materiais de módulo", chance: 39.8 }
+];
 const EQUIPMENT_RARITIES = [
     { id: "common", label: "Comum", weight: 0.72, multiplier: 1 },
     { id: "rare", label: "Raro", weight: 0.23, multiplier: 1.6 },
@@ -64,7 +80,8 @@ const elementConfig = {
 const heroTabs = [
     { id: "atributos", label: "Atributos" },
     { id: "habilidade", label: "Habilidade" },
-    { id: "ascensao", label: "Ascensao" }
+    { id: "ascensao", label: "Ascensao" },
+    { id: "modulos", label: "Módulos" }
 ];
 
 const heroTemplates = [
@@ -278,7 +295,7 @@ function createHeroState(template) {
 function createDefaultState() {
     return {
         resources: { gold: 0, silver: 0, wood: 0, food: 0, energy: 100, gems: 0 },
-        inventory: { equipment: [], chests: [] },
+        inventory: { equipment: [], chests: [], chips: [], chipMaterials: 0 },
         genericShards: { bronze: 0, silver: 0, gold: 0 },
         selectedHeroId: "lucas",
         activeHeroTab: "atributos",
@@ -334,7 +351,9 @@ function loadState() {
         merged.genericShards = { ...fallback.genericShards, ...(parsed.genericShards || {}) };
         merged.inventory = {
             equipment: Array.isArray(parsed.inventory?.equipment) ? parsed.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : [],
-            chests: Array.isArray(parsed.inventory?.chests) ? parsed.inventory.chests.slice(0, 100) : []
+            chests: Array.isArray(parsed.inventory?.chests) ? parsed.inventory.chests.slice(0, 100) : [],
+            chips: Array.isArray(parsed.inventory?.chips) ? parsed.inventory.chips.filter((item) => item && typeof item.id === "string" && CHIP_CATALOG.some((chip) => chip.id === item.typeId) && Number.isInteger(item.level) && item.level >= 1 && item.level <= CHIP_MAX_LEVEL).slice(0, 500) : [],
+            chipMaterials: Number.isFinite(parsed.inventory?.chipMaterials) && parsed.inventory.chipMaterials >= 0 ? Math.floor(parsed.inventory.chipMaterials) : 0
         };
         merged.events = { ...fallback.events, ...(parsed.events || {}) };
         merged.mission = { ...fallback.mission, ...(parsed.mission || {}) };
