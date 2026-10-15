@@ -167,15 +167,28 @@ const player = new Player(1200, 1000, selectedElement.color, nick || "Jogador");
 const PLAYER_BASE_SPEED = player.speed;
 const minimapCtx = ui.minimapCanvas ? ui.minimapCanvas.getContext("2d") : null;
 
-const villageBuildings = [
-    { x: 920, y: 820, w: 120, h: 90, roof: "#8f4d39", body: "#6f5a4e", level: 30 },
-    { x: 1090, y: 840, w: 130, h: 92, roof: "#96533e", body: "#7a6354", level: 30 },
-    { x: 1280, y: 860, w: 125, h: 86, roof: "#8a4634", body: "#6a5546", level: 29 },
-    { x: 1020, y: 1020, w: 110, h: 82, roof: "#7f3f32", body: "#624d41", level: 28 },
-    { x: 1180, y: 1030, w: 140, h: 108, roof: "#9b5c44", body: "#6f5e54", level: 30 },
-    { x: 1370, y: 1050, w: 115, h: 84, roof: "#844335", body: "#655246", level: 30 },
-    { x: 1140, y: 1220, w: 180, h: 150, roof: "#b4684a", body: "#745d51", level: 30 }
-];
+const villageBuildings = (() => {
+    const buildings = [];
+    const roofs = ["#8f4d39", "#96533e", "#844335", "#a35d43", "#7f3f32"];
+    const bodies = ["#6f5a4e", "#7a6354", "#6a5546", "#745d51"];
+    // Six staggered residential blocks create a denser settlement around HQ.
+    for (let row = 0; row < 6; row += 1) {
+        for (let col = 0; col < 6; col += 1) {
+            if ((row === 2 || row === 3) && (col === 2 || col === 3)) continue;
+            const x = 700 + col * 175 + (row % 2) * 24;
+            const y = 650 + row * 142;
+            buildings.push({
+                x, y,
+                w: 92 + ((row + col) % 3) * 10,
+                h: 66 + ((row * 2 + col) % 3) * 8,
+                roof: roofs[(row + col) % roofs.length],
+                body: bodies[(row * 2 + col) % bodies.length],
+                level: 8 + ((row * 7 + col * 3) % 23)
+            });
+        }
+    }
+    return buildings;
+})();
 
 const resourceKinds = {
     gold: {
@@ -1423,7 +1436,6 @@ function renderAll() {
     updateQuickHealButton();
     updateInteractionHint();
     renderAutomationButtons();
-    renderVerticalSlicePanel();
 }
 
 async function pullStateFromBackend() {
@@ -1706,6 +1718,92 @@ function drawBuilding(building) {
     ctx.fillText(`Lv.${building.level}`, x + 8, y + building.h + 18);
 }
 
+
+function drawCommandTower() {
+    const x = 1200 - camera.x;
+    const y = 1030 - camera.y;
+    const glow = ctx.createRadialGradient(x + 72, y + 40, 8, x + 72, y + 40, 190);
+    glow.addColorStop(0, "#f4c76c88");
+    glow.addColorStop(1, "#f4c76c00");
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 120, y - 120, 390, 350);
+    ctx.fillStyle = "#252d2a";
+    ctx.fillRect(x + 25, y + 42, 96, 130);
+    ctx.fillStyle = "#6b6b59";
+    ctx.fillRect(x + 8, y + 32, 130, 20);
+    ctx.fillStyle = "#c5a467";
+    ctx.beginPath();
+    ctx.moveTo(x + 72, y - 36);
+    ctx.lineTo(x + 5, y + 32);
+    ctx.lineTo(x + 139, y + 32);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#ffe5a0";
+    ctx.fillRect(x + 63, y + 65, 18, 38);
+    ctx.fillStyle = "#e6a34d";
+    ctx.beginPath();
+    ctx.moveTo(x + 72, y - 64);
+    ctx.bezierCurveTo(x + 38, y - 20, x + 68, y - 14, x + 72, y + 2);
+    ctx.bezierCurveTo(x + 94, y - 20, x + 93, y - 39, x + 72, y - 64);
+    ctx.fill();
+    ctx.fillStyle = "#f7d77c";
+    ctx.beginPath(); ctx.arc(x + 72, y + 8, 13, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#f7e6bd";
+    ctx.font = "bold 12px Arial";
+    ctx.fillText("QG CENTRAL · Lv.30", x - 1, y + 194);
+}
+function drawDiner() {
+    const x = 1570 - camera.x;
+    const y = 1000 - camera.y;
+    ctx.fillStyle = "#18201e";
+    ctx.fillRect(x, y + 24, 148, 90);
+    ctx.fillStyle = "#c75d48";
+    ctx.fillRect(x - 8, y + 14, 164, 18);
+    ctx.fillStyle = "#ffcb83";
+    ctx.fillRect(x + 14, y + 44, 34, 25);
+    ctx.fillRect(x + 62, y + 44, 34, 25);
+    ctx.fillRect(x + 110, y + 44, 24, 25);
+    ctx.fillStyle = "#f3b85c";
+    ctx.font = "bold 14px Arial";
+    ctx.fillText("DINER", x + 43, y + 8);
+    ctx.shadowColor = "#f4ad58";
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = "#ffbd64";
+    ctx.fillRect(x + 15, y + 3, 118, 3);
+    ctx.shadowBlur = 0;
+}
+function drawConvoyVehicles() {
+    const vehicles = [
+        { x: 920, y: 1460, color: "#3b6671" },
+        { x: 1080, y: 1505, color: "#416e7b" },
+        { x: 1260, y: 1460, color: "#3b6671" },
+        { x: 1450, y: 1505, color: "#b79a57" }
+    ];
+    vehicles.forEach((v, i) => {
+        const x = v.x - camera.x, y = v.y - camera.y;
+        ctx.fillStyle = "#111715";
+        ctx.fillRect(x - 6, y + 5, 116, 50);
+        ctx.fillStyle = v.color;
+        ctx.fillRect(x, y, 104, 42);
+        ctx.fillStyle = "#1a292b";
+        ctx.fillRect(x + 18, y - 10, 58, 20);
+        ctx.fillStyle = "#b9c7c0";
+        ctx.fillRect(x + 24, y - 7, 18, 12);
+        ctx.fillRect(x + 48, y - 7, 20, 12);
+        ctx.fillStyle = "#e8d6a4";
+        ctx.fillRect(x + 90, y + 9, 8, 8);
+        [x + 20, x + 82].forEach(wx => {
+            ctx.fillStyle = "#111313";
+            ctx.beginPath(); ctx.arc(wx, y + 43, 12, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = "#a9aca0"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(wx, y + 43, 6, 0, Math.PI * 2); ctx.stroke();
+        });
+        ctx.fillStyle = "#f1e7c9";
+        ctx.font = "bold 10px Arial";
+        ctx.fillText(i === 3 ? "VIP" : ["ALFA", "BRAVO", "CHARLIE"][i], x + 25, y + 29);
+    });
+}
+
 function drawTrees() {
     for (let i = 0; i < 120; i += 1) {
         const tx = (i * 271) % world.width;
@@ -1731,6 +1829,9 @@ function drawVillage() {
     drawRoads();
     drawTrees();
     villageBuildings.forEach(drawBuilding);
+    drawCommandTower();
+    drawDiner();
+    drawConvoyVehicles();
     runtime.resourceNodes.forEach(drawResourceNode);
     runtime.monsters.forEach(drawMonster);
 }
@@ -1856,7 +1957,7 @@ async function bootstrapGame() {
     await waitFrame();
 
     resizeCanvas();
-    setMinimapVisible(true);
+    setMinimapVisible(false);
     renderAll();
     setLoadingProgress(80, "Montando interface de combate...");
 
