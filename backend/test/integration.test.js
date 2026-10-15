@@ -217,6 +217,8 @@ test("march API enforces server-selected resource and timer", async () => {
         assert.equal(started.status, 200);
         assert.equal(started.body.march.resourceType, "food");
         assert.equal(started.body.march.arriveAtMs - started.body.march.departAtMs, 60000);
+        assert.equal(started.body.march.rewardAmount, 1000);
+        assert.deepEqual(started.body.march.destination, { x: 500, y: 2030 });
         assert.equal(started.body.march.status, "MARCHING");
 
         const listed = await api(server.baseUrl, "GET", "/v1/world/marches", { token });
@@ -277,6 +279,8 @@ test("active expedition timer survives backend restart", async () => {
         const originalRemainingMs = originalMarch.arriveAtMs - Date.now();
         assert.ok(originalRemainingMs > 0);
         assert.equal(originalMarch.arriveAtMs - originalMarch.departAtMs, 60_000);
+        assert.equal(originalMarch.rewardAmount, 800);
+        assert.deepEqual(originalMarch.destination, { x: 520, y: 360 });
 
         await server.stop();
         await new Promise((resolve) => setTimeout(resolve, 40));
@@ -288,6 +292,8 @@ test("active expedition timer survives backend restart", async () => {
         assert.ok(resumedMarch);
         assert.equal(resumedMarch.arriveAtMs, originalMarch.arriveAtMs);
         assert.equal(resumedMarch.departAtMs, originalMarch.departAtMs);
+        assert.deepEqual(resumedMarch.destination, originalMarch.destination);
+        assert.equal(resumedMarch.rewardAmount, originalMarch.rewardAmount);
         assert.equal(resumedMarch.status, "MARCHING");
         assert.ok(resumedMarch.arriveAtMs - Date.now() < originalRemainingMs);
         assert.ok(resumedMarch.arriveAtMs > Date.now());
