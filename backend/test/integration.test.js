@@ -9,7 +9,7 @@ const dbPath = path.join(tmpDir, "db.json");
 process.env.IWAR_DB_PATH = dbPath;
 
 const { createApp } = await import("../src/app.js");
-const { initializeRepository, getRepositoryMode } = await import("../src/repositories/dbRepository.js");
+const { initializeRepository, getRepositoryMode, readDb, writeDb } = await import("../src/repositories/dbRepository.js");
 const { initializeRedis } = await import("../src/services/redisService.js");
 const { startMarch, collectMarch } = await import("../src/services/v1StubService.js");
 
