@@ -1754,7 +1754,24 @@ async function pullStateFromBackend() {
         state.buildings = { ...state.buildings, ...(remote.state.buildings || {}) };
         state.verticalSlice = { ...state.verticalSlice, ...(remote.state.verticalSlice || {}) };
         if (remote.state.expedition && typeof remote.state.expedition === "object") {
-            state.expedition = { ...state.expedition, ...remote.state.expedition };
+            const localExpedition = state.expedition || {};
+            const remoteExpedition = remote.state.expedition;
+            state.expedition = {
+                ...localExpedition,
+                ...remoteExpedition,
+                // The backend snapshot can omit client-facing completion metadata while
+                // older gameplay state is being migrated. Merge it monotonically so a
+                // reload cannot erase a confirmed local receipt/completion.
+                claimedIds: [...new Set([
+                    ...(Array.isArray(localExpedition.claimedIds) ? localExpedition.claimedIds : []),
+                    ...(Array.isArray(remoteExpedition.claimedIds) ? remoteExpedition.claimedIds : [])
+                ])].slice(-200),
+                completedCount: Math.max(
+                    Number.isFinite(localExpedition.completedCount) ? localExpedition.completedCount : 0,
+                    Number.isFinite(remoteExpedition.completedCount) ? remoteExpedition.completedCount : 0
+                ),
+                rewardClaimed: Boolean(localExpedition.rewardClaimed || remoteExpedition.rewardClaimed)
+            };
         }
         state.buildQueue = Array.isArray(remote.state.buildQueue) ? remote.state.buildQueue.slice(0, 2) : state.buildQueue;
         state.heroes = { ...state.heroes, ...(remote.state.heroes || {}) };
