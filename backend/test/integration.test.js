@@ -219,6 +219,13 @@ test("march API enforces server-selected resource and timer", async () => {
         assert.equal(started.body.march.arriveAtMs - started.body.march.departAtMs, 60000);
         assert.equal(started.body.march.status, "MARCHING");
 
+        const listed = await api(server.baseUrl, "GET", "/v1/world/marches", { token });
+        assert.equal(listed.status, 200);
+        assert.ok(listed.body.marches.some((march) => march.marchId === started.body.march.marchId));
+
+        const sync = await api(server.baseUrl, "POST", "/v1/player/sync", { token, body: {} });
+        assert.ok(sync.body.pendingTimers.some((timer) => timer.id === started.body.march.marchId && timer.category === "MARCH"));
+
         const tooEarly = await api(server.baseUrl, "POST", "/v1/world/marches/collect", {
             token,
             body: { marchId: started.body.march.marchId }
