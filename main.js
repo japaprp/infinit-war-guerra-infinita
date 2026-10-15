@@ -46,15 +46,23 @@
             return;
         }
 
+        const safeNick = nick.replace(/[^a-zA-Z0-9_\- ]/g, "").slice(0, 16);
+        const finalNick = safeNick || "Jogador";
+
+        // Local guest access for prototype testing; Firebase linking remains optional.
         if (!authSession || !authSession.uid) {
-            alert("Vincule sua conta Google ou Facebook antes de entrar.");
-            return;
+            authSession = {
+                uid: "guest-local",
+                email: "",
+                displayName: finalNick,
+                provider: "guest",
+                linkedAt: Date.now(),
+                localOnly: true
+            };
+            localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(authSession));
         }
 
-        const safeNick = nick.replace(/[^a-zA-Z0-9_\- ]/g, "").slice(0, 16);
-
-        localStorage.setItem("playerNick", safeNick || "Jogador");
-        localStorage.setItem("playerElement", selectedElement);
+        localStorage.setItem("playerNick", finalNick);
 
         window.location.href = "game.html";
     });
