@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = process.cwd();
@@ -23,4 +23,21 @@ if (!existsSync(resolve(webDir, "index.html")) || !existsSync(resolve(webDir, "g
   throw new Error("Android web bundle is incomplete: index.html or game.html is missing.");
 }
 
-console.log("Android web bundle prepared in www/.");
+// The Android APK should open the base-builder gameplay, not the legacy
+// element-selection/arena login screen. Keep the browser entry page untouched;
+// only the generated Android web bundle gets this guest-mode bootstrap.
+const gameHtmlPath = resolve(webDir, "game.html");
+let gameHtml = readFileSync(gameHtmlPath, "utf8");
+const scriptAnchor = '<script src="entities/player.js"></script>';
+if (!gameHtml.includes(scriptAnchor)) {
+  throw new Error("Cannot prepare Android base-builder entry: entities/player.js script anchor is missing.");
+}
+gameHtml = gameHtml.replace(scriptAnchor, '<script src="guest-bootstrap.js"></script>\n' + scriptAnchor);
+writeFileSync(resolve(webDir, "index.html"), gameHtml, "utf8");
+
+const heroPortrait = resolve(webDir, "assets/characters/hero_recruit.png");
+if (!existsSync(heroPortrait)) {
+  throw new Error("Android web bundle is missing assets/characters/hero_recruit.png.");
+}
+
+console.log("Android web bundle prepared: base-builder scene is the entry point and local guest mode is enabled.");
