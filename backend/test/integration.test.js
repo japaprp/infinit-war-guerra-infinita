@@ -187,9 +187,13 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
             token, headers: { "x-idempotency-key": "exp-claim-2" },
             body: { expeditionId: start.body.expeditionId, idempotencyKey: "exp-claim-2" }
         });
-        assert.equal(second.status, 409);
+        assert.equal(second.status, 200);
+        assert.equal(second.body.alreadyClaimed, true);
+        assert.deepEqual(second.body.rewards, first.body.rewards);
+        assert.equal(second.body.resources.gold, first.body.resources.gold);
         const persisted = await readDb();
         assert.equal(persisted.users["guest:it_expedition_1"].v1.expedition.claimedIds.filter(id => id === start.body.expeditionId).length, 1);
+        assert.equal(Object.keys(persisted.users["guest:it_expedition_1"].v1.expedition.receipts).length, 1);
     } finally {
         await server.stop();
     }
