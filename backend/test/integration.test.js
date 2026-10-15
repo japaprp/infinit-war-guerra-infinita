@@ -166,10 +166,18 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         const login = await api(server.baseUrl, "POST", "/v1/auth/login", { body: { platform: "guest", externalId: "it_expedition_1" } });
         assert.equal(login.status, 200);
         const token = login.body.accessToken;
+        const invalid = await api(server.baseUrl, "POST", "/v1/expeditions/start", {
+            token, body: { destinationId: "unknown-map", objectiveId: "explore" }
+        });
+        assert.equal(invalid.status, 400);
         const start = await api(server.baseUrl, "POST", "/v1/expeditions/start", { token, body: { destinationId: "grey-forest", objectiveId: "explore" } });
         assert.equal(start.status, 200);
         assert.equal(start.body.resources.energy, 85);
         assert.ok(start.body.expeditionId);
+        const duplicateStart = await api(server.baseUrl, "POST", "/v1/expeditions/start", {
+            token, body: { destinationId: "grey-forest", objectiveId: "explore" }
+        });
+        assert.equal(duplicateStart.status, 409);
         const early = await api(server.baseUrl, "POST", "/v1/expeditions/claim", { token, body: { expeditionId: start.body.expeditionId, idempotencyKey: "early-claim" } });
         assert.equal(early.status, 409);
         const db = await readDb();
@@ -181,7 +189,11 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         });
         assert.equal(first.status, 200);
         assert.ok(first.body.rewards.gold > 0);
+        assert.ok(first.body.rewards.steel > 0);
+        assert.ok(first.body.rewards.food > 0);
         assert.equal(first.body.resources.gold, first.body.rewards.gold);
+        assert.equal(first.body.resources.steel, first.body.rewards.steel);
+        assert.equal(first.body.resources.food, first.body.rewards.food);
         assert.equal(first.body.resources.energy, 85);
         await server.stop();
         server = await bootServer({ redisEnabled: false });
@@ -194,7 +206,13 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.equal(second.body.alreadyClaimed, true);
         assert.deepEqual(second.body.rewards, first.body.rewards);
         assert.equal(second.body.resources.gold, first.body.resources.gold);
+        assert.equal(second.body.resources.steel, first.body.resources.steel);
+        assert.equal(second.body.resources.food, first.body.resources.food);
         const persisted = await readDb();
+        assert.equal(persisted.users["guest:it_expedition_1"].v1.resources.gold, first.body.resources.gold);
+        assert.equal(persisted.users["guest:it_expedition_1"].v1.resources.steel, first.body.resources.steel);
+        assert.equal(persisted.users["guest:it_expedition_1"].v1.resources.food, first.body.resources.food);
+        assert.equal(persisted.users["guest:it_expedition_1"].v1.resources.energy, 85);
         assert.equal(persisted.users["guest:it_expedition_1"].v1.expedition.claimedIds.filter(id => id === start.body.expeditionId).length, 1);
         assert.equal(Object.keys(persisted.users["guest:it_expedition_1"].v1.expedition.receipts).length, 1);
     } finally {
