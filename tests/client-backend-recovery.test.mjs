@@ -145,7 +145,7 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
         }, null, { timeout: 20000 });
 
         const started = await readSavedState(page);
-        assert.equal(started.expedition.serverAuthoritative, true, "expedição deve ter sido iniciada pelo backend");
+        assert.equal(started.expedition.serverAuthoritative, true, `expedição deve ter sido iniciada pelo backend; saved=${JSON.stringify(started?.expedition)}; feed=${await page.locator("#systemFeed").innerText()}`);
         assert.equal(started.expedition.destinationId, "old-ruins");
         assert.equal(started.resources.energy, 85);
         const expeditionId = started.expedition.id;
