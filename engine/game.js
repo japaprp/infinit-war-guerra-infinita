@@ -385,6 +385,21 @@ function loadState() {
                 skillLevels: Array.isArray(current.skillLevels) ? current.skillLevels.slice(0, 3) : [1, 1, 1]
             };
         });
+        // Discard stale chip references and enforce one owner per physical module.
+        const seenEquippedChipIds = new Set();
+        heroTemplates.forEach((template) => {
+            const hero = merged.heroes[template.id];
+            for (const stat of ["attackPct", "hpPct"]) {
+                const chipId = hero.equippedChips[stat];
+                const chip = merged.inventory.chips.find((item) => item.id === chipId);
+                const definition = chip && CHIP_CATALOG.find((item) => item.id === chip.typeId);
+                if (!chip || definition?.stat !== stat || seenEquippedChipIds.has(chipId)) {
+                    hero.equippedChips[stat] = null;
+                    continue;
+                }
+                seenEquippedChipIds.add(chipId);
+            }
+        });
 
         // Clamp de seguranca para reduzir manipulacao simples de save.
         merged.resources.gold = clamp(merged.resources.gold, 0, 9999999999);
@@ -1100,6 +1115,17 @@ function equipChip(chipId) {
     }
     const hero = state.heroes[state.selectedHeroId];
     if (!hero?.unlocked) return;
+    // A physical module may only be equipped by one hero at a time.
+    Object.values(state.heroes).forEach((candidate) => {
+        if (candidate.equippedChips?.[definition.stat] === chip.id) {
+            candidate.equippedChips = { ...candidate.equippedChips, [definition.stat]: null };
+        }
+        for (const stat of ["attackPct", "hpPct"]) {
+            if (stat !== definition.stat && candidate.equippedChips?.[stat] === chip.id) {
+                candidate.equippedChips = { ...candidate.equippedChips, [stat]: null };
+            }
+        }
+    });
     hero.equippedChips = { ...(hero.equippedChips || {}), [definition.stat]: chip.id };
     pushFeed(`${chip.name} equipado em ${getHeroTemplate(state.selectedHeroId).name} (+${(definition.basePct + (chip.level - 1) * 9.6).toLocaleString("pt-BR")}%).`);
     renderAll();
