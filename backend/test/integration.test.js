@@ -345,3 +345,44 @@ test("idempotency with Redis persists across server restart", async (t) => {
         await server.stop();
     }
 });
+
+
+test("v1 player sync ignores forged client resource snapshots", async () => {
+    await fs.rm(dbPath, { force: true });
+    const server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_forged_snapshot_1" }
+        });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+
+        const db = await readDb();
+        const user = db.users["guest:it_forged_snapshot_1"];
+        user.v1.resources = { ...user.v1.resources, gold: 1234, wood: 567, steel: 89, food: 4321, energy: 42 };
+        await writeDb(db);
+
+        const sync = await api(server.baseUrl, "POST", "/v1/player/sync", {
+            token,
+            body: {
+                snapshot: { gold: 999999999, wood: 999999999, steel: 999999999, food: 999999999, energy: 999999999 }
+            }
+        });
+        assert.equal(sync.status, 200);
+        assert.equal(sync.body.profile.resources.gold, 1234);
+        assert.equal(sync.body.profile.resources.wood, 567);
+        assert.equal(sync.body.profile.resources.steel, 89);
+        assert.equal(sync.body.profile.resources.food, 4321);
+        assert.equal(sync.body.profile.resources.energy, 42);
+
+        const persisted = await readDb();
+        const saved = persisted.users["guest:it_forged_snapshot_1"].v1.resources;
+        assert.equal(saved.gold, 1234);
+        assert.equal(saved.wood, 567);
+        assert.equal(saved.steel, 89);
+        assert.equal(saved.food, 4321);
+        assert.equal(saved.energy, 42);
+    } finally {
+        await server.stop();
+    }
+});
