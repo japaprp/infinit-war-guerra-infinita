@@ -91,6 +91,7 @@
     const getPlayerMeV1 = async () => request("GET", "/v1/player/me");
     const syncPlayerV1 = async ({ clientVersion = "0.1.0", stateVersion = 0 }) =>
         request("POST", "/v1/player/sync", { clientVersion, stateVersion });
+    const getExpeditionStatusV1 = async () => request("GET", "/v1/expeditions/status");
     const startExpeditionV1 = async ({ destinationId, objectiveId }) =>
         request("POST", "/v1/expeditions/start", { destinationId, objectiveId });
     const claimExpeditionV1 = async ({ expeditionId, idempotencyKey }) =>
@@ -116,6 +117,7 @@
         loginV1,
         getPlayerMeV1,
         syncPlayerV1,
+        getExpeditionStatusV1,
         startExpeditionV1,
         claimExpeditionV1,
         listHeroesV1,
