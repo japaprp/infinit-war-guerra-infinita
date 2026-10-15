@@ -139,6 +139,7 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
             }
         };
 
+        let cacheWriteFailed = false;
         const originalJson = res.json.bind(res);
         res.json = (body) => {
             const status = res.statusCode || 200;
@@ -163,6 +164,7 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
                 .set(key, JSON.stringify(completed), "EX", ttlSec)
                 .then(() => originalJson(body))
                 .catch(async () => {
+                    cacheWriteFailed = true;
                     // Preserve the processing reservation until its short TTL expires.
                     // This prevents a retry from re-running a mutation whose result could not be cached.
                     res.statusCode = 503;
@@ -174,7 +176,7 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
         };
 
         res.on("finish", () => {
-            if (res.statusCode < 200 || res.statusCode >= 300) {
+            if (!cacheWriteFailed && (res.statusCode < 200 || res.statusCode >= 300)) {
                 void releaseReservation();
             }
         });
