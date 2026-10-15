@@ -1064,7 +1064,8 @@ canvas {
     cursor: pointer;
 }
 
-.assign-btn:disabled {
+.assign-vehicle-btn { min-height:27px; padding:5px 7px; border:1px solid #c5a35e88; border-radius:4px; background:#292719; color:#efd18b; font-size:10px; font-weight:800; cursor:pointer; }
+.assign-btn:disabled,.assign-vehicle-btn:disabled {
     background: #4f4f4f;
     color: #d6d6d6;
     cursor: not-allowed;
@@ -1491,6 +1492,14 @@ body.game { background:#101817; color:#f2e9d3; }
 .convoy-meta small { font-size:8px; color:#aebbb0; white-space:nowrap; }
 .convoy-meta em { font-size:8px; color:#8fd09b; font-style:normal; font-weight:900; }
 .convoy-vip .convoy-meta em { color:#e8c46e; }
+.vehicle-formation-head { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:8px 2px 5px; color:#e7d4a8; font-size:9px; letter-spacing:.08em; }
+.vehicle-formation-head span { color:#aebbb0; font-size:8px; letter-spacing:0; }
+.vehicle-formation-slots { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:5px; }
+.vehicle-hero-slot { display:flex; align-items:center; justify-content:space-between; gap:3px; min-width:0; min-height:30px; padding:5px 6px; border:1px solid #83948755; border-radius:5px; background:#101916; color:#dfe6d9; font-size:9px; }
+.vehicle-hero-slot.empty { color:#84938a; border-style:dashed; }
+.vehicle-hero-slot .slot-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vehicle-hero-slot button { flex:0 0 auto; border:0; background:transparent; color:#e2a18b; font-weight:900; cursor:pointer; }
+.roster-assignment-hint { margin:0 0 8px; color:#aebbb0; font-size:11px; }
 .city-chat {
   position:fixed; z-index:24; left:12px; bottom:58px; width:230px;
   padding:9px 11px; border:1px solid #c9ad6c44; border-radius:9px;
@@ -1535,6 +1544,11 @@ body.game { background:#101817; color:#f2e9d3; }
   .convoy-meta b { font-size:8px; }
   .convoy-meta small { font-size:7px; white-space:normal; }
   .convoy-meta em { font-size:7px; }
+  .vehicle-formation-head { margin:5px 1px 4px; font-size:7px; }
+  .vehicle-formation-head span { font-size:7px; }
+  .vehicle-formation-slots { gap:3px; }
+  .vehicle-hero-slot { min-height:25px; padding:3px 4px; font-size:7px; }
+  .vehicle-hero-slot button { font-size:9px; padding:0 2px; }
   .city-chat { display:none; }
   .bottom-nav { bottom:0; }
 }
