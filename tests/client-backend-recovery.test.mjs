@@ -175,7 +175,7 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
 
         // The backend processes the claim, but the browser loses the first response.
         let dropFirstResponse = true;
-        await page.route(`${backend.baseUrl}/v1/expeditions/claim`, async route => {
+        await page.route(`${web.baseUrl}/v1/expeditions/claim`, async route => {
             if (route.request().method() !== "POST") {
                 await route.continue();
                 return;
