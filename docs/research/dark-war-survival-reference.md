@@ -15,6 +15,30 @@
 
 ## Mecânicas recorrentes identificadas nas fontes
 
+## Observações extraídas do pacote de capturas fornecido pelo usuário
+
+O arquivo de referência `jogo.zip` foi descrito no histórico do projeto como contendo 102 capturas de tela, sem código-fonte. O levantamento anterior identificou os seguintes grupos de telas/loops a transformar em requisitos próprios:
+
+- Base/abrigo, coleta e saldo de recursos.
+- Heróis/personagens, evolução, habilidades e estatísticas.
+- Tropas e composição de esquadrão.
+- Equipamentos, chips, fabricação e melhorias de veículo/garagem.
+- Mapa, exploração e criaturas.
+- Baús, consumíveis e recompensas com probabilidades.
+- Aliança, rankings e competição semanal com janela de seis dias.
+- Recompensas de eventos e incentivo a guardar consumíveis para janelas de pontuação.
+
+Esses itens são um inventário preliminar das capturas discutidas, não uma transcrição exaustiva das 102 imagens. Para uma auditoria tela a tela, cada captura precisa ser ligada a um ID/arquivo e registrada com ação observada, estado antes/depois e grau de confiança. O ZIP não contém fonte do jogo comercial e não deve ser tratado como evidência das regras internas não visíveis.
+
+### Diferenças de design obrigatórias para Guerra Infinita
+
+- Começo realmente novo: um único herói/card inicial, recursos de economia e moedas premium em zero.
+- Nomes, personagens, ícones, criaturas, efeitos, mapas, diálogos, composição e paleta originais.
+- Sistemas inspirados em gêneros comuns (base, exploração, equipamento, eventos), mas com regras e progressão próprias.
+- Probabilidades e custos visíveis e auditáveis; sem reproduzir taxas não verificadas do jogo de referência.
+- Nenhuma compra necessária para terminar o conteúdo principal; serviços externos devem continuar gratuitos até autorização explícita.
+
+
 ### 1. Progressão de conta e abrigo
 - A progressão combina nível da base/torre, construções, produção de recursos, pesquisa e desbloqueio gradual de sistemas.
 - Melhorar apenas o nível geral não basta: prédios de suporte, capacidade militar, pesquisa e economia precisam acompanhar.
