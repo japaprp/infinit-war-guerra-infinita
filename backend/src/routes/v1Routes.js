@@ -97,7 +97,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(result);
     });
 
-    router.post("/expeditions/claim", idempotency, userLock, async (req, res) => {
+    router.post("/expeditions/claim", userLock, idempotency, async (req, res) => {
         const { expeditionId, idempotencyKey } = req.body || {};
         if (!expeditionId || !idempotencyKey) return res.status(400).json({ code: "BAD_REQUEST", message: "expeditionId and idempotencyKey are required" });
         const db = await readDb();
