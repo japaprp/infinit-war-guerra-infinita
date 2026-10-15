@@ -123,8 +123,14 @@
 
 <section class="vertical-slice-panel expedition-panel" id="expeditionPanel">
     <header><strong>Expedição</strong><small id="expeditionMapLabel">Floresta Cinzenta</small></header>
-    <p id="expeditionStatus">Prepare seu esquadrão para iniciar uma expedição.</p>
-    <div class="slice-steps" id="expeditionRewardPreview"><div class="slice-step">Recompensas ao retornar: ouro, prata e alimento</div></div>
+    <label class="expedition-field" for="expeditionDestination">Destino do mapa
+        <select id="expeditionDestination"></select>
+    </label>
+    <label class="expedition-field" for="expeditionObjective">Objetivo da missão
+        <select id="expeditionObjective"></select>
+    </label>
+    <p id="expeditionStatus">Escolha um destino e objetivo no mapa para preparar sua primeira expedição.</p>
+    <div class="slice-steps" id="expeditionRewardPreview">Escolha o destino e objetivo para ver o perfil de recompensa.</div>
     <div class="slice-actions"><button id="startExpeditionBtn">Iniciar expedição (15 energia)</button><button id="claimExpeditionBtn" disabled>Resgatar recompensa</button></div>
 </section>
 
