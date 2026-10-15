@@ -1660,6 +1660,7 @@ async function claimExpeditionReward() {
     let gold;
     let silver;
     let food;
+    let serverResources = null;
     const api = getApiClient();
     if (expedition.serverAuthoritative && api && typeof api.claimExpeditionV1 === "function") {
         const idempotencyKey = `exp-claim-${expedition.id}`;
@@ -1673,6 +1674,7 @@ async function claimExpeditionReward() {
         gold = result.rewards.gold;
         silver = result.rewards.steel;
         food = result.rewards.food;
+        serverResources = result.resources;
         state.resources.energy = result.resources.energy;
     } else {
         const multiplier = destination.rewardMultiplier * objective.rewardMultiplier;
@@ -1686,9 +1688,16 @@ async function claimExpeditionReward() {
     expedition.rewardClaimed = true;
     expedition.active = false;
     expedition.completedCount += 1;
-    state.resources.gold += gold;
-    state.resources.silver += silver;
-    state.resources.food += food;
+    if (serverResources) {
+        // The server balance is authoritative; never replay local increments on a retry.
+        state.resources.gold = Math.max(0, Number(serverResources.gold) || 0);
+        state.resources.silver = Math.max(0, Number(serverResources.steel) || 0);
+        state.resources.food = Math.max(0, Number(serverResources.food) || 0);
+    } else {
+        state.resources.gold += gold;
+        state.resources.silver += silver;
+        state.resources.food += food;
+    }
     pushFeed(`Recompensa de ${destination.label}: +${gold} ouro, +${silver} prata e +${food} alimento.`);
     renderAll();
     saveState();
