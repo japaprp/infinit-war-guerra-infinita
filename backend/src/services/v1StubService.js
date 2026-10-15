@@ -256,10 +256,10 @@ export function queryWorldTiles(_user, x, y, radius) {
 }
 
 const MARCH_CONFIG = Object.freeze({
-    gold: { durationMs: 60_000, reward: 500 },
-    wood: { durationMs: 60_000, reward: 800 },
-    steel: { durationMs: 60_000, reward: 300 },
-    food: { durationMs: 60_000, reward: 1000 }
+    gold: { durationMs: 60_000, reward: 500, destination: { x: 3020, y: 420 } },
+    wood: { durationMs: 60_000, reward: 800, destination: { x: 520, y: 360 } },
+    steel: { durationMs: 60_000, reward: 300, destination: { x: 3150, y: 2030 } },
+    food: { durationMs: 60_000, reward: 1000, destination: { x: 500, y: 2030 } }
 });
 
 export function startMarch(user, payload = {}, startedAtMs = nowMs()) {
@@ -279,6 +279,8 @@ export function startMarch(user, payload = {}, startedAtMs = nowMs()) {
     const march = {
         marchId: `march_${crypto.randomUUID()}`,
         resourceType,
+        destination: { ...config.destination },
+        rewardAmount: config.reward,
         departAtMs: startedAtMs,
         arriveAtMs: startedAtMs + config.durationMs,
         status: "MARCHING"
