@@ -35,23 +35,8 @@ export function getPlayerMe(userId, user) {
 export function syncState(userId, user, _request) {
     ensureV1State(user);
 
-    const snapshot = _request?.snapshot;
-    if (snapshot && typeof snapshot === "object") {
-        const resourceKeys = ["gold", "wood", "steel", "food", "energy"];
-        let changed = false;
-
-        for (const key of resourceKeys) {
-            const next = Number(snapshot[key]);
-            if (Number.isFinite(next) && next >= 0) {
-                user.v1.resources[key] = Math.floor(next);
-                changed = true;
-            }
-        }
-
-        if (changed) {
-            user.v1.stateVersion += 1;
-        }
-    }
+    // Client snapshots are intentionally ignored for economy values.
+    // Resource balances may only change through validated server-side game actions.
 
     if (user.v1.resources.energy > user.v1.resources.energyMax) {
         user.v1.resources.energy = user.v1.resources.energyMax;
