@@ -160,6 +160,47 @@ test("v1 endpoints: heroes and buildings flow", async () => {
     }
 });
 
+test("v1 sync ignores client-supplied resource balances", async () => {
+    await fs.rm(dbPath, { force: true });
+    const server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_sync_untrusted_snapshot" }
+        });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+
+        const forgedSync = await api(server.baseUrl, "POST", "/v1/player/sync", {
+            token,
+            body: {
+                snapshot: {
+                    gold: 999999999,
+                    wood: 999999999,
+                    steel: 999999999,
+                    food: 999999999,
+                    energy: 999999999
+                }
+            }
+        });
+        assert.equal(forgedSync.status, 200);
+        assert.equal(forgedSync.body.profile.resources.gold, 0);
+        assert.equal(forgedSync.body.profile.resources.wood, 0);
+        assert.equal(forgedSync.body.profile.resources.steel, 0);
+        assert.equal(forgedSync.body.profile.resources.food, 0);
+        assert.equal(forgedSync.body.profile.energy.current, 100);
+
+        const profile = await api(server.baseUrl, "GET", "/v1/player/me", { token });
+        assert.equal(profile.status, 200);
+        assert.equal(profile.body.resources.gold, 0);
+        assert.equal(profile.body.resources.wood, 0);
+        assert.equal(profile.body.resources.steel, 0);
+        assert.equal(profile.body.resources.food, 0);
+        assert.equal(profile.body.energy.current, 100);
+    } finally {
+        await server.stop();
+    }
+});
+
 test("expedition reward is server-timed, persisted, and claimable only once", async () => {
     await fs.rm(dbPath, { force: true });
     let server = await bootServer({ redisEnabled: false });
