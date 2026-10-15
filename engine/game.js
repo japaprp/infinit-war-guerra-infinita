@@ -1727,6 +1727,46 @@ async function pullStateFromBackend() {
             return;
         }
 
+        // Recover the active expedition from the authenticated server after reload.
+        // LocalStorage is a cache, not the source of truth for expedition timers/rewards.
+        if (typeof api.getExpeditionStatusV1 === "function") {
+            try {
+                const status = await api.getExpeditionStatusV1();
+                const active = status?.active;
+                const serverClaimedIds = Array.isArray(status?.claimedIds) ? status.claimedIds : [];
+                if (active?.expeditionId && Number.isFinite(active.endsAtMs)) {
+                    state.expedition = {
+                        ...state.expedition,
+                        id: active.expeditionId,
+                        destinationId: active.destinationId,
+                        objectiveId: active.objectiveId,
+                        active: true,
+                        startedAt: active.startedAtMs,
+                        endsAt: active.endsAtMs,
+                        rewardClaimed: false,
+                        serverAuthoritative: true,
+                        claimedIds: [...new Set([...(state.expedition.claimedIds || []), ...serverClaimedIds])].slice(-200)
+                    };
+                    if (Number.isFinite(status.resources?.energy)) state.resources.energy = status.resources.energy;
+                } else {
+                    state.expedition.claimedIds = [...new Set([...(state.expedition.claimedIds || []), ...serverClaimedIds])].slice(-200);
+                    if (state.expedition.serverAuthoritative && state.expedition.id && serverClaimedIds.includes(state.expedition.id)) {
+                        state.expedition.active = false;
+                        state.expedition.rewardClaimed = true;
+                        state.expedition.serverAuthoritative = false;
+                    } else if (state.expedition.serverAuthoritative && state.expedition.active) {
+                        // A missing server expedition must never be resurrected from a local save.
+                        state.expedition.active = false;
+                        state.expedition.rewardClaimed = true;
+                        state.expedition.serverAuthoritative = false;
+                    }
+                    if (Number.isFinite(status.resources?.energy)) state.resources.energy = status.resources.energy;
+                }
+            } catch {
+                // Keep cached state when offline; authoritative status will retry on next sync.
+            }
+        }
+
         // A economia principal ainda contém ganhos/gastos legados apenas no cliente.
         // Não sobrescrever esses saldos com zeros de um snapshot remoto parcial; energia
         // da expedição é autoritativa no backend e continua sendo sincronizada.
