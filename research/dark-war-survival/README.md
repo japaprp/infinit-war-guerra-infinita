@@ -2,23 +2,24 @@
 
 Esta pasta reúne evidências visuais usadas para análise comportamental e técnica de referência para o projeto original **Guerra Infinita**.
 
-## Organização
+## Conteúdo
 
-- `screenshots/`: capturas numeradas de `001` a `096`.
-- Use nomes estáveis, por exemplo `001-base-inicial.png`, `002-recrutamento.png`, `003-equipamento.png`.
-- `index.md` (a criar durante a catalogação): tela, sistema observado, evidência visível, hipótese separada e perguntas em aberto.
+- `screenshots/`: capturas de tela originais usadas como evidência.
+- `index.md`: catálogo inicial das observações por arquivo, sistema, evidência e perguntas em aberto.
+- Total confirmado na branch durante a última verificação: **94 imagens**. O plano inicial previa 96; as duas restantes ainda precisam ser localizadas/confirmadas.
 
 ## Regras de análise
 
 1. Registrar somente o que a captura realmente mostra; marcar inferências como hipóteses.
-2. Catalogar interface, progressão, heróis, equipamento, baús/probabilidades, combate, mapa, expedições, recompensas e economia.
-3. Criar nomes, arte, interface e implementação próprios para Guerra Infinita; as imagens são referência de análise, não assets do jogo.
-4. Não registrar credenciais, tokens, códigos de autenticação ou outros segredos.
+2. Classificar observações como **CONFIRMADO VISUALMENTE**, **RELATADO NA INTERFACE** ou **PRECISA DE TESTE**.
+3. Catalogar interface, progressão, heróis, equipamento, baús/probabilidades, combate, mapa, expedições, recompensas e economia.
+4. Criar nomes, arte, interface e implementação próprios para Guerra Infinita; as imagens são referência de análise, não assets do jogo.
+5. Não afirmar que uma fórmula interna foi descoberta com base apenas em uma captura estática.
 
-## Privacidade antes de enviar
+## Privacidade
 
-O repositório é **público**. Antes de adicionar capturas, recorte ou oculte ID de conta, nome de jogador, mensagens privadas, dados de compra e qualquer informação pessoal que não seja necessária para estudar a mecânica. Não envie imagens que contenham segredos.
+O repositório é **público**. As capturas podem conter nome de jogador, ID, aliança, zona, ranking ou mensagens. Antes de compartilhar o material publicamente ou incorporar a PR, recorte/oculte informações pessoais que não sejam necessárias para estudar a mecânica. Não envie credenciais, tokens ou códigos de autenticação.
 
-## Limites do catálogo
+## Estado da análise
 
-As 96 capturas ainda precisam ser adicionadas e verificadas. Nenhuma captura é considerada analisada só por constar nesta pasta. Cada observação será documentada com a referência da imagem correspondente.
+A primeira leitura visual foi registrada em `index.md`. Valores exatos de custos, probabilidades e bônus ainda precisam de transcrição estruturada e, quando possível, de testes controlados. Nenhuma hipótese é tratada como fato sem evidência.
