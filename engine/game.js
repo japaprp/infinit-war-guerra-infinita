@@ -239,7 +239,7 @@ function createHeroState(template) {
         level: 1,
         stars: 1,
         specificShards: 0,
-        equipment: { weapon: 1, armor: 1, boots: 1 },
+        equipment: { weapon: 0, armor: 0, boots: 0 },
         skillLevels: [1, 1, 1]
     };
 }
