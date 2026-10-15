@@ -63,8 +63,8 @@ test("cliente mantém expedição, temporizador e saldos após fechar/reabrir", 
         await page.locator("#startExpeditionBtn").waitFor({ state: "visible" });
         await page.waitForFunction(() => {
             const button = document.querySelector("#startExpeditionBtn");
-            return button && !button.disabled && document.querySelector("#loadingScreen")?.classList.contains("hidden");
-        }, { timeout: 15000 });
+            return button && !button.disabled && document.querySelector("#loadingScreen")?.classList.contains("is-hidden");
+        }, null, { timeout: 15000 });
 
         await page.locator("#expeditionDestination").selectOption("old-ruins");
         await page.locator("#expeditionObjective").selectOption("hunt");
