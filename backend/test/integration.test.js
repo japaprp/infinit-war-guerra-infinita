@@ -257,6 +257,45 @@ test("march rewards are timed, server-calculated and collected only once", () =>
     assert.equal(user.v1.resources.food, beforeFood + 1000);
 });
 
+test("active expedition timer survives backend restart", async () => {
+    await fs.rm(dbPath, { force: true });
+
+    let server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_march_restart" }
+        });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+
+        const started = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            body: { resourceType: "wood", durationMs: 1, reward: 999999 }
+        });
+        assert.equal(started.status, 200);
+        const originalMarch = started.body.march;
+        const originalRemainingMs = originalMarch.arriveAtMs - Date.now();
+        assert.ok(originalRemainingMs > 0);
+        assert.equal(originalMarch.arriveAtMs - originalMarch.departAtMs, 60_000);
+
+        await server.stop();
+        await new Promise((resolve) => setTimeout(resolve, 40));
+        server = await bootServer({ redisEnabled: false });
+
+        const restored = await api(server.baseUrl, "GET", "/v1/world/marches", { token });
+        assert.equal(restored.status, 200);
+        const resumedMarch = restored.body.marches.find((march) => march.marchId === originalMarch.marchId);
+        assert.ok(resumedMarch);
+        assert.equal(resumedMarch.arriveAtMs, originalMarch.arriveAtMs);
+        assert.equal(resumedMarch.departAtMs, originalMarch.departAtMs);
+        assert.equal(resumedMarch.status, "MARCHING");
+        assert.ok(resumedMarch.arriveAtMs - Date.now() < originalRemainingMs);
+        assert.ok(resumedMarch.arriveAtMs > Date.now());
+    } finally {
+        await server.stop();
+    }
+});
+
 test("legacy shop receipt can be consumed only once", async () => {
     await fs.rm(dbPath, { force: true });
 
