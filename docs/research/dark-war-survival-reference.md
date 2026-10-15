@@ -12,6 +12,10 @@
 4. [Reddit — New player, season 1 tips](https://www.reddit.com/r/darkwarsurvival/comments/1ps35i1/new_player_season_1_tips/) — experiência comunitária sobre equipamento, fragmentos, recursos e eficiência free-to-play.
 5. [Reddit — Tips](https://www.reddit.com/r/darkwarsurvival/comments/1v81jbn/tips/) — discussão comunitária sobre progressão, eventos, pesquisa e recursos.
 6. [Z-War — mapas mundiais e sazonais](https://z-war.icu/posts/dark-war-world-season-territory-maps/) — ferramenta comunitária que descreve mapa mundial, mapas de temporada, minimapa, zonas e planejamento territorial.
+7. [Google Play — Dark War: Survival](https://play.google.com/store/apps/details?id=com.readygo.dark.gp&hl=pt_BR) — descrição pública do jogo, sistemas de atribuição de trabalho aos sobreviventes, abrigo, exploração, pesquisa, alianças e indicação de compras no aplicativo.
+8. [Pocket Gamer — guia de Dark War: Survival](https://www.pocketgamer.com/dark-war-survival/guide/) — guia editorial de construção da base, gestão de recursos e exploração do mapa.
+9. [BlueStacks — beginner guide](https://www.bluestacks.com/blog/game-guides/dark-war-survival/dws-beginners-guide-en.html) — visão geral editorial de base, tropas, combate PvE/PvP e progressão.
+10. [Dark War Survival Data — Hero Equipment Lucky Chest](https://darkwardata.com/items/hero-equipment-lucky-chest/) — exemplo comunitário de baú de equipamento aleatório e canais de obtenção; não publica uma tabela completa de probabilidades.
 
 ## Mecânicas recorrentes identificadas nas fontes
 
