@@ -33,25 +33,8 @@ export function getPlayerMe(userId, user) {
 }
 
 export function syncState(userId, user, _request) {
+    // Client snapshots are informational only: the server owns resource balances.
     ensureV1State(user);
-
-    const snapshot = _request?.snapshot;
-    if (snapshot && typeof snapshot === "object") {
-        const resourceKeys = ["gold", "wood", "steel", "food", "energy"];
-        let changed = false;
-
-        for (const key of resourceKeys) {
-            const next = Number(snapshot[key]);
-            if (Number.isFinite(next) && next >= 0) {
-                user.v1.resources[key] = Math.floor(next);
-                changed = true;
-            }
-        }
-
-        if (changed) {
-            user.v1.stateVersion += 1;
-        }
-    }
 
     if (user.v1.resources.energy > user.v1.resources.energyMax) {
         user.v1.resources.energy = user.v1.resources.energyMax;
@@ -267,13 +250,73 @@ export function queryWorldTiles(_user, x, y, radius) {
     };
 }
 
-export function startMarch(_user, _payload) {
-    const departAtMs = nowMs();
-    const arriveAtMs = departAtMs + 90 * 1000;
-    return {
+const MARCH_CONFIG = Object.freeze({
+    gold: { durationMs: 60_000, reward: 500 },
+    wood: { durationMs: 60_000, reward: 800 },
+    steel: { durationMs: 60_000, reward: 300 },
+    food: { durationMs: 60_000, reward: 1000 }
+});
+
+export function startMarch(user, payload = {}, startedAtMs = nowMs()) {
+    ensureV1State(user);
+    const resourceType = String(payload.resourceType || "").toLowerCase();
+    const config = MARCH_CONFIG[resourceType];
+
+    if (!config) {
+        return { error: { status: 400, message: "Unsupported resource type" } };
+    }
+
+    const activeMarches = user.v1.marches.filter((march) => march.status === "MARCHING");
+    if (activeMarches.length >= 3) {
+        return { error: { status: 409, message: "All march slots are busy" } };
+    }
+
+    const march = {
         marchId: `march_${crypto.randomUUID()}`,
-        departAtMs,
-        arriveAtMs
+        resourceType,
+        departAtMs: startedAtMs,
+        arriveAtMs: startedAtMs + config.durationMs,
+        status: "MARCHING"
+    };
+
+    user.v1.marches.push(march);
+    bumpStateVersion(user);
+
+    return { march: { ...march }, serverTimeMs: startedAtMs };
+}
+
+export function collectMarch(user, marchId, collectedAtMs = nowMs()) {
+    ensureV1State(user);
+    const march = user.v1.marches.find((item) => item.marchId === marchId);
+
+    if (!march) {
+        return { error: { status: 404, message: "March not found" } };
+    }
+    if (march.status === "COLLECTED") {
+        return { error: { status: 409, message: "March reward already collected" } };
+    }
+    if (march.status !== "MARCHING") {
+        return { error: { status: 409, message: "March cannot be collected" } };
+    }
+    if (collectedAtMs < march.arriveAtMs) {
+        return { error: { status: 409, message: "March has not arrived yet" } };
+    }
+
+    const config = MARCH_CONFIG[march.resourceType];
+    if (!config) {
+        return { error: { status: 409, message: "March has invalid resource type" } };
+    }
+
+    user.v1.resources[march.resourceType] += config.reward;
+    march.status = "COLLECTED";
+    march.collectedAtMs = collectedAtMs;
+    march.reward = config.reward;
+    bumpStateVersion(user);
+
+    return {
+        march: { ...march },
+        rewards: { [march.resourceType]: config.reward },
+        resources: { ...user.v1.resources }
     };
 }
 
