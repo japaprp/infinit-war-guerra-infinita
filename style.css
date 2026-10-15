@@ -1374,3 +1374,45 @@ canvas {
         font-size: 11px;
     }
 }
+
+
+/* Entry battlefield art: original local SVG, works offline and has no external dependencies. */
+.entry-art {
+    background: #1c2522 url("assets/entry-battlefield.svg") center / cover no-repeat;
+    isolation: isolate;
+}
+.entry-art::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    background: linear-gradient(90deg, #11191755, transparent 48%, #11191722),
+                linear-gradient(0deg, #111917aa 0%, transparent 45%, #11191722 100%);
+    pointer-events: none;
+}
+.entry-art .entry-sun,
+.entry-art .entry-smoke,
+.entry-art .entry-ridge,
+.entry-art .entry-ruins,
+.entry-art .entry-ground {
+    display: none;
+}
+.entry-art .entry-hero {
+    z-index: 1;
+    max-height: 86%;
+    max-width: 68%;
+    object-fit: contain;
+    object-position: center bottom;
+    filter: drop-shadow(0 16px 24px #000b);
+}
+.entry-art .entry-hero-shadow {
+    z-index: 0;
+}
+.entry-art-label {
+    z-index: 3;
+    background: #101715e8;
+}
+@media (max-width:760px) {
+    .entry-art { background-position: center center; }
+    .entry-art .entry-hero { max-width: 82%; max-height: 95%; }
+}
