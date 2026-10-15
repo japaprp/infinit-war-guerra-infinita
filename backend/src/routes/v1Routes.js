@@ -209,7 +209,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(result);
     });
 
-    router.post("/world/marches/collect", userLock, async (req, res) => {
+    router.post("/world/marches/collect", idempotency, userLock, async (req, res) => {
         const marchId = String(req.body?.marchId || "");
         if (!marchId) return res.status(400).json({ code: "BAD_REQUEST", message: "marchId is required" });
 
