@@ -56,3 +56,44 @@ Isso valida os testes automatizados daquele commit, não a fidelidade das fórmu
 - [ ] Especificar uma regra original e testável de ressonância para Guerra Infinita.
 - [ ] Revisar o modelo da PR #15 antes de ampliar a implementação.
 - [ ] Manter a PR aberta e sem merge até concluir revisão e validação.
+
+
+## Auditoria adicional de fontes comunitárias — 2026-10-15
+
+### Fontes consultadas nesta continuação
+
+- [Dark War Survival Player Hub](https://dw.zilo-project.com/): declara que usa dados da comunidade DWSI Discord e convida jogadores a enviar capturas.
+- [Dark War — Precision Parts Calculator](https://www.dark-war.com/calculators/precision-parts): publica requisitos industriais I1–I8 e explica que a rotação de pré-requisitos envolve Torre de Vigia, três campos e Guilda. A página informa correção em 14 de setembro de 2026.
+- [Treyex Gaming — Chip System Guide](https://www.treyexgaming.com/dark-war-survival-chip-system-guide-chip-factions-skills/): guia comunitário sobre facções de chips, baús e fabricação.
+- [Transcrição de vídeo sobre chips](https://www.youtubetranslate.net/en/watch?v=F7xblHuCq4U): transcrição secundária que descreve, entre outros exemplos, 0,2% de chip laranja em baú verde, 30% azul e baú roxo com 85% roxo / 15% laranja.
+
+**Limite de confiança:** nenhuma dessas páginas é documentação oficial do desenvolvedor. São fontes secundárias/comunitárias e podem refletir versões, servidores ou tipos de baú diferentes. A evidência primária do projeto continua sendo a captura original, com nome e contexto preservados.
+
+### Matriz de confronto — chips e baús
+
+| Regra / dado | Evidência disponível | Tratamento no Guerra Infinita |
+|---|---|---|
+| Baú verde com chance de 0,2% para resultado laranja | Capturas WA0185–WA0193 catalogadas; transcrição comunitária concorda com o exemplo | Manter como valor relatado pela interface da captura específica; não generalizar para outros baús |
+| Resultado azul total de 30% | Subtotal visível nas capturas e transcrição secundária | Preservar como observado naquele baú; confirmar se as categorias restantes fecham 100% |
+| Baú roxo: 85% roxo / 15% laranja | Guia/transcrição comunitária, não confirmado aqui por captura inequívoca da tela correspondente | Marcar como hipótese pendente de captura direta |
+| Baú laranja garante chip laranja | Guia/transcrição comunitária | Marcar como hipótese de fonte secundária; confirmar tela, conteúdo e possíveis exceções |
+| Quatro posições de chip e abas I–IV | Capturas WA0155 e WA0180, conforme catálogo | Modelar quatro slots e presets como conceitos distintos até teste confirmar sua relação |
+| Ressonância baseada no menor nível de estrelas | Referência comunitária citada anteriormente; não comprovada apenas pelas capturas disponíveis | Não implementar como fato do jogo de referência; criar teste e definir uma regra própria para Guerra Infinita |
+
+### Próxima fatia técnica recomendada
+
+1. **Modelo de dados:** `ChipDefinition`, `ChipInstance`, `VehicleLoadout` com quatro slots, e presets I–IV separados do inventário.
+2. **Validações:** impedir equipar a mesma instância em dois slots; validar facção, slot compatível, propriedade, evolução e materiais suficientes.
+3. **Ressonância original:** especificar uma regra explícita, determinística e testável para Guerra Infinita; não copiar uma fórmula comunitária não confirmada.
+4. **Baús:** separar tabelas por tipo de baú; validar que cada tabela soma exatamente 100%; manter RNG e concessão de recompensas no servidor quando houver backend.
+5. **Auditoria:** registrar origem da probabilidade (captura, fonte secundária ou decisão de balanceamento), confiança, versão e testes.
+6. **Progressão justa:** permitir obter materiais por atividades jogáveis e não exigir compra para desbloquear a progressão principal.
+
+### Critérios de aceite para a próxima implementação
+
+- Quatro slots podem ser preenchidos e salvos sem duplicação de instância.
+- Presets I–IV salvam/restauram conjuntos independentemente.
+- Equipagem, remoção e evolução persistem após reabrir o jogo.
+- Material insuficiente e item incompatível são recusados sem alterar o estado.
+- Cada baú tem tabela explícita que soma 100%; testes cobrem cada resultado e os limites.
+- A UI identifica claramente valores de protótipo e não apresenta taxas não confirmadas como dados oficiais de Dark War: Survival.
