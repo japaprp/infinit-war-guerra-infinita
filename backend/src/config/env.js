@@ -50,8 +50,9 @@ export function validateRuntimeConfig(config) {
     for (const origin of origins) {
         try {
             const parsed = new URL(origin);
-            if (!["https:", "http:"].includes(parsed.protocol) || parsed.origin !== origin || parsed.username || parsed.password) {
-                problems.push(`CORS_ORIGINS entry must be an exact HTTP(S) origin: ${origin}`);
+            const isLocalHttp = parsed.protocol === "http:" && ["localhost", "127.0.0.1"].includes(parsed.hostname);
+            if ((parsed.protocol !== "https:" && !isLocalHttp) || parsed.origin !== origin || parsed.username || parsed.password) {
+                problems.push(`CORS_ORIGINS entry must be an exact HTTPS origin (HTTP only for local development): ${origin}`);
             }
         } catch {
             problems.push(`CORS_ORIGINS entry is not a valid URL origin: ${origin}`);
