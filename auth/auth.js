@@ -46,14 +46,15 @@
         authStatus.textContent = `Conta: ${provider} (${email})`;
     };
 
-    const syncBackendSession = async (session) => {
+    const syncBackendSession = async (session, user) => {
         const api = getApiClient();
         if (!api || typeof api.exchangeAuthSession !== "function") {
             return;
         }
 
         try {
-            await api.exchangeAuthSession(session);
+            const idToken = user && typeof user.getIdToken === "function" ? await user.getIdToken() : "";
+            await api.exchangeAuthSession(session, idToken);
         } catch (error) {
             if (authStatus) {
                 authStatus.textContent = `Conta: vinculada, backend offline (${error.message})`;
@@ -114,7 +115,7 @@
 
         setSession(session);
         renderStatus(session);
-        syncBackendSession(session);
+        syncBackendSession(session, user);
     });
 
     const loginWithProvider = async (provider) => {
