@@ -205,6 +205,11 @@ const ui = {
     sliceUpgradeHeroBtn: document.getElementById("sliceUpgradeHeroBtn"),
     sliceClaimRewardBtn: document.getElementById("sliceClaimRewardBtn"),
     expeditionPanel: document.getElementById("expeditionPanel"),
+    openVehicleAccessoriesBtn: document.getElementById("openVehicleAccessoriesBtn"),
+    vehicleAccessoriesPanel: document.getElementById("vehicleAccessoriesPanel"),
+    vehicleAccessoryType: document.getElementById("vehicleAccessoryType"),
+    vehicleAccessoryStatus: document.getElementById("vehicleAccessoryStatus"),
+    vehicleAccessoryInventory: document.getElementById("vehicleAccessoryInventory"),
     expeditionStatus: document.getElementById("expeditionStatus"),
     expeditionMapLabel: document.getElementById("expeditionMapLabel"),
     startExpeditionBtn: document.getElementById("startExpeditionBtn"),
@@ -312,6 +317,7 @@ function createDefaultState() {
         inventory: { equipment: [], chests: [], chips: [], chipMaterials: 0 },
         vehicleChipLoadouts: window.IWChipLoadouts.createDefaultLoadouts(),
         activeVehicleChipPreset: "I",
+        vehicleAccessories: window.IWVehicleAccessories.createDefaultState()
         genericShards: { bronze: 0, silver: 0, gold: 0 },
         selectedHeroId: "lucas",
         activeHeroTab: "atributos",
@@ -378,6 +384,7 @@ function loadState() {
         merged.activeVehicleChipPreset = window.IWChipLoadouts.PRESETS.includes(parsed.activeVehicleChipPreset)
             ? parsed.activeVehicleChipPreset
             : "I";
+        merged.vehicleAccessories = window.IWVehicleAccessories.normalizeState(parsed.vehicleAccessories);
         merged.events = { ...fallback.events, ...(parsed.events || {}) };
         merged.mission = { ...fallback.mission, ...(parsed.mission || {}) };
         merged.buildings = { ...fallback.buildings, ...(parsed.buildings || {}) };
@@ -548,16 +555,17 @@ function getHeroRuntime(heroId) {
         state.inventory.chips,
         CHIP_CATALOG
     );
+    const vehicleAccessoryBonuses = window.IWVehicleAccessories.calculateBonuses(state.vehicleAccessories);
     // This progression formula belongs to our prototype; it is not claimed to reproduce
     // Dark War: Survival's undocumented full chip-level formula.
     const chipPct = (stat) => (equippedChips.reduce((sum, item) => {
         const definition = CHIP_CATALOG.find((chip) => chip.id === item.typeId);
         return sum + (definition?.stat === stat ? definition.basePct + (item.level - 1) * 9.6 : 0);
-    }, 0) + (vehicleChipBonuses[stat] || 0)) / 100;
+    }, 0) + (vehicleChipBonuses[stat] || 0) + (vehicleAccessoryBonuses[stat] || 0)) / 100;
     const starMultiplier = 1 + (heroState.stars - 1) * 0.08 + (heroState.starStep || 0) * 0.01;
 
     const atk = Math.floor((template.baseStats.atk + equipBonusAtk + skillAtkBonus) * starMultiplier * (1 + chipPct("attackPct")));
-    const def = Math.floor((template.baseStats.def + equipBonusDef + skillDefBonus) * starMultiplier);
+    const def = Math.floor((template.baseStats.def + equipBonusDef + skillDefBonus) * starMultiplier * (1 + (vehicleAccessoryBonuses.defensePct || 0) / 100));
     const troops = Math.floor((template.baseStats.troops + equipBonusTroops) * starMultiplier * (1 + chipPct("hpPct")));
     const power = atk * 8 + def * 6 + troops * 28 + heroState.level * 3200;
     const skillAverage = heroState.skillLevels.reduce((a, b) => a + b, 0) / 3;
@@ -701,6 +709,19 @@ function closeShopPanel() {
     ui.shopPanel.setAttribute("aria-hidden", "true");
 }
 
+function openVehicleAccessoriesPanel() {
+    if (!ui.vehicleAccessoriesPanel) return;
+    ui.vehicleAccessoriesPanel.classList.add("open");
+    ui.vehicleAccessoriesPanel.setAttribute("aria-hidden", "false");
+    renderVehicleAccessoriesPanel();
+}
+
+function closeVehicleAccessoriesPanel() {
+    if (!ui.vehicleAccessoriesPanel) return;
+    ui.vehicleAccessoriesPanel.classList.remove("open");
+    ui.vehicleAccessoriesPanel.setAttribute("aria-hidden", "true");
+}
+
 function closeTransientPanels() {
     let closedAny = false;
     if (ui.heroPanel.classList.contains("open")) {
@@ -709,6 +730,10 @@ function closeTransientPanels() {
     }
     if (ui.shopPanel.classList.contains("open")) {
         closeShopPanel();
+        closedAny = true;
+    }
+    if (ui.vehicleAccessoriesPanel?.classList.contains("open")) {
+        closeVehicleAccessoriesPanel();
         closedAny = true;
     }
     return closedAny;
@@ -1893,6 +1918,68 @@ function renderExpeditionOptions() {
     }
 }
 
+function renderVehicleAccessoriesPanel() {
+    if (!ui.vehicleAccessoriesPanel || !ui.vehicleAccessoryInventory || !ui.vehicleAccessoryStatus || !ui.vehicleAccessoryType) return;
+    const accessoryApi = window.IWVehicleAccessories;
+    const accessoryState = accessoryApi.normalizeState(state.vehicleAccessories);
+    state.vehicleAccessories = accessoryState;
+    const craftCost = accessoryApi.getCraftCost();
+    const canCraft = Object.entries(craftCost).every(([key, value]) => state.resources[key] >= value);
+    ui.vehicleAccessoryStatus.textContent = `Recursos: ${state.resources.gold.toLocaleString("pt-BR")} ouro · ${state.resources.silver.toLocaleString("pt-BR")} prata · ${state.resources.wood.toLocaleString("pt-BR")} madeira. Fabricação: ${craftCost.gold} ouro, ${craftCost.silver} prata e ${craftCost.wood} madeira.`;
+    const options = accessoryApi.SLOTS.map((slot) => `<option value="${slot.typeId}">${slot.label}</option>`).join("");
+    if (ui.vehicleAccessoryType.innerHTML !== options) ui.vehicleAccessoryType.innerHTML = options;
+    const inventory = accessoryState.inventory;
+    ui.vehicleAccessoryInventory.innerHTML = inventory.length ? inventory.map((item) => {
+        const slot = accessoryApi.SLOTS.find((entry) => entry.typeId === item.typeId);
+        const equipped = accessoryState.slots[slot.id] === item.id;
+        const cost = accessoryApi.getUpgradeCost(item);
+        const canUpgrade = cost && Object.entries(cost).every(([key, value]) => state.resources[key] >= value);
+        return `<article class="accessory-item"><div><strong>${slot.label} · Nv. ${item.level}</strong><small>${slot.description}${equipped ? " · Equipado" : " · Inventário"}</small>${cost ? `<small>Próximo nível: ${cost.gold} ouro · ${cost.silver} prata · ${cost.wood} madeira</small>` : "<small>Nível máximo</small>"}</div><div class="accessory-actions"><button class="inline-action" data-action="equip-accessory" data-accessory-id="${item.id}" data-slot-id="${slot.id}" ${equipped ? "disabled" : ""}>${equipped ? "Equipado" : "Equipar"}</button><button class="inline-action" data-action="upgrade-accessory" data-accessory-id="${item.id}" ${!canUpgrade ? "disabled" : ""}>Evoluir</button></div></article>`;
+    }).join("") : "<p>Nenhum acessório fabricado. Todo jogador começa sem acessórios avançados; fabrique peças com recursos obtidos no jogo.</p>";
+    const craftButton = ui.vehicleAccessoriesPanel.querySelector("[data-action='craft-accessory']");
+    if (craftButton) craftButton.disabled = !canCraft || inventory.length >= 200;
+}
+
+function craftVehicleAccessory() {
+    const typeId = ui.vehicleAccessoryType?.value;
+    const id = `acc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const result = window.IWVehicleAccessories.craftAccessory(state.vehicleAccessories, state.resources, typeId, id);
+    if (!result.ok) {
+        pushFeed(result.reason === "insufficient-resources" ? "Recursos insuficientes para fabricar o acessório." : "Não foi possível fabricar esse acessório.");
+        return;
+    }
+    state.vehicleAccessories = result.state;
+    state.resources = result.resources;
+    pushFeed("Acessório fabricado no nível 1.");
+    renderAll();
+    saveState();
+}
+
+function equipVehicleAccessory(accessoryId, slotId) {
+    const result = window.IWVehicleAccessories.equipAccessory(state.vehicleAccessories, accessoryId, slotId);
+    if (!result.ok) {
+        pushFeed("Esse acessório não é compatível com a posição selecionada.");
+        return;
+    }
+    state.vehicleAccessories = result.state;
+    pushFeed("Acessório equipado na viatura.");
+    renderAll();
+    saveState();
+}
+
+function upgradeVehicleAccessory(accessoryId) {
+    const result = window.IWVehicleAccessories.upgradeAccessory(state.vehicleAccessories, state.resources, accessoryId);
+    if (!result.ok) {
+        pushFeed(result.reason === "insufficient-resources" ? "Recursos insuficientes; nenhuma alteração foi aplicada." : result.reason === "max-level" ? "Esse acessório já atingiu o nível máximo." : "Acessório não encontrado; nenhuma alteração foi aplicada.");
+        return;
+    }
+    state.vehicleAccessories = result.state;
+    state.resources = result.resources;
+    pushFeed(`Acessório evoluído para o nível ${result.accessory.level}.`);
+    renderAll();
+    saveState();
+}
+
 function renderExpeditionPanel() {
     if (!ui.expeditionPanel || !ui.expeditionStatus || !ui.startExpeditionBtn || !ui.claimExpeditionBtn) return;
     renderExpeditionOptions();
@@ -2026,6 +2113,7 @@ function renderAll() {
     renderAutomationButtons();
     renderVerticalSlicePanel();
     renderExpeditionPanel();
+    renderVehicleAccessoriesPanel();
 }
 
 async function pullStateFromBackend() {
@@ -2058,6 +2146,7 @@ async function pullStateFromBackend() {
             chips: Array.isArray(state.inventory.chips) ? state.inventory.chips : [],
             chipMaterials: Number.isFinite(state.inventory.chipMaterials) ? state.inventory.chipMaterials : 0
         };
+        if (remote.state.vehicleAccessories) state.vehicleAccessories = window.IWVehicleAccessories.normalizeState(remote.state.vehicleAccessories);
         state.selectedHeroId = remote.state.selectedHeroId || state.selectedHeroId;
         state.activeHeroTab = remote.state.activeHeroTab || state.activeHeroTab;
         state.activeSquadSlot = Number.isFinite(remote.state.activeSquadSlot) ? remote.state.activeSquadSlot : state.activeSquadSlot;
@@ -2131,6 +2220,14 @@ function bindUiActions() {
         saveState();
     });
 
+    ui.vehicleAccessoriesPanel?.addEventListener("click", (event) => {
+        const actionTarget = event.target.closest("[data-action]");
+        if (!actionTarget) return;
+        if (actionTarget.dataset.action === "craft-accessory") craftVehicleAccessory();
+        if (actionTarget.dataset.action === "equip-accessory") equipVehicleAccessory(actionTarget.dataset.accessoryId, actionTarget.dataset.slotId);
+        if (actionTarget.dataset.action === "upgrade-accessory") upgradeVehicleAccessory(actionTarget.dataset.accessoryId);
+    });
+
     ui.heroTabContent.addEventListener("click", (event) => {
         const actionTarget = event.target.closest("[data-action]");
         if (!actionTarget) return;
@@ -2164,6 +2261,11 @@ function bindUiActions() {
 
     ui.openShopBtn.addEventListener("click", () => {
         openShopPanel();
+    });
+
+    ui.openVehicleAccessoriesBtn?.addEventListener("click", () => {
+        if (ui.vehicleAccessoriesPanel.classList.contains("open")) closeVehicleAccessoriesPanel();
+        else openVehicleAccessoriesPanel();
     });
 
     ui.closeShopBtn.addEventListener("click", () => {
@@ -2508,6 +2610,7 @@ setInterval(() => {
     renderTimers();
     renderVerticalSlicePanel();
     renderExpeditionPanel();
+    renderVehicleAccessoriesPanel();
 }, 1000);
 
 function gameLoop(currentTime) {
