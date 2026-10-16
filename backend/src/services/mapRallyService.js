@@ -103,7 +103,7 @@ export function startMapHunt(db, userId, user, payload = {}) {
     user.v1.marches.push({ marchId: huntId, targetId, departAtMs: now, arriveAtMs: hunt.endsAtMs, status: "marching" });
     db.hunts[operationId] = hunt;
     user.v1.stateVersion = (user.v1.stateVersion || 0) + 1;
-    return { ...hunt, resources: { ...user.v1.resources } };
+    return { ...hunt, resources: { ...user.v1.resources }, troops: user.v1.troops };
 }
 
 export function createMapRally(db, userId, user, payload = {}) {
@@ -224,7 +224,7 @@ export function resolveMapRally(db, userId, user, operationId, nowMs = Date.now(
     if (!rally) return businessError(404, "Rally not found");
     if (!isAllianceMember(user, rally.allianceId)) return businessError(403, "Only alliance members can resolve this rally");
     if (rally.result && rally.status === "completed") {
-        return { rally, rewardReceipt: rally.rewardReceipts?.[userId] || null, resources: { ...user.v1.resources }, replayed: true };
+        return { rally, rewardReceipt: rally.rewardReceipts?.[userId] || null, resources: { ...user.v1.resources }, troops: user.v1.troops, replayed: true };
     }
     if (rally.status !== "marching") return businessError(409, "Rally must be marching before resolution");
     if (nowMs < rally.arrivesAtMs) return businessError(409, "The rally has not arrived yet");
