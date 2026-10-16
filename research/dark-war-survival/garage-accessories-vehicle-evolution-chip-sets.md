@@ -208,3 +208,20 @@ A página também registra a versão **1.250.666, de 28 de setembro de 2026**, c
 1. Procurar captura que mostre o botão ou painel de “modificação tática” e seus requisitos na conta de referência.
 2. Identificar se “nível da garagem 267” e os níveis 23–26 dos acessórios pertencem à mesma tela/versão e se são grandezas diferentes.
 3. Procurar notas de atualização oficiais acessíveis ou capturas de versão que confirmem os gatilhos, antes de elevar a confiança acima de “registro secundário de patch”.
+
+
+## Verificação adicional do histórico público de versões — 2026-10-16
+
+### Comparação de fontes de loja e agregadores
+
+- A página pública da [App Store de Dark War:Survival](https://apps.apple.com/us/app/dark-war-survival/id6670441558) apresenta histórico de versões e notas de atualização. Nesta consulta, o conteúdo visível inclui otimizações gerais e entradas recentes; ele é mais útil para datar versões do que para validar fórmulas internas de chips.
+- A página pública do [Google Play](https://play.google.com/store/apps/details?id=com.readygo.dark.gp&hl=pt_BR) declara atualização em 4 de setembro de 2026 na região consultada. A data de atualização da loja não garante que todas as regiões/lojas tenham o mesmo número de versão ou as mesmas notas.
+- O [iPa4Fun — histórico de versões](https://www.ipa4fun.com/history/835232/) indexa versões e notas de terceiros. Na consulta, ele lista alterações de abril de 2026 em destruição/durabilidade e versões posteriores com otimizações; é útil como índice, mas deve ser confrontado com a loja oficial e a tela do cliente.
+- A página de ferramentas da aliança [SynC Wars](https://www.syncwars.com/2026/07/dws-tools-update-v1-9-9-smarter-stats-safer-data-and-better-alliance-planning/) demonstra práticas comunitárias de registrar CP total, CP de marcha, facção e capturas ao longo do tempo. É uma ferramenta de comunidade, não um serviço oficial do jogo, e não valida por si só atributos da garagem.
+
+### Resultado para a engenharia reversa
+
+1. **Não há evidência suficiente nesta rodada para declarar uma mudança recente na fórmula dos chips ou na garagem.** As notas recentes consultadas são majoritariamente de otimização ou de outros sistemas.
+2. Para toda captura nova, registrar versão do cliente, data, região/servidor se visível, nível de conta e tela/sistema. Isso reduz falsos conflitos entre guias antigos e telas atuais.
+3. O estado de garagem descrito pelo usuário permanece uma referência avançada; não converter níveis, materiais, custos ou CP diretamente em progressão inicial.
+4. O PR #17 do Guerra Infinita continua aberto e não mesclado nesta verificação. A implementação de quatro presets é um protótipo original; antes de integrar à versão principal, revisar achados automatizados pendentes e confirmar os testes no GitHub Actions. Não mesclar automaticamente.
