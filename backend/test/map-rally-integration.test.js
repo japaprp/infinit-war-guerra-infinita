@@ -109,6 +109,8 @@ test("map hunt resolves after arrival and grants rewards only once", async () =>
         assert.equal(resolved.status, 200);
         assert.ok(["victory", "defeat"].includes(resolved.body.result.outcome));
         assert.ok(resolved.body.rewardReceipt.receiptId);
+        assert.equal(resolved.body.rewardReceipt.troopsCommitted, 250);
+        assert.equal(resolved.body.rewardReceipt.troopsReturned + resolved.body.rewardReceipt.troopsLost, 250);
         const afterFirst = (await readDb()).users["guest:hunt_combat_player"].v1;
         assert.equal(afterFirst.resources.gold, resolved.body.rewardReceipt.rewards.gold);
         assert.equal(afterFirst.resources.food, resolved.body.rewardReceipt.rewards.food);
@@ -172,6 +174,7 @@ test("alliance rally enforces membership, unique entry, leader transitions and p
         });
         assert.equal(joined.status, 200);
         assert.equal(joined.body.resources.energy, 85);
+        assert.equal(joined.body.troops, 750, "joining reserves the committed troops");
         assert.equal(joined.body.rally.participants.length, 2);
 
         const duplicateJoin = await request(server.baseUrl, "POST", "/v1/world/alliance-rallies/rally-op-1/join", {
@@ -180,6 +183,7 @@ test("alliance rally enforces membership, unique entry, leader transitions and p
         assert.equal(duplicateJoin.status, 409);
         const memberState = (await readDb()).users["guest:rally_member"].v1;
         assert.equal(memberState.resources.energy, 85);
+        assert.equal(memberState.troops, 750, "duplicate join must not reserve troops again");
 
         const closeByNonLeader = await request(server.baseUrl, "POST", "/v1/world/alliance-rallies/rally-op-1/close", { token: memberToken });
         assert.equal(closeByNonLeader.status, 403);
@@ -216,6 +220,7 @@ test("alliance rally enforces membership, unique entry, leader transitions and p
         const db = await readDb();
         assert.equal(db.rallies["rally-op-1"].participants.length, 2);
         assert.equal(db.users["guest:rally_member"].v1.resources.gold, resolved.body.rewardReceipt.rewards.gold);
+        assert.equal(db.users["guest:rally_member"].v1.troops, 750 + resolved.body.rewardReceipt.troopsReturned);
     } finally {
         await server.stop();
     }
