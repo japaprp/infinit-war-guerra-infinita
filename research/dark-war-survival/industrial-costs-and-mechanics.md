@@ -88,3 +88,32 @@ A página https://www.dark-war.com/calculators/precision-parts relata que cada t
 - Conferir se a tela atual é Torre de Vigia I4 e se o próximo tier mostra **370 Peças de Precisão por estágio / 1.850 no total**.
 - Para cada captura, registrar separadamente custo por estágio, total do tier, recursos secundários, pré-requisitos e nome exato da construção.
 - Se uma captura divergir, priorizar a evidência visual datada e registrar servidor/versão quando disponíveis; não apagar silenciosamente a divergência comunitária.
+
+
+## Nova varredura de fontes públicas — 2026-10-16
+
+### Fontes adicionais localizadas
+
+- [Dark-war.com — calculadora de Peças de Precisão](https://www.dark-war.com/calculators/precision-parts): apresenta custos por tier I1–I8 e pré-requisitos por torre, acampamentos e Guilda. A página declara correções feitas em 14/09/2026 e distingue valores confirmados por painel de jogo dos ainda não fotografados.
+- [Dark-war.com — calculadora da Torre de Vigia WT1–WT30](https://www.dark-war.com/calculators/watchtower): oferece custos de recursos e pré-requisitos antes da Era Industrial. A própria página marca alguns descontos de herói como estimativas, então os custos com desconto não devem ser tratados como valores universais.
+- [Dark-war.com — guia de início e marcos de progressão](https://www.dark-war.com/start): divide a progressão em faixas WT1–10, WT11–20, WT21–25, WT26–30 e WT30+, e descreve WT30 como marco para a Era Industrial. É um guia comunitário de estratégia, não especificação oficial.
+- [Packsify — guia de construções (10/04/2026)](https://www.packsify.com/blogs/dark-war-survival-building-upgrade-guide): recomenda priorizar a Torre de Vigia e descreve os efeitos de pré-requisito sobre heróis, pesquisa e tropas. Fonte secundária, com recomendações estratégicas e possível contexto de temporada específico.
+
+### Reconciliação importante: custo mínimo vs. plano de foco
+
+A calculadora Dark-war.com mostra mais de um total para chegar a Industrial 8:
+- **24.350** Peças de Precisão para o plano mínimo da Torre de Vigia com pré-requisitos;
+- **25.150** se o acampamento de Atiradores também for elevado com a Torre;
+- **25.850** se o foco for o acampamento de Guerreiros;
+- **26.450** se o foco for o acampamento de Cavalaria;
+- **28.750** para elevar os três acampamentos até o alvo indicado.
+
+Esses totais não devem ser resumidos como se fossem a mesma coisa: representam planos diferentes de investimento e foco de acampamento. A fonte informa que a rotação dos pré-requisitos é Guerreiro → Atirador → Cavalaria e que a fase da rotação afeta qual plano é mais econômico. São cálculos comunitários; confirmar contra capturas do jogo antes de chamar os valores de definitivos.
+
+### Limites de confiança
+
+1. O padrão “cinco etapas por tier” é coerente entre as calculadoras comunitárias consultadas, mas precisa de captura própria para ser promovido a evidência direta do projeto.
+2. A Torre de Vigia I5 aparece com 370 peças por etapa em mais de uma tabela, porém a calculadora Dark-war.com assinala esse valor como ainda não fotografado; manter como **corroborado por comunidade, não confirmado visualmente**.
+3. O valor I6 de 300 por etapa e I8 de 350 por etapa são apresentados pela fonte como verificados em painéis do jogo por seus autores; isso continua sendo evidência reportada por terceiros, não captura nossa.
+4. Custos e pré-requisitos não devem ser convertidos em fórmula linear: a sequência I1–I8 da Torre inclui uma redução de custo em I6.
+5. O usuário está usando uma conta avançada para análise. Para Guerra Infinita, a economia, o desbloqueio da Era Industrial e o ritmo de progressão serão projetados para uma conta nova a partir do nível 1, sem importar os custos do jogo de referência como valores finais.
