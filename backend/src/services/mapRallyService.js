@@ -50,7 +50,7 @@ export function startMapHunt(db, userId, user, payload = {}) {
     const prior = db.hunts[operationId];
     if (prior) {
         if (prior.playerId !== userId) return businessError(409, "operationId already used");
-        return { ...prior, replayed: true };
+        return { ...prior, resources: { ...user.v1.resources }, replayed: true };
     }
     if (user.v1.resources.energy < target.energyCost) return businessError(409, "Insufficient energy");
     const now = Date.now();
@@ -85,7 +85,7 @@ export function createMapRally(db, userId, user, payload = {}) {
     const prior = db.rallies[operationId];
     if (prior) {
         if (prior.leaderId !== userId) return businessError(409, "operationId already used");
-        return { ...prior, replayed: true };
+        return { ...prior, resources: { ...user.v1.resources }, replayed: true };
     }
     const now = Date.now();
     const rallyId = `rally_${crypto.randomUUID()}`;
