@@ -1413,6 +1413,10 @@ async function openInventoryChest(chestId) {
     }
     const chest = state.inventory.chests[chestIndex];
     const api = getApiClient();
+    if (api?.hasToken?.() && chest.source !== "server") {
+        pushFeed("Este baú veio do protótipo local e não pode ser resgatado online. Baús online precisam ser emitidos pelo servidor.");
+        return;
+    }
     if (api?.hasToken?.() && typeof api.openServerChestV1 === "function") {
         try {
             const result = await api.openServerChestV1({ chestId, idempotencyKey: `chest-open-${chestId}` });
@@ -1744,7 +1748,7 @@ function fightMonster(monster) {
             state.inventory.equipment.push(equipmentDrop);
             pushFeed(`Equipamento encontrado: ${equipmentDrop.name} (+${equipmentDrop.bonus}).`);
         }
-        if (Math.random() < CHEST_DROP_CHANCE) {
+        if (!getApiClient()?.hasToken?.() && Math.random() < CHEST_DROP_CHANCE) {
             state.inventory.chests.push({ id: `chest-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type: "explorer", name: "Baú de Explorador", obtainedAt: Date.now() });
             pushFeed("Você encontrou um Baú de Explorador!");
         }
