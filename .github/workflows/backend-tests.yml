@@ -17,7 +17,6 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
-      - ".github/workflows/backend-integration.yml"
       - "api/**"
       - "auth/**"
       - "index.html"
