@@ -17,9 +17,9 @@ O teste `tests/public-frontend-package.test.mjs` exige que a lista corresponda e
 
 ## Bloqueios antes de publicar
 
-1. A configuração Firebase atualmente é um modelo sem chaves; login Google/Facebook não estará operacional até a configuração explícita.
-2. As políticas CSP ainda contêm localhost e não incluem o host final da API. Não inventar ou preencher URL antes de existir um endereço confirmado.
-3. O endereço da API e a origem pública do frontend ainda não foram definidos.
+1. A configuração Firebase contém valores de projeto. Antes de publicar, confirmar no Console Firebase o projeto correto, os domínios autorizados, os provedores de login habilitados e as restrições da chave de API; esses valores de cliente não substituem essa validação.
+2. As páginas agora apontam para `https://infinit-war-api.onrender.com` e incluem esse host exato em `connect-src`. A API ainda precisa inicializar com banco e variáveis válidas antes de testar a comunicação real.
+3. O endereço da API está confirmado; a origem pública do frontend ainda não foi definida.
 4. Rodar os testes de pacote, persistência, integração e backend e corrigir falhas antes de tornar a PR pronta.
 5. Hospedar apenas `frontend/public`; nunca a raiz do repositório.
 
