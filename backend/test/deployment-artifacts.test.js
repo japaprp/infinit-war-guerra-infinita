@@ -25,13 +25,18 @@ test("Render blueprint is an explicitly free backend template with a health chec
     assert.doesNotMatch(yaml, /type: pserv|type: worker|type: cron/);
 });
 
-test("hosted frontend configuration remains deliberately unbound until API origin is known", () => {
+test("both browser pages expose a blank API-origin placeholder and retain CSP", () => {
     const config = read("api/config.js");
     const html = read("index.html");
+    const gameHtml = read("game.html");
     const docs = read("DEPLOYMENT_PREPARATION.md");
+    assert.match(config, /configuredMeta/);
     assert.match(config, /isLocalDevelopment \? "http:\/\/localhost:4000" : ""/);
-    assert.match(html, /Content-Security-Policy/);
-    assert.match(html, /connect-src[^"]*http:\/\/localhost:4000/);
+    for (const page of [html, gameHtml]) {
+        assert.match(page, /name="iwar-api-base-url" content=""/);
+        assert.match(page, /Content-Security-Policy/);
+        assert.match(page, /connect-src[^"]*http:\/\/localhost:4000/);
+    }
     assert.match(docs, /actual frontend and API origins are confirmed/i);
     assert.match(docs, /Do not commit secrets or invent a production URL/i);
 });
