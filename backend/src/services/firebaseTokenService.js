@@ -63,6 +63,11 @@ export async function verifyFirebaseIdToken(idToken, projectId, options = {}) {
     if (!Number.isFinite(claims.auth_time) || claims.auth_time > nowSeconds + 60 || claims.auth_time > claims.iat) {
         throw new Error("Firebase ID token authentication time is invalid");
     }
+    // Email/password accounts must verify ownership of the address before the backend accepts a session.
+    // Federated providers (for example Google) follow their provider verification state instead.
+    if (claims.firebase?.sign_in_provider === "password" && claims.email_verified !== true) {
+        throw new Error("Firebase email address must be verified");
+    }
 
     const certificates = await getCertificates(options.fetchImpl || fetch, options.now ?? Date.now());
     const certificate = certificates[header.kid];
