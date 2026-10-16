@@ -112,3 +112,62 @@ test("Firebase verifier rejects implausibly long token lifetimes", async () => {
         /issue time is invalid/
     );
 });
+
+import { sign } from "node:crypto";
+import { firebaseTestCertificate, firebaseTestPrivateKey } from "./fixtures/firebase-test-keys.js";
+
+function createSignedFirebaseToken({ projectId = "infinit-war-test", uid = "verified-user", nowSeconds = Math.floor(Date.now() / 1000) } = {}) {
+    const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
+    const header = encode({ alg: "RS256", kid: "test-key" });
+    const payload = encode({
+        aud: projectId,
+        iss: `https://securetoken.google.com/${projectId}`,
+        sub: uid,
+        exp: nowSeconds + 3600,
+        iat: nowSeconds,
+        auth_time: nowSeconds - 30,
+        email: "verified@example.test",
+        name: "Verified Test User",
+        firebase: { sign_in_provider: "google.com" }
+    });
+    const signingInput = `${header}.${payload}`;
+    const signature = sign("RSA-SHA256", Buffer.from(signingInput), firebaseTestPrivateKey).toString("base64url");
+    return `${signingInput}.${signature}`;
+}
+
+function mockCertificateFetch() {
+    return async () => ({
+        ok: true,
+        headers: { get: () => "public, max-age=3600" },
+        json: async () => ({ "test-key": firebaseTestCertificate })
+    });
+}
+
+test("Firebase verifier accepts a correctly signed token and trusts only its claims", async () => {
+    clearFirebaseCertificateCacheForTests();
+    const now = Date.now();
+    const token = createSignedFirebaseToken({ nowSeconds: Math.floor(now / 1000) });
+    const identity = await verifyFirebaseIdToken(token, "infinit-war-test", {
+        now,
+        fetchImpl: mockCertificateFetch()
+    });
+    assert.equal(identity.uid, "verified-user");
+    assert.equal(identity.provider, "google.com");
+    assert.equal(identity.email, "verified@example.test");
+    assert.equal(identity.displayName, "Verified Test User");
+    clearFirebaseCertificateCacheForTests();
+});
+
+test("Firebase verifier rejects an invalid signature even when claims match", async () => {
+    clearFirebaseCertificateCacheForTests();
+    const token = createSignedFirebaseToken();
+    const parts = token.split(".");
+    parts[2] = Buffer.alloc(256, 0).toString("base64url");
+    await assert.rejects(
+        () => verifyFirebaseIdToken(parts.join("."), "infinit-war-test", {
+            fetchImpl: mockCertificateFetch()
+        }),
+        /signature is invalid/
+    );
+    clearFirebaseCertificateCacheForTests();
+});
