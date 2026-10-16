@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-      - "fix/**"
-      - "feat/**"
     paths:
       - "tests/client-persistence.test.mjs"
       - "tests/client-backend-recovery.test.mjs"
