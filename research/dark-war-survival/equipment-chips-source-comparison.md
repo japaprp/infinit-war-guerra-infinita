@@ -97,3 +97,37 @@ Isso valida os testes automatizados daquele commit, não a fidelidade das fórmu
 - Material insuficiente e item incompatível são recusados sem alterar o estado.
 - Cada baú tem tabela explícita que soma 100%; testes cobrem cada resultado e os limites.
 - A UI identifica claramente valores de protótipo e não apresenta taxas não confirmadas como dados oficiais de Dark War: Survival.
+
+
+## Auditoria de heróis e equipamentos — novas fontes públicas, 2026-10-16
+
+### Evidência comunitária localizada
+
+- [Packsify — Hero Equipment Guide, 30 jul. 2026](https://www.packsify.com/blogs/dark-war-survival-hero-equipment-guide): afirma que, em batalhas de tropas (PvP, rally e State of Supremacy), os atributos de equipamento dos cinco heróis da formação são agregados. O artigo contrasta esse comportamento com batalhas do modo Hero Battles/Adventure, onde a alocação de equipamento em cada herói importa para o dano de ataques normais. É uma afirmação de guia comunitário, não confirmada por teste independente neste projeto.
+- [LDShop — Advanced Gear Optimization Strategy, 17 jun. 2026](https://www.ldshop.gg/blog/dark-war-survival/hero-euipment.html): descreve quatro espaços de equipamento (arma, capacete, armadura e botas), associando os dois primeiros a atributos ofensivos e os dois últimos à sobrevivência. É uma fonte secundária; conferir nomes, ícones e atributos na captura antes de usar a nomenclatura final.
+- [DWS攻略研究所 — guia de heróis S1–S6](https://dws-kouryaku.com/hero-guide/): página em japonês com atualização registrada em outubro de 2026, organizada por facção/tipo, temporada, equipamento exclusivo, materiais de estrelas e reinicialização. Pode servir como índice de personagens/sistemas, mas não é prova de que a mesma rotação de heróis/temporada se aplique ao servidor da conta do usuário.
+- [Vídeo YouTube — Hero Equipment Guide & Best Tips](https://www.youtube.com/watch?v=fSASmXvrdp4): vídeo de fevereiro de 2025 sobre raridade, aprimoramento e equipamento. É anterior a várias atualizações e serve apenas como contexto histórico, não como fonte atual para custos ou meta.
+
+### Distinção de mecânica a preservar
+
+Há duas perguntas diferentes que os guias comunitários podem estar misturando:
+1. **Atributos agregados da formação:** quais bônus de equipamento contam para o poder/dano de uma marcha de tropas.
+2. **Alocação individual em combate de heróis:** se o personagem que usa ataque normal recebe os atributos do item que está vestindo.
+
+Não colapsar as duas regras numa só. Antes de codificar, é necessário definir quais modos de combate Guerra Infinita terá e estabelecer, para cada modo, se os atributos são agregados pela formação ou aplicados individualmente. Essa será uma decisão de arquitetura original, testável por unidade de combate.
+
+### Limitações e decisões de implementação
+
+- Nenhuma taxa de aumento por estrela, custo de núcleo de poder ou regra de compartilhamento de equipamento é promovida a fato nesta rodada: os materiais encontrados são guias secundários e versões distintas podem divergir.
+- Registrar para cada item: slot, classe/facção compatível, raridade, nível, estrelas, atributos-base, bônus de conjunto (se houver), custos de aprimoramento e origem da informação.
+- Separar EquipmentDefinition (dados imutáveis do tipo de peça) de EquipmentInstance (nível, estrelas, proprietário e identificador único), evitando que uma cópia do item seja duplicada por troca de herói.
+- Os modos de batalha devem declarar uma política explícita de cálculo de atributos: formationAggregate ou perHero, em vez de deixar a regra implícita na UI.
+- Não copiar heróis, nomes, arte, descrições, tabelas de balanceamento ou identidade visual do jogo de referência. A pesquisa serve para compreender categorias e padrões de sistemas; o conteúdo do Guerra Infinita deve ser original.
+- A progressão do Guerra Infinita começa no nível 1 e deve permitir obter equipamento e materiais por jogo regular, sem compras obrigatórias.
+
+### Próximas verificações
+
+1. Cruzar as capturas WA0206–WA0216 com os quatro slots de equipamento, nomes exatos, raridade, estrelas e atributos.
+2. Procurar capturas em que o mesmo equipamento é movido entre heróis e comparar o poder da marcha antes/depois.
+3. Separar tela de atributos de herói, tela de formação e resultado de batalha; um único número de poder não basta para deduzir o cálculo de dano.
+4. Manter todas as afirmações comunitárias etiquetadas como secundárias até haver captura legível, teste controlado ou documentação oficial.
