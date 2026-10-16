@@ -157,10 +157,12 @@ export function joinMapRally(db, userId, user, operationId, payload = {}) {
     const target = HUNT_TARGETS[rally.targetId];
     if (!target || user.v1.resources.energy < target.energyCost) return businessError(409, "Insufficient energy or invalid target");
     const participant = { playerId: userId, heroIds: formation.map(hero => hero.heroId), formation, troopCount: payload.troopCount, energyCost: target.energyCost, joinedAtMs: Date.now() };
+    // Reserve resources and troops in the same persisted operation as participation.
     rally.participants.push(participant);
     user.v1.resources.energy -= target.energyCost;
+    user.v1.troops -= payload.troopCount;
     user.v1.stateVersion = (user.v1.stateVersion || 0) + 1;
-    return { rally, resources: { ...user.v1.resources } };
+    return { rally, resources: { ...user.v1.resources }, troops: user.v1.troops };
 }
 
 export function closeMapRally(db, userId, operationId) {
