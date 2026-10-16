@@ -4,12 +4,9 @@ on:
   push:
     branches:
       - main
-      - "fix/**"
-      - "feat/**"
     paths:
       - "backend/**"
       - ".github/workflows/backend-integration.yml"
-      - ".github/workflows/backend-tests.yml"
       - "api/**"
   pull_request:
     paths:
