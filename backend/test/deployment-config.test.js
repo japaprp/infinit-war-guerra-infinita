@@ -63,6 +63,7 @@ test("production configuration rejects unsafe defaults and ephemeral JSON storag
     assert.throws(
         () => validateRuntimeConfig({
             NODE_ENV: "production",
+            FIREBASE_PROJECT_ID: "infinit-war-test",
             JWT_SECRET: "unsafe_dev_secret",
             RECEIPT_SECRET: "unsafe_receipt_secret",
             DATA_DRIVER: "json",
