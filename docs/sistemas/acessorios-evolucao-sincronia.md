@@ -82,3 +82,18 @@ A proposta inicial é usar marcos discretos com descrição visível, em vez de 
 4. Implementar melhoria transacional com testes.
 5. Implementar marcos de evolução da viatura.
 6. Só depois calibrar e ativar Sincronia de Núcleo.
+
+
+## Implementação inicial de acessórios (branch de trabalho)
+
+O módulo `engine/vehicle-accessories.js` agora modela acessórios como entidades próprias, com `id`, `typeId` e `level`, inventário separado e seis posições tipadas. O estado é normalizado no carregamento e salvo junto ao estado do jogador.
+
+- Fabricação de protótipo: 300 ouro, 200 prata e 100 madeira; gera uma entidade no nível 1.
+- Evolução: custo base de 120 ouro, 80 prata e 40 madeira, multiplicado por uma curva configurável de 1,45 por nível anterior; nível máximo 10.
+- A operação valida todos os recursos antes de devolver estado e saldos novos. Falhas não mutam os objetos de entrada nem descontam parcialmente recursos.
+- Apenas acessórios do tipo correspondente podem ocupar cada posição; um item não pode ocupar duas posições simultaneamente.
+- Bônus originais por nível são calculados a partir das entidades equipadas. ATQ, DEF e vida/unidades já alimentam os atributos de combate suportados pelo protótipo; precisão e dano contra estruturas ficam registrados para sistemas de combate futuros.
+- A interface ACC permite fabricar, equipar e evoluir, exibindo os custos antes da ação.
+- Todos os custos e bônus são parâmetros provisórios do Guerra Infinita, não valores copiados do jogo de referência.
+
+A Sincronia de Núcleo continua desativada. A conta nova tem inventário de acessórios vazio, posições vazias e nenhum bônus herdado.
