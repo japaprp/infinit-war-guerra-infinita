@@ -135,6 +135,43 @@
     <div class="slice-actions"><button id="startExpeditionBtn">Iniciar expedição (15 energia)</button><button id="claimExpeditionBtn" disabled>Resgatar recompensa</button></div>
 </section>
 
+<section class="vertical-slice-panel expedition-panel" id="mapRallyPanel">
+    <header><strong>Caçadas e Incursões</strong><small>Online · servidor</small></header>
+    <p id="mapRallyStatus" role="status">Entre na conta e atualize a lista de heróis para usar as caçadas online.</p>
+    <div class="expedition-field">
+        <label for="mapRallyTarget">Alvo</label>
+        <select id="mapRallyTarget">
+            <option value="grey-forest-stalker">Rastreador da Floresta · Nv. 1 · 15 energia</option>
+            <option value="old-ruins-brute">Bruto das Ruínas · Nv. 2 · 15 energia</option>
+        </select>
+    </div>
+    <div class="expedition-field">
+        <label for="mapRallyHero">Herói da formação</label>
+        <select id="mapRallyHero"><option value="">Atualize os heróis primeiro</option></select>
+    </div>
+    <div class="slice-actions">
+        <button id="mapRallyRefreshHeroesBtn" type="button">Atualizar heróis</button>
+        <button id="mapHuntStartBtn" type="button">Iniciar caçada</button>
+    </div>
+    <hr>
+    <label class="expedition-field" for="mapRallyTroops">Tropas para a incursão
+        <input id="mapRallyTroops" type="number" min="1" max="1000000" step="1" value="100">
+    </label>
+    <div class="slice-actions">
+        <button id="mapRallyCreateBtn" type="button">Criar incursão</button>
+    </div>
+    <label class="expedition-field" for="mapRallyOperationId">Código da incursão
+        <input id="mapRallyOperationId" type="text" maxlength="100" placeholder="Cole o código compartilhado">
+    </label>
+    <div class="slice-actions">
+        <button id="mapRallyJoinBtn" type="button">Participar</button>
+        <button id="mapRallyRefreshBtn" type="button">Consultar</button>
+        <button id="mapRallyCloseBtn" type="button">Fechar inscrições</button>
+        <button id="mapRallyDispatchBtn" type="button">Despachar</button>
+    </div>
+    <div id="mapRallyDetails" class="slice-steps">As incursões exigem conta autenticada e uma aliança.</div>
+</section>
+
 <section class="vehicle-accessories-panel" id="vehicleAccessoriesPanel" aria-hidden="true">
     <header><strong>Acessórios da Viatura</strong><button class="close-btn" id="closeVehicleAccessoriesBtn">Fechar</button></header>
     <p id="vehicleAccessoryStatus">Recursos e custos de fabricação.</p>
