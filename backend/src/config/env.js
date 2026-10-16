@@ -31,6 +31,10 @@ export function validateRuntimeConfig(config) {
         }
     }
 
+    if (String(config.JWT_SECRET || "") === String(config.RECEIPT_SECRET || "")) {
+        problems.push("JWT_SECRET and RECEIPT_SECRET must be different values");
+    }
+
     if (String(config.DATA_DRIVER || "").toLowerCase() !== "mysql") {
         problems.push("DATA_DRIVER must be mysql for persistent hosted gameplay");
     }
