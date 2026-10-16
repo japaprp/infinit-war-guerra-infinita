@@ -867,6 +867,53 @@ canvas {
     overflow-y: auto;
 }
 
+#mapRallyPanel {
+    top: 86px;
+    right: 16px;
+    bottom: auto;
+    left: auto;
+    width: min(320px, calc(100vw - 32px));
+    max-height: min(65vh, 560px);
+    overflow-y: auto;
+}
+
+#mapRallyPanel .expedition-field input {
+    width: 100%;
+    min-height: 34px;
+    padding: 7px 9px;
+    border: 1px solid var(--stroke);
+    border-radius: 7px;
+    background: #101b2b;
+    color: var(--text-main);
+    font: inherit;
+}
+
+#mapRallyHeroField {
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid var(--stroke);
+    border-radius: 8px;
+}
+
+#mapRallyHeroField legend {
+    padding: 0 5px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.map-rally-hero-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 2px;
+    color: var(--text-main);
+    font-size: 12px;
+}
+
+.map-rally-hero-option input {
+    accent-color: #78c6ff;
+}
+
 .expedition-field {
     display: grid;
     gap: 5px;
