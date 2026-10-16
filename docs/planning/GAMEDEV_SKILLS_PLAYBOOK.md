@@ -42,7 +42,16 @@ Antes de implementar uma mecânica referenciada:
 7. Executar os testes e relatar commit, resultado e limitações reais.
 8. Validar a interação dentro do jogo em tamanhos de janela e após fechar/reabrir quando a funcionalidade envolver UI ou persistência.
 
-## 4. Próxima sequência técnica
+## 4. Regra de progressão de uma conta nova
+
+- Contas novas começam sem progresso herdado: inventário de equipamentos, baús, módulos e materiais vazio; fragmentos zerados; módulos não equipados; progresso de expedição e objetivos reiniciado; edifícios e heróis no nível inicial.
+- Desbloqueios e formação inicial devem seguir uma sequência explícita de tutorial/progressão. Heróis que ainda não foram desbloqueados não podem aparecer como disponíveis nem conceder atributos.
+- Recursos iniciais diferentes de zero (por exemplo, energia de partida) só podem existir se forem uma decisão de design documentada; não podem surgir de dados copiados de capturas de contas avançadas.
+- Capturas de jogadores de alto nível servem para mapear sistemas, nomes genéricos de atributos, tetos observáveis e estados finais; não servem como template de save inicial.
+- A progressão deve ser reproduzível e testável: novo jogador → recompensa/desbloqueio → gasto/evolução → salvar → reabrir. Nunca carregar níveis, itens, saldo ou heróis de uma conta de referência para uma conta nova.
+- Ao alterar a economia inicial, documentar separadamente os valores iniciais intencionais e o que deve estar zerado. Não assumir que “começar do zero” significa energia zero ou ausência de qualquer tutorial.
+
+## 5. Próxima sequência técnica
 
 1. **Fechar CI da PR de módulos** e verificar persistência real no navegador, sem alegar sucesso antes do resultado.
 2. **Auditar o sistema de módulos**: manter os dois pontos visuais documentados (+71% → +80,6%; +45,2% → +54,8%), mas não extrapolar a fórmula nem os custos para níveis não capturados.
