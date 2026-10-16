@@ -51,7 +51,7 @@
         return payload;
     };
 
-    const exchangeAuthSession = async (session) => {
+    const exchangeAuthSession = async (session, idToken = "") => {
         if (!session || !session.uid || !session.provider) {
             return null;
         }
@@ -59,6 +59,7 @@
         const result = await request("POST", "/auth/session", {
             provider: session.provider,
             providerUid: session.uid,
+            idToken,
             email: session.email || "",
             displayName: session.displayName || ""
         });
