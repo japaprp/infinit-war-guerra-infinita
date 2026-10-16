@@ -41,3 +41,12 @@ test("vehicle chip evolution cannot consume any chip saved in a preset", async (
     assert.match(source, /savedInVehiclePreset = window\.IWChipLoadouts\.PRESETS\.some/,
         "the ownership guard must include every saved vehicle preset");
 });
+
+test("explorer chest content probabilities are visible in the inventory UI", async () => {
+    const source = await readFile(gameUrl, "utf8");
+    assert.match(source, /const explorerChestOddsRows = CHEST_REWARD_TABLE\.map/);
+    assert.match(source, /Probabilidades · Baú de Explorador/);
+    assert.match(source, /Distribuição do conteúdo de cada baú de explorador/);
+    assert.match(source, /entry\.weight \* 100/);
+    assert.match(source, /Total: \$\{CHEST_REWARD_TABLE\.reduce/);
+});
