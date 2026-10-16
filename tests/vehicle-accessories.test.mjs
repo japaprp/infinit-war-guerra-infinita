@@ -89,3 +89,57 @@ test("equipped accessory bonuses are derived only from valid equipped entities",
     assert.equal(bonuses.attackPct, 1.5);
     assert.equal(bonuses.hpPct, 0);
 });
+
+test("duplicate IDs, invalid resource balances, and full inventory fail without spending", () => {
+    const base = craftAccessory(createDefaultState(), rich(), "propulsor", "acc-1");
+    const duplicate = craftAccessory(base.state, base.resources, "propulsor", "acc-1");
+    assert.equal(duplicate.ok, false);
+    assert.equal(duplicate.reason, "invalid-id");
+    assert.deepEqual(duplicate.resources, base.resources);
+
+    const invalidBalance = craftAccessory(createDefaultState(), { gold: Infinity, silver: 200, wood: 100 }, "propulsor", "acc-2");
+    assert.equal(invalidBalance.ok, false);
+    assert.equal(invalidBalance.reason, "insufficient-resources");
+
+    const fullState = {
+        inventory: Array.from({ length: 200 }, (_, i) => ({ id: `acc-${i}`, typeId: "propulsor", level: 1 })),
+        slots: {}
+    };
+    const full = craftAccessory(fullState, rich(), "propulsor", "extra");
+    assert.equal(full.ok, false);
+    assert.equal(full.reason, "inventory-full");
+    assert.equal(full.resources.gold, 100000);
+});
+
+test("normalization removes duplicate entities and prevents one item occupying multiple slots", () => {
+    const normalized = normalizeState({
+        inventory: [
+            { id: "same", typeId: "propulsor", level: 2 },
+            { id: "same", typeId: "propulsor", level: 4 },
+            { id: "sensor", typeId: "tactical-sensor", level: 1 }
+        ],
+        slots: { propulsor: "same", "reactive-plates": "same", "tactical-sensor": "sensor" }
+    });
+    assert.deepEqual(normalized.inventory.map((item) => item.id), ["same", "sensor"]);
+    assert.equal(normalized.inventory[0].level, 2);
+    assert.equal(normalized.slots.propulsor, "same");
+    assert.equal(normalized.slots["reactive-plates"], null);
+    assert.equal(normalized.slots["tactical-sensor"], "sensor");
+});
+
+test("upgrade cost curve stays finite and increases through the level cap", () => {
+    let previous = null;
+    for (let level = 1; level < accessories.MAX_LEVEL; level += 1) {
+        const cost = getUpgradeCost({ id: "curve", typeId: "propulsor", level });
+        assert.ok(cost.gold > 0 && cost.silver > 0 && cost.wood > 0);
+        assert.ok(Object.values(cost).every(Number.isFinite));
+        if (previous) {
+            assert.ok(cost.gold > previous.gold);
+            assert.ok(cost.silver > previous.silver);
+            assert.ok(cost.wood > previous.wood);
+        }
+        previous = cost;
+    }
+    assert.equal(getUpgradeCost({ level: accessories.MAX_LEVEL }), null);
+});
+
