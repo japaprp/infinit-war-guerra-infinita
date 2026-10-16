@@ -1297,3 +1297,29 @@ canvas {
         font-size: 11px;
     }
 }
+
+
+/* Guerra Infinita: module inventory and transparent odds table */
+.module-odds {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+}
+.module-odds th,
+.module-odds td {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid rgba(150, 170, 195, 0.2);
+    text-align: left;
+}
+.module-odds th:last-child,
+.module-odds td:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.inventory-item > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: flex-end;
+}

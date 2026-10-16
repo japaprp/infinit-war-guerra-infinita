@@ -25,11 +25,39 @@ const EXPEDITION_OBJECTIVES = [
     { id: "gather", label: "Coletar suprimentos", description: "Priorizar alimento e materiais", rewardMultiplier: 1.1 }
 ];
 const CHEST_REWARD_TABLE = [
-    { id: "resources", label: "Recursos", weight: 0.55 },
-    { id: "shards", label: "Fragmentos", weight: 0.3 },
-    { id: "equipment", label: "Equipamento", weight: 0.15 }
+    { id: "resources", label: "Recursos", weight: 0.45 },
+    { id: "shards", label: "Fragmentos", weight: 0.25 },
+    { id: "equipment", label: "Equipamento", weight: 0.15 },
+    { id: "moduleChest", label: "Baú de Módulos", weight: 0.15 }
 ];
 const EQUIPMENT_SLOTS = { weapon: "Arma", armor: "Armadura", boots: "Botas" };
+const CHIP_CATALOG = [
+    { id: "assault-module", name: "Módulo de Assalto", role: "Guerreiro", stat: "attackPct", statLabel: "Dano de combate", basePct: 32.6, upgradeCopies: 5, rarity: "Épico", color: "#a56bff" },
+    { id: "gravity-barrier", name: "Barreira Gravitacional", role: "Guerreiro", stat: "hpPct", statLabel: "Vida e proteção", basePct: 6.8, upgradeCopies: 3, rarity: "Épico", color: "#53c7e8" },
+    { id: "recon-array", name: "Matriz de Reconhecimento", role: "Batedor", stat: "attackPct", statLabel: "Dano de combate", basePct: 12, upgradeCopies: 4, rarity: "Raro", color: "#4f9bff" },
+    { id: "supply-core", name: "Núcleo de Suprimentos", role: "Suporte", stat: "hpPct", statLabel: "Vida e proteção", basePct: 10, upgradeCopies: 4, rarity: "Raro", color: "#4f9bff" }
+];
+const CHIP_MAX_LEVEL = 10;
+// Hero promotion reference baseline: five internal steps per star tier.
+// Values are based on secondary community guides and remain configurable pending direct in-game cost screenshots.
+const HERO_STAR_FRAGMENT_COSTS = [
+    [1, 1, 2, 3, 3],
+    [5, 5, 5, 5, 15],
+    [15, 15, 15, 15, 50],
+    [50, 50, 50, 50, 100],
+    [100, 100, 100, 100, 100]
+];
+// Prototype chest odds are original design values, not a claim about the reference game's full pool.
+// The observed 0.2% orange tier and 30% blue subtotal are retained as research anchors.
+const MODULE_CHEST_ODDS = [
+    { id: "legendary", label: "Módulo lendário", chance: 0.2 },
+    { id: "blue-a", label: "Módulo azul: Assalto", chance: 7.5 },
+    { id: "blue-b", label: "Módulo azul: Barreira", chance: 7.5 },
+    { id: "blue-c", label: "Módulo azul: Reconhecimento", chance: 7.5 },
+    { id: "blue-d", label: "Módulo azul: Suprimentos", chance: 7.5 },
+    { id: "purple", label: "Módulo avançado", chance: 30 },
+    { id: "materials", label: "Materiais de módulo", chance: 39.8 }
+];
 const EQUIPMENT_RARITIES = [
     { id: "common", label: "Comum", weight: 0.72, multiplier: 1 },
     { id: "rare", label: "Raro", weight: 0.23, multiplier: 1.6 },
@@ -64,7 +92,8 @@ const elementConfig = {
 const heroTabs = [
     { id: "atributos", label: "Atributos" },
     { id: "habilidade", label: "Habilidade" },
-    { id: "ascensao", label: "Ascensao" }
+    { id: "ascensao", label: "Ascensao" },
+    { id: "modulos", label: "Módulos" }
 ];
 
 const heroTemplates = [
@@ -269,8 +298,10 @@ function createHeroState(template) {
         unlocked: template.unlockOrder <= INITIAL_UNLOCKED,
         level: 1,
         stars: 1,
+        starStep: 0,
         specificShards: 0,
         equipment: { weapon: 0, armor: 0, boots: 0 },
+        equippedChips: { attackPct: null, hpPct: null },
         skillLevels: [1, 1, 1]
     };
 }
@@ -278,7 +309,7 @@ function createHeroState(template) {
 function createDefaultState() {
     return {
         resources: { gold: 0, silver: 0, wood: 0, food: 0, energy: 100, gems: 0 },
-        inventory: { equipment: [], chests: [] },
+        inventory: { equipment: [], chests: [], chips: [], chipMaterials: 0 },
         genericShards: { bronze: 0, silver: 0, gold: 0 },
         selectedHeroId: "lucas",
         activeHeroTab: "atributos",
@@ -334,7 +365,9 @@ function loadState() {
         merged.genericShards = { ...fallback.genericShards, ...(parsed.genericShards || {}) };
         merged.inventory = {
             equipment: Array.isArray(parsed.inventory?.equipment) ? parsed.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : [],
-            chests: Array.isArray(parsed.inventory?.chests) ? parsed.inventory.chests.slice(0, 100) : []
+            chests: Array.isArray(parsed.inventory?.chests) ? parsed.inventory.chests.slice(0, 100) : [],
+            chips: Array.isArray(parsed.inventory?.chips) ? parsed.inventory.chips.filter((item) => item && typeof item.id === "string" && CHIP_CATALOG.some((chip) => chip.id === item.typeId) && Number.isInteger(item.level) && item.level >= 1 && item.level <= CHIP_MAX_LEVEL).slice(0, 500) : [],
+            chipMaterials: Number.isFinite(parsed.inventory?.chipMaterials) && parsed.inventory.chipMaterials >= 0 ? Math.floor(parsed.inventory.chipMaterials) : 0
         };
         merged.events = { ...fallback.events, ...(parsed.events || {}) };
         merged.mission = { ...fallback.mission, ...(parsed.mission || {}) };
@@ -358,8 +391,25 @@ function loadState() {
                 ...current,
                 equipment: { weapon: 0, armor: 0, boots: 0, ...(current.equipment || {}) },
                 equippedItems: Object.fromEntries(Object.keys(EQUIPMENT_SLOTS).map((slot) => [slot, current.equippedItems?.[slot] || null])),
+                equippedChips: { attackPct: current.equippedChips?.attackPct || null, hpPct: current.equippedChips?.hpPct || null },
+                starStep: Number.isInteger(current.starStep) ? clamp(current.starStep, 0, 5) : 0,
                 skillLevels: Array.isArray(current.skillLevels) ? current.skillLevels.slice(0, 3) : [1, 1, 1]
             };
+        });
+        // Discard stale chip references and enforce one owner per physical module.
+        const seenEquippedChipIds = new Set();
+        heroTemplates.forEach((template) => {
+            const hero = merged.heroes[template.id];
+            for (const stat of ["attackPct", "hpPct"]) {
+                const chipId = hero.equippedChips[stat];
+                const chip = merged.inventory.chips.find((item) => item.id === chipId);
+                const definition = chip && CHIP_CATALOG.find((item) => item.id === chip.typeId);
+                if (!chip || definition?.stat !== stat || seenEquippedChipIds.has(chipId)) {
+                    hero.equippedChips[stat] = null;
+                    continue;
+                }
+                seenEquippedChipIds.add(chipId);
+            }
         });
 
         // Clamp de seguranca para reduzir manipulacao simples de save.
@@ -478,11 +528,21 @@ function getHeroRuntime(heroId) {
     const equipBonusTroops = heroState.equipment.boots * 2 + getEquippedBonus("boots");
     const skillAtkBonus = heroState.skillLevels.reduce((sum, level) => sum + level * 28, 0);
     const skillDefBonus = heroState.skillLevels.reduce((sum, level) => sum + level * 22, 0);
-    const starMultiplier = 1 + (heroState.stars - 1) * 0.08;
+    const equippedChips = Object.values(heroState.equippedChips || {}).filter(Boolean)
+        .map((chipId) => state.inventory.chips.find((chip) => chip.id === chipId))
+        .filter(Boolean);
+    // Original Guerra Infinita prototype progression only. The reference captures show
+    // two before/after values, not a complete level formula; do not present this as verified
+    // Dark War: Survival behavior.
+    const chipPct = (stat) => equippedChips.reduce((sum, item) => {
+        const definition = CHIP_CATALOG.find((chip) => chip.id === item.typeId);
+        return sum + (definition?.stat === stat ? definition.basePct + (item.level - 1) * 9.6 : 0);
+    }, 0) / 100;
+    const starMultiplier = 1 + (heroState.stars - 1) * 0.08 + (heroState.starStep || 0) * 0.01;
 
-    const atk = Math.floor((template.baseStats.atk + equipBonusAtk + skillAtkBonus) * starMultiplier);
+    const atk = Math.floor((template.baseStats.atk + equipBonusAtk + skillAtkBonus) * starMultiplier * (1 + chipPct("attackPct")));
     const def = Math.floor((template.baseStats.def + equipBonusDef + skillDefBonus) * starMultiplier);
-    const troops = Math.floor((template.baseStats.troops + equipBonusTroops) * starMultiplier);
+    const troops = Math.floor((template.baseStats.troops + equipBonusTroops) * starMultiplier * (1 + chipPct("hpPct")));
     const power = atk * 8 + def * 6 + troops * 28 + heroState.level * 3200;
     const skillAverage = heroState.skillLevels.reduce((a, b) => a + b, 0) / 3;
 
@@ -1034,6 +1094,88 @@ function rollChestReward() {
     }) || CHEST_REWARD_TABLE[0];
 }
 
+function createChip(typeId, level = 1, rarityLabel = "") {
+    const definition = CHIP_CATALOG.find((chip) => chip.id === typeId);
+    if (!definition) return null;
+    return {
+        id: `chip-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        typeId,
+        name: definition.name,
+        role: definition.role,
+        level: Math.max(1, Math.min(CHIP_MAX_LEVEL, Math.floor(level))),
+        rarityLabel: rarityLabel || definition.rarity,
+        obtainedAt: Date.now()
+    };
+}
+
+function rollModuleChestReward() {
+    const roll = Math.random() * 100;
+    let cumulative = 0;
+    return MODULE_CHEST_ODDS.find((entry) => {
+        cumulative += entry.chance;
+        return roll < cumulative;
+    }) || MODULE_CHEST_ODDS[MODULE_CHEST_ODDS.length - 1];
+}
+
+function equipChip(chipId) {
+    const chip = state.inventory.chips.find((item) => item.id === chipId);
+    const definition = chip && CHIP_CATALOG.find((item) => item.id === chip.typeId);
+    if (!chip || !definition) {
+        pushFeed("Módulo não encontrado no inventário.");
+        return;
+    }
+    const hero = state.heroes[state.selectedHeroId];
+    if (!hero?.unlocked) return;
+    // A physical module may only be equipped by one hero at a time.
+    Object.values(state.heroes).forEach((candidate) => {
+        if (candidate.equippedChips?.[definition.stat] === chip.id) {
+            candidate.equippedChips = { ...candidate.equippedChips, [definition.stat]: null };
+        }
+        for (const stat of ["attackPct", "hpPct"]) {
+            if (stat !== definition.stat && candidate.equippedChips?.[stat] === chip.id) {
+                candidate.equippedChips = { ...candidate.equippedChips, [stat]: null };
+            }
+        }
+    });
+    hero.equippedChips = { ...(hero.equippedChips || {}), [definition.stat]: chip.id };
+    pushFeed(`${chip.name} equipado em ${getHeroTemplate(state.selectedHeroId).name} (+${(definition.basePct + (chip.level - 1) * 9.6).toLocaleString("pt-BR")}%).`);
+    renderAll();
+    saveState();
+}
+
+function isChipEquipped(chipId) {
+    return Object.values(state.heroes || {}).some((hero) =>
+        Object.values(hero.equippedChips || {}).includes(chipId)
+    );
+}
+
+function upgradeChip(chipId) {
+    const chip = state.inventory.chips.find((item) => item.id === chipId);
+    const definition = chip && CHIP_CATALOG.find((item) => item.id === chip.typeId);
+    if (!chip || !definition) {
+        pushFeed("Módulo não encontrado no inventário.");
+        return;
+    }
+    if (chip.level >= CHIP_MAX_LEVEL) {
+        pushFeed("Este módulo já atingiu o nível máximo.");
+        return;
+    }
+    // Módulos equipados em qualquer herói não podem ser consumidos como cópias.
+    const duplicates = state.inventory.chips.filter((item) =>
+        item.typeId === chip.typeId && item.id !== chip.id && !isChipEquipped(item.id)
+    );
+    if (duplicates.length < definition.upgradeCopies) {
+        pushFeed(`Evolução exige ${definition.upgradeCopies} cópias adicionais não equipadas. Disponíveis: ${duplicates.length}.`);
+        return;
+    }
+    const consumeIds = new Set(duplicates.slice(0, definition.upgradeCopies).map((item) => item.id));
+    state.inventory.chips = state.inventory.chips.filter((item) => !consumeIds.has(item.id));
+    chip.level += 1;
+    pushFeed(`${chip.name} evoluiu para Nv.${chip.level}. Bônus atual: +${(definition.basePct + (chip.level - 1) * 9.6).toLocaleString("pt-BR")}%.`);
+    renderAll();
+    saveState();
+}
+
 function openInventoryChest(chestId) {
     const chestIndex = state.inventory.chests.findIndex((chest) => chest.id === chestId);
     if (chestIndex < 0) {
@@ -1041,6 +1183,32 @@ function openInventoryChest(chestId) {
         return;
     }
     const [chest] = state.inventory.chests.splice(chestIndex, 1);
+    if (chest.type === "module") {
+        const result = rollModuleChestReward();
+        if (result.id === "materials") {
+            const amount = 20 + Math.floor(Math.random() * 41);
+            state.inventory.chipMaterials = (state.inventory.chipMaterials || 0) + amount;
+            pushFeed(`Baú de Módulos: +${amount} materiais de módulo.`);
+        } else {
+            const mapping = {
+                legendary: ["assault-module", 5, "Lendário"],
+                "blue-a": ["assault-module", 1, "Raro"],
+                "blue-b": ["gravity-barrier", 1, "Raro"],
+                "blue-c": ["recon-array", 1, "Raro"],
+                "blue-d": ["supply-core", 1, "Raro"],
+                purple: [[ "assault-module", "gravity-barrier" ][Math.floor(Math.random() * 2)], 2, "Épico"]
+            };
+            const [typeId, level, rarity] = mapping[result.id];
+            const item = createChip(typeId, level, rarity);
+            if (item) {
+                state.inventory.chips.push(item);
+                pushFeed(`Baú de Módulos: ${item.name} Nv.${item.level} (${rarity}).`);
+            }
+        }
+        renderAll();
+        saveState();
+        return;
+    }
     const reward = rollChestReward();
     if (reward.id === "resources") {
         const gold = 250 + Math.floor(Math.random() * 751);
@@ -1057,6 +1225,10 @@ function openInventoryChest(chestId) {
         state.totalPuzzles += amount;
         checkHeroUnlocks();
         pushFeed(`Baú aberto: +${amount} fragmento(s) ${tierLabel(pool).toLowerCase()}.`);
+    } else if (reward.id === "moduleChest") {
+        const moduleChest = { id: `module-chest-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type: "module", name: "Baú de Módulos" };
+        state.inventory.chests.push(moduleChest);
+        pushFeed("Baú aberto: você encontrou um Baú de Módulos. As probabilidades estão listadas na aba Módulos.");
     } else {
         const item = createEquipmentItem(8);
         state.inventory.equipment.push(item);
@@ -1115,14 +1287,21 @@ function levelUpHero() {
     saveState();
 }
 
+function getHeroStarPromotionCost(heroState) {
+    if (heroState.stars >= 5 && heroState.starStep >= 5) return null;
+    const tierIndex = clamp(heroState.stars - 1, 0, HERO_STAR_FRAGMENT_COSTS.length - 1);
+    const stepIndex = clamp(heroState.starStep || 0, 0, 4);
+    return HERO_STAR_FRAGMENT_COSTS[tierIndex][stepIndex];
+}
+
 function ascendHero() {
     const hero = getHeroRuntime(state.selectedHeroId);
     const heroState = hero.heroState;
-    if (heroState.stars >= 5) {
-        pushFeed("Heroi no maximo de estrelas.");
+    const needed = getHeroStarPromotionCost(heroState);
+    if (needed === null) {
+        pushFeed("Herói no máximo de estrelas.");
         return;
     }
-    const needed = 10 + heroState.stars * 5;
     let available = heroState.specificShards;
     const pools = getAllowedGenericPools(hero.template.tier);
     pools.forEach((pool) => {
@@ -1143,8 +1322,18 @@ function ascendHero() {
         state.genericShards[pool] -= used;
         remaining -= used;
     }
-    heroState.stars += 1;
-    pushFeed(`${hero.template.name} ascendeu para ${heroState.stars} estrelas.`);
+
+    if (heroState.stars === 5 && heroState.starStep === 4) {
+        heroState.starStep = 5;
+    } else {
+        heroState.starStep = (heroState.starStep || 0) + 1;
+        if (heroState.starStep >= 5) {
+            heroState.stars += 1;
+            heroState.starStep = 0;
+        }
+    }
+    const progress = heroState.starStep === 5 ? "5/5 · máximo" : `${heroState.starStep}/5 etapas da estrela atual`;
+    pushFeed(`${hero.template.name}: ${heroState.stars}★ · ${progress}.`);
     renderAll();
     saveState();
 }
@@ -1502,6 +1691,27 @@ function renderTabContent() {
         return;
     }
 
+    if (state.activeHeroTab === "modulos") {
+        const chips = state.inventory.chips || [];
+        const oddsRows = MODULE_CHEST_ODDS.map((item) => `<tr><td>${item.label}</td><td>${item.chance.toLocaleString("pt-BR")}%</td></tr>`).join("");
+        const chipRows = chips.length ? chips.map((chip) => {
+            const definition = CHIP_CATALOG.find((item) => item.id === chip.typeId);
+            const equipped = hero.heroState.equippedChips?.[definition?.stat] === chip.id;
+            const pct = definition ? definition.basePct + (chip.level - 1) * 9.6 : 0;
+            const copies = chips.filter((item) => item.typeId === chip.typeId && item.id !== chip.id && !isChipEquipped(item.id)).length;
+            return `<article class="inventory-item"><span><strong>${chip.name} · Nv.${chip.level}</strong><small>${chip.role} · ${chip.rarityLabel} · +${pct.toLocaleString("pt-BR")}% ${definition?.statLabel || ""} · cópias extras: ${copies}</small></span><div><button class="inline-action" data-action="equip-chip" data-chip-id="${chip.id}" ${equipped ? "disabled" : ""}>${equipped ? "Equipado" : "Equipar"}</button><button class="inline-action" data-action="upgrade-chip" data-chip-id="${chip.id}" ${chip.level >= CHIP_MAX_LEVEL || copies < (definition?.upgradeCopies || 999) ? "disabled" : ""}>Evoluir (${definition?.upgradeCopies || "—"} cópias)</button></div></article>`;
+        }).join("") : "<p>Nenhum módulo no inventário. Encontre um Baú de Módulos em baús de explorador.</p>";
+        const moduleChests = state.inventory.chests.filter((chest) => chest.type === "module");
+        ui.heroTabContent.innerHTML = `
+            <section class="inventory-section"><h3>Módulos equipados · ${hero.template.name}</h3><p>ATQ base com módulos: ${hero.atk.toLocaleString("pt-BR")} · Unidades protegidas: ${hero.troops.toLocaleString("pt-BR")}</p>
+            <p>Materiais de módulo: <strong>${state.inventory.chipMaterials || 0}</strong></p></section>
+            <section class="inventory-section"><h3>Baús de Módulos (${moduleChests.length})</h3>
+            ${moduleChests.length ? moduleChests.map((chest) => `<article class="inventory-item"><span><strong>${chest.name}</strong><small>Recompensas e probabilidades transparentes</small></span><button class="inline-action" data-action="open-chest" data-chest-id="${chest.id}">Abrir</button></article>`).join("") : "<p>Abra um baú de explorador para ter chance de encontrar um Baú de Módulos.</p>"}</section>
+            <section class="inventory-section"><h3>Inventário de módulos (${chips.length})</h3>${chipRows}</section>
+            <section class="inventory-section"><h3>Probabilidades · Baú de Módulos</h3><p>Chances e progressão são valores provisórios do protótipo original Guerra Infinita. As capturas de referência não comprovam o pool completo nem uma fórmula geral de evolução.</p><table class="module-odds"><thead><tr><th>Recompensa</th><th>Chance</th></tr></thead><tbody>${oddsRows}</tbody></table><p>Total: ${MODULE_CHEST_ODDS.reduce((sum, item) => sum + item.chance, 0).toLocaleString("pt-BR")}%</p></section>`;
+        return;
+    }
+
     if (state.activeHeroTab === "habilidade") {
         ui.heroTabContent.innerHTML = `<div class="ability-list">${hero.template.skills
             .map((skill, index) => {
@@ -1512,9 +1722,11 @@ function renderTabContent() {
         return;
     }
 
-    const ascensionNeed = 10 + hero.heroState.stars * 5;
+    const ascensionNeed = getHeroStarPromotionCost(hero.heroState);
+    const isMaxStars = ascensionNeed === null;
     const pools = getAllowedGenericPools(hero.template.tier).map((pool) => `${tierLabel(pool)}: ${state.genericShards[pool]}`).join(" | ");
-    ui.heroTabContent.innerHTML = `<div class="ascension-box"><p class="star-line">${"★".repeat(hero.heroState.stars)}${"☆".repeat(5 - hero.heroState.stars)}</p><p>QB especifico (${hero.template.weapon}): <strong>${hero.heroState.specificShards}</strong></p><p>Pools permitidos: <strong>${pools}</strong></p><p>Necessario para ascender: <strong>${ascensionNeed}</strong></p><button class="ascend-btn" data-action="ascend-hero">Ascender heroi</button></div>`;
+    const starStepLabel = hero.heroState.starStep === 5 ? "5/5 etapas · máximo" : `${hero.heroState.starStep || 0}/5 etapas desta estrela`;
+    ui.heroTabContent.innerHTML = `<div class="ascension-box"><p class="star-line">${"★".repeat(hero.heroState.stars)}${"☆".repeat(5 - hero.heroState.stars)}</p><p>Progresso da estrela: <strong>${starStepLabel}</strong></p><p>Fragmentos específicos (${hero.template.weapon}): <strong>${hero.heroState.specificShards}</strong></p><p>Fragmentos universais permitidos: <strong>${pools}</strong></p><p>Necessário para próxima etapa: <strong>${isMaxStars ? "Máximo alcançado" : ascensionNeed + " fragmentos"}</strong></p><button class="ascend-btn" data-action="ascend-hero" ${isMaxStars ? "disabled" : ""}>${isMaxStars ? "Herói no máximo" : "Evoluir estrela"}</button></div>`;
 }
 
 function updateHeroDetail() {
@@ -1741,7 +1953,9 @@ async function pullStateFromBackend() {
         state.genericShards = { ...state.genericShards, ...(remote.state.genericShards || {}) };
         state.inventory = {
             equipment: Array.isArray(remote.state.inventory?.equipment) ? remote.state.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : state.inventory.equipment,
-            chests: Array.isArray(remote.state.inventory?.chests) ? remote.state.inventory.chests.slice(0, 100) : state.inventory.chests
+            chests: Array.isArray(remote.state.inventory?.chests) ? remote.state.inventory.chests.slice(0, 100) : state.inventory.chests,
+            chips: Array.isArray(state.inventory.chips) ? state.inventory.chips : [],
+            chipMaterials: Number.isFinite(state.inventory.chipMaterials) ? state.inventory.chipMaterials : 0
         };
         state.selectedHeroId = remote.state.selectedHeroId || state.selectedHeroId;
         state.activeHeroTab = remote.state.activeHeroTab || state.activeHeroTab;
@@ -1822,6 +2036,8 @@ function bindUiActions() {
         const action = actionTarget.dataset.action;
         if (action === "upgrade-equip") upgradeEquipment(actionTarget.dataset.slot);
         if (action === "equip-item") equipInventoryItem(actionTarget.dataset.itemId);
+        if (action === "equip-chip") equipChip(actionTarget.dataset.chipId);
+        if (action === "upgrade-chip") upgradeChip(actionTarget.dataset.chipId);
         if (action === "open-chest") openInventoryChest(actionTarget.dataset.chestId);
         if (action === "upgrade-skill") upgradeSkill(Number(actionTarget.dataset.skillIndex));
         if (action === "ascend-hero") ascendHero();
