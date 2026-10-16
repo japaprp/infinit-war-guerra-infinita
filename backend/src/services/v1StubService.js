@@ -208,6 +208,18 @@ function grantFirstExpeditionVehicleChip(user, expedition) {
     return getVehicleLoadout(user).inventory.find(item => item.id === chip.id) || null;
 }
 
+function grantExpeditionChest(user) {
+    const inventory = ensureServerInventory(user);
+    // A guaranteed first explorer chest introduces the server-owned chest flow;
+    // later expedition chest drops use the original prototype's 10% target.
+    if (!inventory.firstExpeditionChestGranted) {
+        inventory.firstExpeditionChestGranted = true;
+        return serverChest(user, "explorer");
+    }
+    if (crypto.randomInt(0, 100) < 10) return serverChest(user, "explorer");
+    return null;
+}
+
 export function claimExpedition(user, payload = {}) {
     ensureV1State(user);
     user.v1.expedition ||= { active: null, claimedIds: [], receipts: {} };
