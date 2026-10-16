@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { ensureV1State } from "./userService.js";
 import { getActiveVehicleBonuses } from "./vehicleLoadoutService.js";
+import { grantCombatChestDrop } from "./v1StubService.js";
 
 const HUNT_TARGETS = Object.freeze({
     "grey-forest-stalker": { energyCost: 15, travelMs: 30_000, level: 1, kind: "roaming_enemy", enemyHp: 260_000, reward: { gold: 1200, food: 800, steel: 50 } },
@@ -204,6 +205,7 @@ export function resolveMapHunt(db, userId, user, operationId, nowMs = Date.now()
     const damage = combatDamage(power, operationId);
     const won = damage >= target.enemyHp;
     const rewards = rewardsFor(target, won);
+    const chestReward = grantCombatChestDrop(user, won, operationId);
     const result = {
         resultId: `result_${crypto.createHash("sha256").update(operationId).digest("hex").slice(0, 24)}`,
         rulesVersion: COMBAT_RULES_VERSION, outcome: won ? "victory" : "defeat",
@@ -221,6 +223,7 @@ export function resolveMapHunt(db, userId, user, operationId, nowMs = Date.now()
     hunt.status = "completed";
     hunt.result = result;
     hunt.rewardReceipt = receipt;
+    hunt.chestReward = chestReward;
     hunt.completedAtMs = nowMs;
     user.v1.marches = (user.v1.marches || []).map(march => march.marchId === hunt.huntId ? { ...march, status: "completed" } : march);
     return { ...hunt, rewardReceipt: receipt, resources: { ...user.v1.resources }, troops: user.v1.troops, replayed: false };
@@ -258,6 +261,7 @@ export function resolveMapRally(db, userId, user, operationId, nowMs = Date.now(
     for (const participant of participants) {
         const participantUser = db.users[participant.playerId];
         const rewards = rewardsFor(target, won);
+        const chestReward = grantCombatChestDrop(participantUser, won, `${operationId}:${participant.playerId}`);
         grantResources(participantUser, rewards);
         const troopsCommitted = Number(participant.troopCount) || 0;
         const baseLosses = Math.floor(troopsCommitted * (won ? 0.02 : 0.25));
@@ -268,7 +272,7 @@ export function resolveMapRally(db, userId, user, operationId, nowMs = Date.now(
         rewardReceipts[participant.playerId] = {
             receiptId: `reward_${result.resultId}_${participant.playerId}`,
             playerId: participant.playerId, resultId: result.resultId, rewards,
-            troopsCommitted, troopsLost, troopsReturned, grantedAtMs: nowMs
+            troopsCommitted, troopsLost, troopsReturned, grantedAtMs: nowMs, chestReward
         };
     }
     rally.status = "completed";
@@ -302,7 +306,8 @@ export function listMapBattleHistory(db, userId, user, limit = 20) {
             startedAtMs: hunt.startedAtMs,
             completedAtMs: hunt.completedAtMs || null,
             result: safeResult(hunt.result),
-            rewardReceipt: hunt.rewardReceipt || null
+            rewardReceipt: hunt.rewardReceipt || null,
+            chestReward: hunt.chestReward || null
         }));
     const rallies = Object.values(db.rallies || {})
         .filter(rally => (rally.participants || []).some(participant => participant.playerId === userId))
