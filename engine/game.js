@@ -318,7 +318,7 @@ function createDefaultState() {
         inventory: { equipment: [], chests: [], chips: [], chipMaterials: 0 },
         vehicleChipLoadouts: window.IWChipLoadouts.createDefaultLoadouts(),
         activeVehicleChipPreset: "I",
-        vehicleAccessories: window.IWVehicleAccessories.createDefaultState()
+        vehicleAccessories: window.IWVehicleAccessories.createDefaultState(),
         genericShards: { bronze: 0, silver: 0, gold: 0 },
         selectedHeroId: "lucas",
         activeHeroTab: "atributos",
