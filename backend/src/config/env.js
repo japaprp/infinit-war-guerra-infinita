@@ -16,6 +16,7 @@ export const env = {
     MYSQL_PASSWORD: process.env.MYSQL_PASSWORD || "",
     MYSQL_SSL: String(process.env.MYSQL_SSL || "false").toLowerCase() === "true",
     CORS_ORIGINS: process.env.CORS_ORIGINS || "",
+    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || "",
     REDIS_ENABLED: String(process.env.REDIS_ENABLED || "false").toLowerCase() === "true",
     REDIS_URL: process.env.REDIS_URL || "redis://127.0.0.1:6379"
 };
@@ -24,6 +25,9 @@ export function validateRuntimeConfig(config) {
     if (String(config.NODE_ENV || "development").toLowerCase() !== "production") return;
 
     const problems = [];
+    if (!String(config.FIREBASE_PROJECT_ID || "").trim()) {
+        problems.push("FIREBASE_PROJECT_ID is required to verify Firebase ID tokens");
+    }
     for (const key of ["JWT_SECRET", "RECEIPT_SECRET"]) {
         const value = String(config[key] || "");
         if (value.length < 32 || value === "unsafe_dev_secret" || value === "unsafe_receipt_secret") {
