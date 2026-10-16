@@ -2214,8 +2214,11 @@ function mapRallyShowCombat(result, label) {
     }
     const outcome = battle.outcome === "victory" ? "VITÓRIA" : "DERROTA";
     const rewards = receipt?.rewards;
+    const troopText = receipt && Number.isFinite(receipt.troopsReturned)
+        ? `Tropas: ${receipt.troopsReturned.toLocaleString("pt-BR")} retornaram; ${Number(receipt.troopsLost || 0).toLocaleString("pt-BR")} baixas.`
+        : "";
     const rewardText = rewards
-        ? `Prêmios: +${rewards.gold} ouro, +${rewards.food} alimento, +${rewards.steel} aço.`
+        ? `Prêmios: +${rewards.gold} ouro, +${rewards.food} alimento, +${rewards.steel} aço. ${troopText}`
         : "Resultado já registrado; este jogador não tem recibo individual nesta resposta.";
     if (ui.mapRallyDetails) {
         ui.mapRallyDetails.textContent = `${outcome} · Dano: ${Number(battle.damage).toLocaleString("pt-BR")} / ${Number(battle.enemyHp).toLocaleString("pt-BR")} HP · ${rewardText} ID: ${battle.resultId}`;
