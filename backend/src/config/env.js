@@ -42,6 +42,9 @@ export function validateRuntimeConfig(config) {
     for (const key of ["MYSQL_HOST", "MYSQL_DATABASE", "MYSQL_USER", "MYSQL_PASSWORD"]) {
         if (!String(config[key] || "").trim()) problems.push(`${key} is required`);
     }
+    if (!Number.isInteger(Number(config.MYSQL_PORT)) || Number(config.MYSQL_PORT) < 1 || Number(config.MYSQL_PORT) > 65535) {
+        problems.push("MYSQL_PORT must be an integer between 1 and 65535");
+    }
 
     const origins = String(config.CORS_ORIGINS || "")
         .split(",")
