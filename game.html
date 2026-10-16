@@ -153,6 +153,12 @@
         <button id="mapRallyRefreshHeroesBtn" type="button">Atualizar heróis</button>
         <button id="mapHuntStartBtn" type="button">Iniciar caçada</button>
     </div>
+    <label class="expedition-field" for="mapRallyHuntOperationId">Código da caçada ativa
+        <input id="mapRallyHuntOperationId" type="text" maxlength="100" placeholder="Preenchido ao iniciar uma caçada">
+    </label>
+    <div class="slice-actions">
+        <button id="mapHuntResolveBtn" type="button">Resolver combate / resgatar</button>
+    </div>
     <hr>
     <label class="expedition-field" for="mapRallyTroops">Tropas para a incursão
         <input id="mapRallyTroops" type="number" min="1" max="1000000" step="1" value="100">
@@ -168,6 +174,7 @@
         <button id="mapRallyRefreshBtn" type="button">Consultar</button>
         <button id="mapRallyCloseBtn" type="button">Fechar inscrições</button>
         <button id="mapRallyDispatchBtn" type="button">Despachar</button>
+        <button id="mapRallyResolveBtn" type="button">Resolver combate / recompensas</button>
     </div>
     <div id="mapRallyDetails" class="slice-steps">As incursões exigem conta autenticada e uma aliança.</div>
 </section>
