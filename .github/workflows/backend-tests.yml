@@ -6,20 +6,35 @@ on:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
       - "api/**"
+      - "auth/**"
+      - "engine/**"
+      - "entities/**"
+      - "frontend/public/**"
+      - "tests/public-frontend-package.test.mjs"
       - "index.html"
       - "game.html"
+      - "main.js"
+      - "style.css"
       - "render.yaml"
       - "DEPLOYMENT_PREPARATION.md"
   push:
     branches:
       - main
       - "fix/**"
+      - "feat/**"
     paths:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
       - "api/**"
+      - "auth/**"
+      - "engine/**"
+      - "entities/**"
+      - "frontend/public/**"
+      - "tests/public-frontend-package.test.mjs"
       - "index.html"
       - "game.html"
+      - "main.js"
+      - "style.css"
       - "render.yaml"
       - "DEPLOYMENT_PREPARATION.md"
 
@@ -40,6 +55,8 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Test public frontend package boundary
+        run: node --test ../tests/public-frontend-package.test.mjs
       - name: Test deployment readiness and configuration
         run: npm run test:deploy
       - name: Test backend integration
