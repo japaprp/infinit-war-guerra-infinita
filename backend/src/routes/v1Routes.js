@@ -23,11 +23,25 @@ import {
     claimBattlePass,
     getPlayerMe,
     startExpedition,
-    claimExpedition
+    claimExpedition,
+    getServerChests,
+    openServerChest
 } from "../services/v1StubService.js";
 import { createAuthMiddleware } from "../middlewares/authMiddleware.js";
+import { getVehicleLoadout, setActiveVehiclePreset, equipVehicleChip, removeVehicleChip, upgradeVehicleChip } from "../services/vehicleLoadoutService.js";
 import { createUserLockMiddleware } from "../middlewares/userLockMiddleware.js";
 import { createIdempotencyMiddleware } from "../middlewares/idempotencyMiddleware.js";
+import {
+    startMapHunt,
+    createMapRally,
+    joinMapRally,
+    closeMapRally,
+    dispatchMapRally,
+    getMapRally,
+    resolveMapHunt,
+    resolveMapRally,
+    listMapBattleHistory
+} from "../services/mapRallyService.js";
 
 function asError(res, result) {
     if (!result || !result.error) return false;
@@ -39,6 +53,14 @@ export function createV1Routes(env, runtime = {}) {
     const router = Router();
     const authMiddleware = createAuthMiddleware(env.JWT_SECRET);
     const userLock = createUserLockMiddleware({ redisClient: runtime.redisClient, ttlSec: 8 });
+    const rallyLock = createUserLockMiddleware({
+        redisClient: runtime.redisClient,
+        ttlSec: 8,
+        keyResolver: (req) => {
+            const operationId = req.params?.operationId || req.body?.operationId;
+            return operationId ? `lock:rally:${operationId}` : `lock:rally:create:${req.user?.sub || "anonymous"}`;
+        }
+    });
     const idempotency = createIdempotencyMiddleware({ redisClient: runtime.redisClient, ttlSec: 300 });
 
     router.post("/auth/login", async (req, res) => {
@@ -222,6 +244,153 @@ export function createV1Routes(env, runtime = {}) {
     router.post("/world/rallies", userLock, async (req, res) => {
         const joinWindowSec = Number(req.body?.joinWindowSec || 300);
         res.json(createRally(req.user.sub, { joinWindowSec }));
+    });
+
+    router.post("/world/hunts/:operationId/resolve", userLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = resolveMapHunt(db, req.user.sub, user, req.params.operationId);
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.get("/world/battle-history", async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const limit = Number.parseInt(req.query.limit, 10);
+        res.json(listMapBattleHistory(db, req.user.sub, user, Number.isFinite(limit) ? limit : 20));
+    });
+
+    router.post("/world/hunts/start", userLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = startMapHunt(db, req.user.sub, user, req.body || {});
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.post("/world/alliance-rallies", userLock, rallyLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = createMapRally(db, req.user.sub, user, req.body || {});
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.get("/world/alliance-rallies/:operationId", async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = getMapRally(db, req.user.sub, user, req.params.operationId);
+        if (asError(res, result)) return;
+        res.json(result);
+    });
+
+    router.post("/world/alliance-rallies/:operationId/join", userLock, rallyLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = joinMapRally(db, req.user.sub, user, req.params.operationId, req.body || {});
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.post("/world/alliance-rallies/:operationId/close", userLock, rallyLock, async (req, res) => {
+        const db = await readDb();
+        const result = closeMapRally(db, req.user.sub, req.params.operationId);
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.post("/world/alliance-rallies/:operationId/resolve", userLock, rallyLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = resolveMapRally(db, req.user.sub, user, req.params.operationId);
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.post("/world/alliance-rallies/:operationId/dispatch", userLock, rallyLock, async (req, res) => {
+        const db = await readDb();
+        const result = dispatchMapRally(db, req.user.sub, req.params.operationId);
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.get("/inventory/chests", async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        res.json(getServerChests(user));
+    });
+
+    router.post("/inventory/chests/:chestId/open", userLock, idempotency, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = openServerChest(user, req.params.chestId);
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.get("/vehicle/loadout", async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        res.json(getVehicleLoadout(user));
+    });
+
+    router.post("/vehicle/presets/active", userLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = setActiveVehiclePreset(user, req.body?.presetId);
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.post("/vehicle/chips/equip", userLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = equipVehicleChip(user, req.body || {});
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.post("/vehicle/chips/remove", userLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = removeVehicleChip(user, req.body || {});
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.post("/vehicle/chips/:chipId/upgrade", userLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = upgradeVehicleChip(user, req.params.chipId);
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
     });
 
     router.post("/alliances", userLock, async (req, res) => {

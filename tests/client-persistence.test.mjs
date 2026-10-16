@@ -93,6 +93,14 @@ test("cliente mantém expedição, temporizador e saldos após fechar/reabrir", 
             return button && !button.disabled;
         }, null, { timeout: 15000 });
 
+        await page.waitForFunction(() => document.querySelector("#expeditionDestination")?.options.length > 0, null, { timeout: 5000 }).catch(async error => {
+            const diagnostics = await page.evaluate(() => ({
+                loadingText: document.querySelector("#loadingStatusText")?.innerText,
+                scripts: [...document.scripts].map(script => ({ src: script.src, loaded: !script.src || [...performance.getEntriesByType("resource")].some(entry => entry.name.endsWith(script.src)) })),
+                destinationHtml: document.querySelector("#expeditionDestination")?.innerHTML
+            }));
+            throw new Error("Expedition options were not initialized: " + JSON.stringify({ diagnostics, pageErrors }) + "; " + error.message);
+        });
         await page.locator("#expeditionDestination").selectOption("old-ruins");
         await page.locator("#expeditionObjective").selectOption("hunt");
         await page.locator("#startExpeditionBtn").click();

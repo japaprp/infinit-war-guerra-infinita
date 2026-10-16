@@ -205,13 +205,37 @@ const ui = {
     sliceUpgradeHeroBtn: document.getElementById("sliceUpgradeHeroBtn"),
     sliceClaimRewardBtn: document.getElementById("sliceClaimRewardBtn"),
     expeditionPanel: document.getElementById("expeditionPanel"),
+    openVehicleAccessoriesBtn: document.getElementById("openVehicleAccessoriesBtn"),
+    vehicleAccessoriesPanel: document.getElementById("vehicleAccessoriesPanel"),
+    closeVehicleAccessoriesBtn: document.getElementById("closeVehicleAccessoriesBtn"),
+    vehicleAccessoryType: document.getElementById("vehicleAccessoryType"),
+    vehicleAccessoryStatus: document.getElementById("vehicleAccessoryStatus"),
+    vehicleAccessoryInventory: document.getElementById("vehicleAccessoryInventory"),
     expeditionStatus: document.getElementById("expeditionStatus"),
     expeditionMapLabel: document.getElementById("expeditionMapLabel"),
     startExpeditionBtn: document.getElementById("startExpeditionBtn"),
     claimExpeditionBtn: document.getElementById("claimExpeditionBtn"),
     expeditionDestination: document.getElementById("expeditionDestination"),
     expeditionObjective: document.getElementById("expeditionObjective"),
-    expeditionRewardPreview: document.getElementById("expeditionRewardPreview")
+    expeditionRewardPreview: document.getElementById("expeditionRewardPreview"),
+    mapRallyStatus: document.getElementById("mapRallyStatus"),
+    mapRallyTarget: document.getElementById("mapRallyTarget"),
+    mapRallyHeroList: document.getElementById("mapRallyHeroList"),
+    mapRallyRefreshHeroesBtn: document.getElementById("mapRallyRefreshHeroesBtn"),
+    mapHuntStartBtn: document.getElementById("mapHuntStartBtn"),
+    mapRallyHuntOperationId: document.getElementById("mapRallyHuntOperationId"),
+    mapHuntResolveBtn: document.getElementById("mapHuntResolveBtn"),
+    mapRallyTroops: document.getElementById("mapRallyTroops"),
+    mapRallyCreateBtn: document.getElementById("mapRallyCreateBtn"),
+    mapRallyOperationId: document.getElementById("mapRallyOperationId"),
+    mapRallyJoinBtn: document.getElementById("mapRallyJoinBtn"),
+    mapRallyRefreshBtn: document.getElementById("mapRallyRefreshBtn"),
+    mapRallyCloseBtn: document.getElementById("mapRallyCloseBtn"),
+    mapRallyDispatchBtn: document.getElementById("mapRallyDispatchBtn"),
+    mapRallyResolveBtn: document.getElementById("mapRallyResolveBtn"),
+    mapRallyDetails: document.getElementById("mapRallyDetails"),
+    mapBattleHistoryRefreshBtn: document.getElementById("mapBattleHistoryRefreshBtn"),
+    mapBattleHistory: document.getElementById("mapBattleHistory")
 };
 
 const heroDetail = {
@@ -309,7 +333,10 @@ function createHeroState(template) {
 function createDefaultState() {
     return {
         resources: { gold: 0, silver: 0, wood: 0, food: 0, energy: 100, gems: 0 },
-        inventory: { equipment: [], chests: [], chips: [], chipMaterials: 0 },
+        inventory: { equipment: [], chests: [], chips: [], chipMaterials: 0, appliedChestReceiptIds: [] },
+        vehicleChipLoadouts: window.IWChipLoadouts.createDefaultLoadouts(),
+        activeVehicleChipPreset: "I",
+        vehicleAccessories: window.IWVehicleAccessories.createDefaultState(),
         genericShards: { bronze: 0, silver: 0, gold: 0 },
         selectedHeroId: "lucas",
         activeHeroTab: "atributos",
@@ -367,8 +394,17 @@ function loadState() {
             equipment: Array.isArray(parsed.inventory?.equipment) ? parsed.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : [],
             chests: Array.isArray(parsed.inventory?.chests) ? parsed.inventory.chests.slice(0, 100) : [],
             chips: Array.isArray(parsed.inventory?.chips) ? parsed.inventory.chips.filter((item) => item && typeof item.id === "string" && CHIP_CATALOG.some((chip) => chip.id === item.typeId) && Number.isInteger(item.level) && item.level >= 1 && item.level <= CHIP_MAX_LEVEL).slice(0, 500) : [],
-            chipMaterials: Number.isFinite(parsed.inventory?.chipMaterials) && parsed.inventory.chipMaterials >= 0 ? Math.floor(parsed.inventory.chipMaterials) : 0
+            chipMaterials: Number.isFinite(parsed.inventory?.chipMaterials) && parsed.inventory.chipMaterials >= 0 ? Math.floor(parsed.inventory.chipMaterials) : 0,
+            appliedChestReceiptIds: Array.isArray(parsed.inventory?.appliedChestReceiptIds) ? parsed.inventory.appliedChestReceiptIds.filter((id) => typeof id === "string").slice(-500) : []
         };
+        merged.vehicleChipLoadouts = window.IWChipLoadouts.normalizeLoadouts(
+            parsed.vehicleChipLoadouts,
+            new Set(merged.inventory.chips.map((chip) => chip.id))
+        );
+        merged.activeVehicleChipPreset = window.IWChipLoadouts.PRESETS.includes(parsed.activeVehicleChipPreset)
+            ? parsed.activeVehicleChipPreset
+            : "I";
+        merged.vehicleAccessories = window.IWVehicleAccessories.normalizeState(parsed.vehicleAccessories);
         merged.events = { ...fallback.events, ...(parsed.events || {}) };
         merged.mission = { ...fallback.mission, ...(parsed.mission || {}) };
         merged.buildings = { ...fallback.buildings, ...(parsed.buildings || {}) };
@@ -456,6 +492,52 @@ function getApiClient() {
     return window.IWARApi || window.GDEApi || null;
 }
 
+async function syncServerVehicleLoadout({ render = true } = {}) {
+    const api = getApiClient();
+    if (!api?.hasToken?.() || typeof api.getVehicleLoadoutV1 !== "function") return null;
+    const remote = await api.getVehicleLoadoutV1();
+    const inventory = Array.isArray(remote.inventory) ? remote.inventory : [];
+    state.inventory.chips = inventory.map((chip) => ({
+        id: chip.id,
+        typeId: chip.typeId,
+        name: chip.name,
+        role: chip.role,
+        level: chip.level,
+        rarityLabel: chip.rarity || "Comum",
+        source: chip.source || "server",
+        obtainedAt: chip.obtainedAt || Date.now()
+    }));
+    state.vehicleChipLoadouts = window.IWChipLoadouts.normalizeLoadouts(
+        remote.presets,
+        new Set(state.inventory.chips.map((chip) => chip.id))
+    );
+    state.activeVehicleChipPreset = remote.activePreset || "I";
+    if (typeof api.getServerChestsV1 === "function") {
+        const serverInventory = await api.getServerChestsV1();
+        state.inventory.chests = Array.isArray(serverInventory.chests) ? serverInventory.chests.slice(0, 100) : [];
+        state.inventory.chipMaterials = Math.max(0, Number(serverInventory.chipMaterials) || 0);
+        state.inventory.equipment = Array.isArray(serverInventory.equipment)
+            ? serverInventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500)
+            : [];
+        if (serverInventory.shards && typeof serverInventory.shards === "object") {
+            state.genericShards = { ...state.genericShards, ...serverInventory.shards };
+        }
+        const applied = new Set(Array.isArray(state.inventory.appliedChestReceiptIds) ? state.inventory.appliedChestReceiptIds : []);
+        for (const receipt of (Array.isArray(serverInventory.receipts) ? serverInventory.receipts : [])) {
+            if (!receipt?.chestId || applied.has(receipt.chestId)) continue;
+            if (receipt.reward?.type === "resources" && receipt.resources && typeof receipt.resources === "object") {
+                for (const [serverKey, clientKey] of [["gold", "gold"], ["steel", "silver"], ["food", "food"], ["energy", "energy"]]) {
+                    if (Number.isFinite(receipt.resources[serverKey])) state.resources[clientKey] = receipt.resources[serverKey];
+                }
+            }
+            applied.add(receipt.chestId);
+        }
+        state.inventory.appliedChestReceiptIds = [...applied].slice(-500);
+    }
+    if (render) renderAll();
+    return remote;
+}
+
 function saveState() {
     const payload = {
         ...state,
@@ -531,17 +613,25 @@ function getHeroRuntime(heroId) {
     const equippedChips = Object.values(heroState.equippedChips || {}).filter(Boolean)
         .map((chipId) => state.inventory.chips.find((chip) => chip.id === chipId))
         .filter(Boolean);
-    // Original Guerra Infinita prototype progression only. The reference captures show
-    // two before/after values, not a complete level formula; do not present this as verified
-    // Dark War: Survival behavior.
-    const chipPct = (stat) => equippedChips.reduce((sum, item) => {
+    // Original Guerra Infinita rule: only the selected vehicle preset contributes its
+    // installed chips to combat stats. Alternate presets are saved plans, not stacked bonuses.
+    const vehicleChipBonuses = window.IWVehicleChipCombat.calculatePresetBonuses(
+        state.vehicleChipLoadouts,
+        state.activeVehicleChipPreset,
+        state.inventory.chips,
+        CHIP_CATALOG
+    );
+    const vehicleAccessoryBonuses = window.IWVehicleAccessories.calculateBonuses(state.vehicleAccessories);
+    // This progression formula belongs to our prototype; it is not claimed to reproduce
+    // Dark War: Survival's undocumented full chip-level formula.
+    const chipPct = (stat) => (equippedChips.reduce((sum, item) => {
         const definition = CHIP_CATALOG.find((chip) => chip.id === item.typeId);
         return sum + (definition?.stat === stat ? definition.basePct + (item.level - 1) * 9.6 : 0);
-    }, 0) / 100;
+    }, 0) + (vehicleChipBonuses[stat] || 0) + (vehicleAccessoryBonuses[stat] || 0)) / 100;
     const starMultiplier = 1 + (heroState.stars - 1) * 0.08 + (heroState.starStep || 0) * 0.01;
 
     const atk = Math.floor((template.baseStats.atk + equipBonusAtk + skillAtkBonus) * starMultiplier * (1 + chipPct("attackPct")));
-    const def = Math.floor((template.baseStats.def + equipBonusDef + skillDefBonus) * starMultiplier);
+    const def = Math.floor((template.baseStats.def + equipBonusDef + skillDefBonus) * starMultiplier * (1 + (vehicleAccessoryBonuses.defensePct || 0) / 100));
     const troops = Math.floor((template.baseStats.troops + equipBonusTroops) * starMultiplier * (1 + chipPct("hpPct")));
     const power = atk * 8 + def * 6 + troops * 28 + heroState.level * 3200;
     const skillAverage = heroState.skillLevels.reduce((a, b) => a + b, 0) / 3;
@@ -685,6 +775,19 @@ function closeShopPanel() {
     ui.shopPanel.setAttribute("aria-hidden", "true");
 }
 
+function openVehicleAccessoriesPanel() {
+    if (!ui.vehicleAccessoriesPanel) return;
+    ui.vehicleAccessoriesPanel.classList.add("open");
+    ui.vehicleAccessoriesPanel.setAttribute("aria-hidden", "false");
+    renderVehicleAccessoriesPanel();
+}
+
+function closeVehicleAccessoriesPanel() {
+    if (!ui.vehicleAccessoriesPanel) return;
+    ui.vehicleAccessoriesPanel.classList.remove("open");
+    ui.vehicleAccessoriesPanel.setAttribute("aria-hidden", "true");
+}
+
 function closeTransientPanels() {
     let closedAny = false;
     if (ui.heroPanel.classList.contains("open")) {
@@ -693,6 +796,10 @@ function closeTransientPanels() {
     }
     if (ui.shopPanel.classList.contains("open")) {
         closeShopPanel();
+        closedAny = true;
+    }
+    if (ui.vehicleAccessoriesPanel?.classList.contains("open")) {
+        closeVehicleAccessoriesPanel();
         closedAny = true;
     }
     return closedAny;
@@ -1124,6 +1231,10 @@ function equipChip(chipId) {
         pushFeed("Módulo não encontrado no inventário.");
         return;
     }
+    if (window.IWChipLoadouts.PRESETS.some((preset) => window.IWChipLoadouts.isChipInPreset(state.vehicleChipLoadouts, preset, chipId))) {
+        pushFeed("Este módulo está salvo em uma configuração de viatura. Remova-o das configurações antes de equipá-lo no herói.");
+        return;
+    }
     const hero = state.heroes[state.selectedHeroId];
     if (!hero?.unlocked) return;
     // A physical module may only be equipped by one hero at a time.
@@ -1144,12 +1255,111 @@ function equipChip(chipId) {
 }
 
 function isChipEquipped(chipId) {
-    return Object.values(state.heroes || {}).some((hero) =>
+    const equippedByHero = Object.values(state.heroes || {}).some((hero) =>
         Object.values(hero.equippedChips || {}).includes(chipId)
     );
+    const savedInVehiclePreset = window.IWChipLoadouts.PRESETS.some((preset) =>
+        window.IWChipLoadouts.isChipInPreset(state.vehicleChipLoadouts, preset, chipId)
+    );
+    return equippedByHero || savedInVehiclePreset;
 }
 
-function upgradeChip(chipId) {
+async function selectVehicleChipPreset(preset) {
+    if (!window.IWChipLoadouts.PRESETS.includes(preset)) return;
+    const api = getApiClient();
+    if (api?.hasToken?.() && typeof api.setActiveVehiclePresetV1 === "function") {
+        try {
+            const remote = await api.setActiveVehiclePresetV1(preset);
+            state.activeVehicleChipPreset = remote.activePreset || preset;
+            state.vehicleChipLoadouts = window.IWChipLoadouts.normalizeLoadouts(remote.presets, new Set(state.inventory.chips.map((chip) => chip.id)));
+            renderTabContent();
+            saveState();
+        } catch (error) {
+            pushFeed(`Não foi possível trocar a configuração no servidor: ${error.message}`);
+        }
+        return;
+    }
+    state.activeVehicleChipPreset = preset;
+    renderTabContent();
+    saveState();
+}
+
+async function assignVehicleChip(chipId) {
+    const chip = state.inventory.chips.find((item) => item.id === chipId);
+    if (!chip) {
+        pushFeed("Módulo não encontrado no inventário.");
+        return;
+    }
+    const preset = state.activeVehicleChipPreset;
+    const current = state.vehicleChipLoadouts[preset];
+    const slot = window.IWChipLoadouts.SLOTS.find((candidate) => !current[candidate.id]);
+    if (!slot) {
+        pushFeed("Esta configuração já tem quatro módulos. Remova um antes de substituir.");
+        return;
+    }
+    const api = getApiClient();
+    if (api?.hasToken?.() && typeof api.equipVehicleChipV1 === "function") {
+        try {
+            const remote = await api.equipVehicleChipV1({ chipId, slotId: slot.id, presetId: preset });
+            Object.values(state.heroes).forEach((hero) => {
+                for (const stat of ["attackPct", "hpPct"]) {
+                    if (hero.equippedChips?.[stat] === chipId) hero.equippedChips[stat] = null;
+                }
+            });
+            state.inventory.chips = (remote.inventory || []).map((item) => ({
+                id: item.id, typeId: item.typeId, name: item.name, role: item.role,
+                level: item.level, rarityLabel: item.rarity || "Comum", source: item.source || "server",
+                obtainedAt: item.obtainedAt || Date.now()
+            }));
+            state.vehicleChipLoadouts = window.IWChipLoadouts.normalizeLoadouts(remote.presets, new Set(state.inventory.chips.map((item) => item.id)));
+            pushFeed(`${chip.name} instalado na configuração ${preset}, espaço ${slot.label}.`);
+            renderAll();
+            saveState();
+        } catch (error) {
+            pushFeed(`O servidor recusou a instalação do módulo: ${error.message}`);
+        }
+        return;
+    }
+    const result = window.IWChipLoadouts.assignChip(
+        state.vehicleChipLoadouts, preset, slot.id, chipId,
+        new Set(state.inventory.chips.map((item) => item.id))
+    );
+    if (!result.ok) {
+        pushFeed(result.reason === "duplicate-in-preset" ? "Este módulo já está em outro espaço desta configuração." : "Não foi possível equipar o módulo.");
+        return;
+    }
+    Object.values(state.heroes).forEach((hero) => {
+        for (const stat of ["attackPct", "hpPct"]) if (hero.equippedChips?.[stat] === chipId) hero.equippedChips[stat] = null;
+    });
+    state.vehicleChipLoadouts = result.loadouts;
+    pushFeed(`${chip.name} instalado na configuração ${preset}, espaço ${slot.label}.`);
+    renderAll();
+    saveState();
+}
+
+async function removeVehicleChip(slotId) {
+    const api = getApiClient();
+    if (api?.hasToken?.() && typeof api.removeVehicleChipV1 === "function") {
+        try {
+            const remote = await api.removeVehicleChipV1({ slotId, presetId: state.activeVehicleChipPreset });
+            state.vehicleChipLoadouts = window.IWChipLoadouts.normalizeLoadouts(remote.presets, new Set(state.inventory.chips.map((chip) => chip.id)));
+            pushFeed("Módulo removido da configuração de viatura.");
+            renderAll();
+            saveState();
+        } catch (error) {
+            pushFeed(`Não foi possível remover o módulo no servidor: ${error.message}`);
+        }
+        return;
+    }
+    const result = window.IWChipLoadouts.clearSlot(state.vehicleChipLoadouts, state.activeVehicleChipPreset, slotId, new Set(state.inventory.chips.map((item) => item.id)));
+    if (!result.ok) return;
+    state.vehicleChipLoadouts = result.loadouts;
+    pushFeed("Módulo removido da configuração de viatura.");
+    renderAll();
+    saveState();
+}
+
+async function upgradeChip(chipId) {
     const chip = state.inventory.chips.find((item) => item.id === chipId);
     const definition = chip && CHIP_CATALOG.find((item) => item.id === chip.typeId);
     if (!chip || !definition) {
@@ -1160,10 +1370,29 @@ function upgradeChip(chipId) {
         pushFeed("Este módulo já atingiu o nível máximo.");
         return;
     }
-    // Módulos equipados em qualquer herói não podem ser consumidos como cópias.
-    const duplicates = state.inventory.chips.filter((item) =>
-        item.typeId === chip.typeId && item.id !== chip.id && !isChipEquipped(item.id)
-    );
+    const api = getApiClient();
+    if (api?.hasToken?.() && typeof api.upgradeVehicleChipV1 === "function") {
+        try {
+            const remote = await api.upgradeVehicleChipV1(chipId);
+            state.inventory.chips = (remote.inventory || []).map((item) => ({
+                id: item.id, typeId: item.typeId, name: item.name, role: item.role,
+                level: item.level, rarityLabel: item.rarity || "Comum", source: item.source || "server",
+                obtainedAt: item.obtainedAt || Date.now()
+            }));
+            state.vehicleChipLoadouts = window.IWChipLoadouts.normalizeLoadouts(remote.presets, new Set(state.inventory.chips.map((item) => item.id)));
+            pushFeed(`${chip.name} evoluiu no servidor.`);
+            renderAll();
+            saveState();
+        } catch (error) {
+            pushFeed(`Não foi possível evoluir o módulo: ${error.message}`);
+        }
+        return;
+    }
+    if (isChipEquipped(chipId)) {
+        pushFeed("Remova este módulo das configurações antes de usá-lo como base de evolução.");
+        return;
+    }
+    const duplicates = state.inventory.chips.filter((item) => item.typeId === chip.typeId && item.id !== chip.id && !isChipEquipped(item.id));
     if (duplicates.length < definition.upgradeCopies) {
         pushFeed(`Evolução exige ${definition.upgradeCopies} cópias adicionais não equipadas. Disponíveis: ${duplicates.length}.`);
         return;
@@ -1176,13 +1405,49 @@ function upgradeChip(chipId) {
     saveState();
 }
 
-function openInventoryChest(chestId) {
+async function openInventoryChest(chestId) {
     const chestIndex = state.inventory.chests.findIndex((chest) => chest.id === chestId);
     if (chestIndex < 0) {
         pushFeed("Baú não encontrado no inventário.");
         return;
     }
-    const [chest] = state.inventory.chests.splice(chestIndex, 1);
+    const chest = state.inventory.chests[chestIndex];
+    const api = getApiClient();
+    if (api?.hasToken?.() && chest.source !== "server") {
+        pushFeed("Este baú veio do protótipo local e não pode ser resgatado online. Baús online precisam ser emitidos pelo servidor.");
+        return;
+    }
+    if (api?.hasToken?.() && typeof api.openServerChestV1 === "function") {
+        try {
+            const result = await api.openServerChestV1({ chestId, idempotencyKey: `chest-open-${chestId}` });
+            if (!Array.isArray(state.inventory.appliedChestReceiptIds)) state.inventory.appliedChestReceiptIds = [];
+            const applied = new Set(state.inventory.appliedChestReceiptIds);
+            if (!applied.has(result.chestId)) {
+                // The server's balances are authoritative; never add a reward delta
+                // on top of a balance that may already include the same chest.
+                if (result.resources && typeof result.resources === "object") {
+                    for (const [serverKey, clientKey] of [["gold", "gold"], ["steel", "silver"], ["food", "food"], ["energy", "energy"]]) {
+                        if (Number.isFinite(result.resources[serverKey])) state.resources[clientKey] = result.resources[serverKey];
+                    }
+                }
+                state.inventory.appliedChestReceiptIds = [...applied, result.chestId].slice(-500);
+            }
+            await syncServerVehicleLoadout({ render: false });
+            const reward = result.reward || {};
+            if (reward.type === "resources") pushFeed(`Baú aberto: +${reward.gold} ouro, +${reward.steel} prata e +${reward.food} alimento.`);
+            else if (reward.type === "shards") pushFeed(`Baú aberto: +${reward.amount} fragmento(s) ${reward.pool}.`);
+            else if (reward.type === "equipment") pushFeed("Baú aberto: novo equipamento recebido pelo servidor.");
+            else if (reward.type === "moduleChest") pushFeed("Baú aberto: você encontrou um Baú de Módulos.");
+            else if (reward.type === "chipMaterials") pushFeed(`Baú de Módulos: +${reward.amount} materiais de módulo.`);
+            else if (reward.type === "chip") pushFeed(`Baú de Módulos: ${reward.chip?.name || "Módulo"} Nv.${reward.chip?.level || 1} recebido.`);
+            renderAll();
+            saveState();
+        } catch (error) {
+            pushFeed(`O servidor não confirmou a abertura do baú: ${error.message}. O baú foi preservado.`);
+        }
+        return;
+    }
+    state.inventory.chests.splice(chestIndex, 1);
     if (chest.type === "module") {
         const result = rollModuleChestReward();
         if (result.id === "materials") {
@@ -1433,6 +1698,10 @@ function getNearestMonster(maxDistance) {
 }
 
 function collectResourceNode(node) {
+    if (getApiClient()?.hasToken?.()) {
+        pushFeed("A coleta direta do mapa ainda não foi migrada para validação do servidor. Para obter recursos online, use as expedições e caçadas validadas.");
+        return;
+    }
     if (isActionOnCooldown("collect")) return;
     const config = resourceKinds[node.kind];
     let gain = config.value;
@@ -1459,6 +1728,10 @@ function collectResourceNode(node) {
 }
 
 function fightMonster(monster) {
+    if (getApiClient()?.hasToken?.()) {
+        pushFeed("O combate direto do mapa ainda está sendo migrado para resolução autoritativa. Para ganhar recursos e recompensas online, use a seção Caçadas do Servidor; o combate local não concederá itens.");
+        return;
+    }
     if (isActionOnCooldown("fight")) return;
     const hero = getHeroRuntime(state.selectedHeroId);
     const squadPower = getSquadPower();
@@ -1485,7 +1758,7 @@ function fightMonster(monster) {
             state.inventory.equipment.push(equipmentDrop);
             pushFeed(`Equipamento encontrado: ${equipmentDrop.name} (+${equipmentDrop.bonus}).`);
         }
-        if (Math.random() < CHEST_DROP_CHANCE) {
+        if (!getApiClient()?.hasToken?.() && Math.random() < CHEST_DROP_CHANCE) {
             state.inventory.chests.push({ id: `chest-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type: "explorer", name: "Baú de Explorador", obtainedAt: Date.now() });
             pushFeed("Você encontrou um Baú de Explorador!");
         }
@@ -1661,6 +1934,9 @@ function renderTabContent() {
 
     if (state.activeHeroTab === "atributos") {
         const foodCost = 120 + hero.heroState.level * 25;
+        const explorerChestOddsRows = CHEST_REWARD_TABLE.map((entry) =>
+            `<tr><td>${entry.label}</td><td>${(entry.weight * 100).toLocaleString("pt-BR")}%</td></tr>`
+        ).join("");
         ui.heroTabContent.innerHTML = `
             <div class="stats-grid">
                 <div class="stat-item"><span>ATQ</span><strong>${hero.atk.toLocaleString("pt-BR")}</strong><em>Nv.${hero.heroState.level}</em></div>
@@ -1676,7 +1952,12 @@ function renderTabContent() {
                 }).join("")}
             </div>
             <section class="inventory-section"><h3>Baús (${state.inventory.chests.length})</h3>
-                ${state.inventory.chests.length ? state.inventory.chests.map((chest) => `<article class="inventory-item"><span><strong>${chest.name || "Baú de Explorador"}</strong><small>Recompensa aleatória · probabilidades publicadas</small></span><button class="inline-action" data-action="open-chest" data-chest-id="${chest.id}">Abrir</button></article>`).join("") : "<p>Baús podem ser encontrados ao derrotar monstros.</p>"}
+                ${state.inventory.chests.length ? state.inventory.chests.map((chest) => `<article class="inventory-item"><span><strong>${chest.name || "Baú de Explorador"}</strong><small>Recompensa aleatória · consulte a distribuição abaixo</small></span><button class="inline-action" data-action="open-chest" data-chest-id="${chest.id}">Abrir</button></article>`).join("") : "<p>Baús podem ser encontrados ao derrotar monstros.</p>"}
+            </section>
+            <section class="inventory-section"><h3>Probabilidades · Baú de Explorador</h3>
+                <p>Distribuição do conteúdo de cada baú de explorador. Não representa a chance de encontrar um baú ao derrotar um monstro.</p>
+                <table class="module-odds"><thead><tr><th>Recompensa</th><th>Chance</th></tr></thead><tbody>${explorerChestOddsRows}</tbody></table>
+                <p>Total: ${CHEST_REWARD_TABLE.reduce((sum, entry) => sum + entry.weight * 100, 0).toLocaleString("pt-BR")}%</p>
             </section>
             <section class="inventory-section"><h3>Inventário de equipamentos (${state.inventory.equipment.length})</h3>
                 ${state.inventory.equipment.length ? state.inventory.equipment.map((item) => {
@@ -1693,17 +1974,28 @@ function renderTabContent() {
 
     if (state.activeHeroTab === "modulos") {
         const chips = state.inventory.chips || [];
+        const activePreset = state.activeVehicleChipPreset;
+        const activeLoadout = state.vehicleChipLoadouts[activePreset];
+        const filledVehicleSlots = window.IWChipLoadouts.filledSlotCount(state.vehicleChipLoadouts, activePreset);
+        const presetButtons = window.IWChipLoadouts.PRESETS.map((preset) => `<button class="inline-action" data-action="select-chip-preset" data-preset="${preset}" ${preset === activePreset ? "disabled" : ""}>Preset ${preset}${preset === activePreset ? " · ativo" : ""}</button>`).join("");
+        const vehicleSlotRows = window.IWChipLoadouts.SLOTS.map((slot) => {
+            const chipId = activeLoadout[slot.id];
+            const chip = chips.find((item) => item.id === chipId);
+            return `<article class="inventory-item"><span><strong>${slot.label}</strong><small>${chip ? `${chip.name} · Nv.${chip.level}` : "Espaço vazio"}</small></span><button class="inline-action" data-action="remove-vehicle-chip" data-slot-id="${slot.id}" ${chip ? "" : "disabled"}>Remover</button></article>`;
+        }).join("");
         const oddsRows = MODULE_CHEST_ODDS.map((item) => `<tr><td>${item.label}</td><td>${item.chance.toLocaleString("pt-BR")}%</td></tr>`).join("");
         const chipRows = chips.length ? chips.map((chip) => {
             const definition = CHIP_CATALOG.find((item) => item.id === chip.typeId);
-            const equipped = hero.heroState.equippedChips?.[definition?.stat] === chip.id;
+            const equippedByHero = hero.heroState.equippedChips?.[definition?.stat] === chip.id;
+            const equipped = equippedByHero || window.IWChipLoadouts.PRESETS.some((preset) => window.IWChipLoadouts.isChipInPreset(state.vehicleChipLoadouts, preset, chip.id));
             const pct = definition ? definition.basePct + (chip.level - 1) * 9.6 : 0;
             const copies = chips.filter((item) => item.typeId === chip.typeId && item.id !== chip.id && !isChipEquipped(item.id)).length;
-            return `<article class="inventory-item"><span><strong>${chip.name} · Nv.${chip.level}</strong><small>${chip.role} · ${chip.rarityLabel} · +${pct.toLocaleString("pt-BR")}% ${definition?.statLabel || ""} · cópias extras: ${copies}</small></span><div><button class="inline-action" data-action="equip-chip" data-chip-id="${chip.id}" ${equipped ? "disabled" : ""}>${equipped ? "Equipado" : "Equipar"}</button><button class="inline-action" data-action="upgrade-chip" data-chip-id="${chip.id}" ${chip.level >= CHIP_MAX_LEVEL || copies < (definition?.upgradeCopies || 999) ? "disabled" : ""}>Evoluir (${definition?.upgradeCopies || "—"} cópias)</button></div></article>`;
+            return `<article class="inventory-item"><span><strong>${chip.name} · Nv.${chip.level}</strong><small>${chip.role} · ${chip.rarityLabel} · +${pct.toLocaleString("pt-BR")}% ${definition?.statLabel || ""} · cópias extras: ${copies}</small></span><div><button class="inline-action" data-action="equip-chip" data-chip-id="${chip.id}" ${equipped ? "disabled" : ""}>${equipped ? "Equipado/salvo" : "Equipar no herói"}</button><button class="inline-action" data-action="assign-vehicle-chip" data-chip-id="${chip.id}" ${window.IWChipLoadouts.isChipInPreset(state.vehicleChipLoadouts, activePreset, chip.id) || filledVehicleSlots >= 4 ? "disabled" : ""}>Instalar na viatura</button><button class="inline-action" data-action="upgrade-chip" data-chip-id="${chip.id}" ${chip.level >= CHIP_MAX_LEVEL || copies < (definition?.upgradeCopies || 999) ? "disabled" : ""}>Evoluir (${definition?.upgradeCopies || "—"} cópias)</button></div></article>`;
         }).join("") : "<p>Nenhum módulo no inventário. Encontre um Baú de Módulos em baús de explorador.</p>";
         const moduleChests = state.inventory.chests.filter((chest) => chest.type === "module");
         ui.heroTabContent.innerHTML = `
-            <section class="inventory-section"><h3>Módulos equipados · ${hero.template.name}</h3><p>ATQ base com módulos: ${hero.atk.toLocaleString("pt-BR")} · Unidades protegidas: ${hero.troops.toLocaleString("pt-BR")}</p>
+            <section class="inventory-section"><h3>Configuração de viatura · Preset ${activePreset}</h3><p>Configuração original com quatro espaços. A ressonância ainda não concede bônus até sua regra ser definida e testada.</p><div class="preset-switcher">${presetButtons}</div><p>Espaços ocupados: <strong>${filledVehicleSlots}/4</strong></p>${vehicleSlotRows}</section>
+            <section class="inventory-section"><h3>Módulos do herói · ${hero.template.name}</h3><p>ATQ calculado: ${hero.atk.toLocaleString("pt-BR")} · Unidades: ${hero.troops.toLocaleString("pt-BR")}</p>
             <p>Materiais de módulo: <strong>${state.inventory.chipMaterials || 0}</strong></p></section>
             <section class="inventory-section"><h3>Baús de Módulos (${moduleChests.length})</h3>
             ${moduleChests.length ? moduleChests.map((chest) => `<article class="inventory-item"><span><strong>${chest.name}</strong><small>Recompensas e probabilidades transparentes</small></span><button class="inline-action" data-action="open-chest" data-chest-id="${chest.id}">Abrir</button></article>`).join("") : "<p>Abra um baú de explorador para ter chance de encontrar um Baú de Módulos.</p>"}</section>
@@ -1792,6 +2084,68 @@ function renderExpeditionOptions() {
     }
 }
 
+function renderVehicleAccessoriesPanel() {
+    if (!ui.vehicleAccessoriesPanel || !ui.vehicleAccessoryInventory || !ui.vehicleAccessoryStatus || !ui.vehicleAccessoryType) return;
+    const accessoryApi = window.IWVehicleAccessories;
+    const accessoryState = accessoryApi.normalizeState(state.vehicleAccessories);
+    state.vehicleAccessories = accessoryState;
+    const craftCost = accessoryApi.getCraftCost();
+    const canCraft = Object.entries(craftCost).every(([key, value]) => state.resources[key] >= value);
+    ui.vehicleAccessoryStatus.textContent = `Recursos: ${state.resources.gold.toLocaleString("pt-BR")} ouro · ${state.resources.silver.toLocaleString("pt-BR")} prata · ${state.resources.wood.toLocaleString("pt-BR")} madeira. Fabricação: ${craftCost.gold} ouro, ${craftCost.silver} prata e ${craftCost.wood} madeira.`;
+    const options = accessoryApi.SLOTS.map((slot) => `<option value="${slot.typeId}">${slot.label}</option>`).join("");
+    if (ui.vehicleAccessoryType.innerHTML !== options) ui.vehicleAccessoryType.innerHTML = options;
+    const inventory = accessoryState.inventory;
+    ui.vehicleAccessoryInventory.innerHTML = inventory.length ? inventory.map((item) => {
+        const slot = accessoryApi.SLOTS.find((entry) => entry.typeId === item.typeId);
+        const equipped = accessoryState.slots[slot.id] === item.id;
+        const cost = accessoryApi.getUpgradeCost(item);
+        const canUpgrade = cost && Object.entries(cost).every(([key, value]) => state.resources[key] >= value);
+        return `<article class="accessory-item"><div><strong>${slot.label} · Nv. ${item.level}</strong><small>${slot.description}${equipped ? " · Equipado" : " · Inventário"}</small>${cost ? `<small>Próximo nível: ${cost.gold} ouro · ${cost.silver} prata · ${cost.wood} madeira</small>` : "<small>Nível máximo</small>"}</div><div class="accessory-actions"><button class="inline-action" data-action="equip-accessory" data-accessory-id="${item.id}" data-slot-id="${slot.id}" ${equipped ? "disabled" : ""}>${equipped ? "Equipado" : "Equipar"}</button><button class="inline-action" data-action="upgrade-accessory" data-accessory-id="${item.id}" ${!canUpgrade ? "disabled" : ""}>Evoluir</button></div></article>`;
+    }).join("") : "<p>Nenhum acessório fabricado. Todo jogador começa sem acessórios avançados; fabrique peças com recursos obtidos no jogo.</p>";
+    const craftButton = ui.vehicleAccessoriesPanel.querySelector("[data-action='craft-accessory']");
+    if (craftButton) craftButton.disabled = !canCraft || inventory.length >= 200;
+}
+
+function craftVehicleAccessory() {
+    const typeId = ui.vehicleAccessoryType?.value;
+    const id = `acc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const result = window.IWVehicleAccessories.craftAccessory(state.vehicleAccessories, state.resources, typeId, id);
+    if (!result.ok) {
+        pushFeed(result.reason === "insufficient-resources" ? "Recursos insuficientes para fabricar o acessório." : "Não foi possível fabricar esse acessório.");
+        return;
+    }
+    state.vehicleAccessories = result.state;
+    state.resources = result.resources;
+    pushFeed("Acessório fabricado no nível 1.");
+    renderAll();
+    saveState();
+}
+
+function equipVehicleAccessory(accessoryId, slotId) {
+    const result = window.IWVehicleAccessories.equipAccessory(state.vehicleAccessories, accessoryId, slotId);
+    if (!result.ok) {
+        pushFeed("Esse acessório não é compatível com a posição selecionada.");
+        return;
+    }
+    state.vehicleAccessories = result.state;
+    pushFeed("Acessório equipado na viatura.");
+    renderAll();
+    saveState();
+}
+
+function upgradeVehicleAccessory(accessoryId) {
+    const result = window.IWVehicleAccessories.upgradeAccessory(state.vehicleAccessories, state.resources, accessoryId);
+    if (!result.ok) {
+        pushFeed(result.reason === "insufficient-resources" ? "Recursos insuficientes; nenhuma alteração foi aplicada." : result.reason === "max-level" ? "Esse acessório já atingiu o nível máximo." : "Acessório não encontrado; nenhuma alteração foi aplicada.");
+        return;
+    }
+    state.vehicleAccessories = result.state;
+    state.resources = result.resources;
+    pushFeed(`Acessório evoluído para o nível ${result.accessory.level}.`);
+    renderAll();
+    saveState();
+}
+
 function renderExpeditionPanel() {
     if (!ui.expeditionPanel || !ui.expeditionStatus || !ui.startExpeditionBtn || !ui.claimExpeditionBtn) return;
     renderExpeditionOptions();
@@ -1869,6 +2223,7 @@ async function claimExpeditionReward() {
     }
     const destination = getExpeditionDestination();
     const objective = getExpeditionObjective();
+    let vehicleChipReward = null;
     let gold;
     let silver;
     let food;
@@ -1885,6 +2240,7 @@ async function claimExpeditionReward() {
         gold = result.rewards.gold;
         silver = result.rewards.steel;
         food = result.rewards.food;
+        vehicleChipReward = result.vehicleChipReward || null;
         state.resources.energy = result.resources.energy;
     } else {
         const multiplier = destination.rewardMultiplier * objective.rewardMultiplier;
@@ -1905,8 +2261,309 @@ async function claimExpeditionReward() {
     state.resources.silver += silver;
     state.resources.food += food;
     pushFeed(`Recompensa de ${destination.label}: +${gold} ouro, +${silver} prata e +${food} alimento.`);
+    if (vehicleChipReward) {
+        try {
+            await syncServerVehicleLoadout({ render: false });
+            pushFeed(`Primeiro módulo de viatura recebido: ${vehicleChipReward.name || vehicleChipReward.typeId}, nível ${vehicleChipReward.level}.`);
+        } catch (error) {
+            pushFeed(`Recompensa de módulo registrada no servidor; sincronização pendente: ${error.message}`);
+        }
+    }
     renderAll();
     saveState();
+}
+
+let mapRallyHeroesLoaded = false;
+
+function mapRallySetStatus(message) {
+    if (ui.mapRallyStatus) ui.mapRallyStatus.textContent = message;
+}
+
+function mapRallyGetOperationId() {
+    return (ui.mapRallyOperationId?.value || "").trim();
+}
+
+function mapRallyNewOperationId(prefix) {
+    const randomPart = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+    return `${prefix}-${randomPart}`;
+}
+
+function mapRallyRequireApi() {
+    const api = getApiClient();
+    if (!api || !api.hasToken || !api.hasToken()) {
+        mapRallySetStatus("Entre na sua conta para usar caçadas e incursões sincronizadas com o servidor.");
+        return null;
+    }
+    return api;
+}
+
+async function refreshMapBattleHistory() {
+    const api = mapRallyRequireApi();
+    if (!api) return;
+    if (typeof api.getMapBattleHistoryV1 !== "function") {
+        if (ui.mapBattleHistory) ui.mapBattleHistory.textContent = "O histórico não está disponível nesta versão da API.";
+        return;
+    }
+    try {
+        const response = await api.getMapBattleHistoryV1(20);
+        const battles = Array.isArray(response?.battles) ? response.battles : [];
+        if (!ui.mapBattleHistory) return;
+        if (!battles.length) {
+            ui.mapBattleHistory.textContent = "Nenhuma batalha registrada ainda.";
+            return;
+        }
+        ui.mapBattleHistory.replaceChildren();
+        for (const battle of battles) {
+            const item = document.createElement("p");
+            const outcome = battle.result?.outcome === "victory" ? "Vitória"
+                : battle.result?.outcome === "defeat" ? "Derrota" : "Pendente";
+            const type = battle.type === "alliance-rally" ? "Incursão de aliança" : "Caçada";
+            const rewards = battle.rewardReceipt?.rewards;
+            const rewardText = rewards
+                ? ` · +${rewards.gold} ouro, +${rewards.food} alimento, +${rewards.steel} aço`
+                : "";
+            item.textContent = `${type} · ${battle.targetId} · ${battle.status} · ${outcome}${rewardText} · ID: ${battle.operationId}`;
+            ui.mapBattleHistory.appendChild(item);
+        }
+    } catch (error) {
+        if (ui.mapBattleHistory) ui.mapBattleHistory.textContent = `Falha ao carregar histórico: ${error.message}`;
+    }
+}
+
+async function refreshMapRallyHeroes() {
+    const api = mapRallyRequireApi();
+    if (!api) return;
+    if (typeof api.listHeroesV1 !== "function") {
+        mapRallySetStatus("A lista de heróis não está disponível nesta versão da API.");
+        return;
+    }
+    try {
+        const response = await api.listHeroesV1();
+        const heroes = Array.isArray(response?.heroes) ? response.heroes : [];
+        const list = ui.mapRallyHeroList;
+        if (!list) return;
+        const previouslySelected = new Set([...list.querySelectorAll("input[type='checkbox']:checked")].map((input) => input.value));
+        list.replaceChildren();
+        heroes.forEach((hero) => {
+            if (!hero || typeof hero.heroId !== "string") return;
+            const label = document.createElement("label");
+            label.className = "map-rally-hero-option";
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.value = hero.heroId;
+            checkbox.checked = previouslySelected.has(hero.heroId) || (previouslySelected.size === 0 && hero.heroId === heroes[0]?.heroId);
+            checkbox.addEventListener("change", () => {
+                const selected = [...list.querySelectorAll("input[type='checkbox']:checked")];
+                if (selected.length > 5) {
+                    checkbox.checked = false;
+                    mapRallySetStatus("A formação aceita no máximo 5 heróis.");
+                    return;
+                }
+                mapRallySetStatus(`Formação selecionada: ${selected.length}/5 herói(s).`);
+            });
+            const text = document.createElement("span");
+            text.textContent = `${hero.name || hero.heroId} · Nv. ${Number(hero.level) || 1}`;
+            label.append(checkbox, text);
+            list.appendChild(label);
+        });
+        if (!list.children.length) {
+            list.textContent = "Nenhum herói disponível.";
+        }
+        mapRallyHeroesLoaded = list.querySelectorAll("input[type='checkbox']").length > 0;
+        mapRallySetStatus(mapRallyHeroesLoaded
+            ? `Lista atualizada: ${heroes.length} herói(s). Marque de 1 a 5 para formar a marcha.`
+            : "O servidor não retornou heróis utilizáveis.");
+    } catch (error) {
+        mapRallySetStatus(`Falha ao carregar heróis: ${error.message}`);
+    }
+}
+function mapRallySelectedHeroIds() {
+    const list = ui.mapRallyHeroList;
+    if (!list) return [];
+    return [...list.querySelectorAll("input[type='checkbox']:checked")].map((input) => input.value).slice(0, 5);
+}
+
+function mapRallySyncResources(response) {
+    const resources = response?.resources;
+    if (!resources) return;
+    if (Number.isFinite(resources.energy)) state.resources.energy = resources.energy;
+    if (Number.isFinite(resources.gold)) state.resources.gold = resources.gold;
+    if (Number.isFinite(resources.food)) state.resources.food = resources.food;
+    if (Number.isFinite(resources.steel)) state.resources.silver = resources.steel;
+    renderResources();
+    updateStaminaHud();
+    saveState();
+}
+
+function mapRallyShowCombat(result, label) {
+    const battle = result?.result || result?.hunt?.result || result?.rally?.result;
+    const receipt = result?.rewardReceipt || result?.hunt?.rewardReceipt;
+    if (!battle) {
+        mapRallySetStatus(label);
+        return;
+    }
+    const outcome = battle.outcome === "victory" ? "VITÓRIA" : "DERROTA";
+    const rewards = receipt?.rewards;
+    const troopText = receipt && Number.isFinite(receipt.troopsReturned)
+        ? `Tropas: ${receipt.troopsReturned.toLocaleString("pt-BR")} retornaram; ${Number(receipt.troopsLost || 0).toLocaleString("pt-BR")} baixas.`
+        : "";
+    const rewardText = rewards
+        ? `Prêmios: +${rewards.gold} ouro, +${rewards.food} alimento, +${rewards.steel} aço. ${troopText}`
+        : "Resultado já registrado; este jogador não tem recibo individual nesta resposta.";
+    if (ui.mapRallyDetails) {
+        ui.mapRallyDetails.textContent = `${outcome} · Dano: ${Number(battle.damage).toLocaleString("pt-BR")} / ${Number(battle.enemyHp).toLocaleString("pt-BR")} HP · ${rewardText} ID: ${battle.resultId}`;
+    }
+    mapRallySetStatus(`${label} ${result.replayed ? "(resultado recuperado, sem nova concessão)" : ""}`);
+}
+
+function mapRallyRenderDetails(rally) {
+    if (!ui.mapRallyDetails || !rally) return;
+    const participants = Array.isArray(rally.participants) ? rally.participants : [];
+    const troopTotal = participants.reduce((sum, participant) => sum + (Number(participant.troopCount) || 0), 0);
+    const participantText = participants.map((participant) =>
+        `${participant.playerId}: ${Number(participant.troopCount).toLocaleString("pt-BR")} tropas`).join(" · ");
+    ui.mapRallyDetails.textContent = `Estado: ${rally.status} · Participantes: ${participants.length}/${rally.capacity} · Tropas: ${troopTotal.toLocaleString("pt-BR")} · ${participantText || "sem participantes"}`;
+}
+
+async function startMapHuntFromPanel() {
+    const api = mapRallyRequireApi();
+    if (!api) return;
+    if (!mapRallyHeroesLoaded) await refreshMapRallyHeroes();
+    const heroIds = mapRallySelectedHeroIds();
+    if (!heroIds.length) return mapRallySetStatus("Selecione um herói retornado pelo servidor.");
+    try {
+        const operationId = mapRallyNewOperationId("hunt");
+        const result = await api.startMapHuntV1({
+            targetId: ui.mapRallyTarget.value,
+            heroIds,
+            troopCount: Number(ui.mapRallyTroops?.value) || 0,
+            operationId
+        });
+        if (ui.mapRallyHuntOperationId) ui.mapRallyHuntOperationId.value = operationId;
+        mapRallySyncResources(result);
+        mapRallySetStatus(`Caçada iniciada: ${result.targetId} · estado ${result.status}. Energia restante: ${result.resources?.energy ?? "—"}.`);
+        if (ui.mapRallyDetails) ui.mapRallyDetails.textContent = `ID da caçada: ${result.huntId} · chegada prevista: ${new Date(result.endsAtMs).toLocaleTimeString("pt-BR")}.`;
+    } catch (error) {
+        mapRallySetStatus(`Não foi possível iniciar a caçada: ${error.message}`);
+    }
+}
+
+async function resolveMapHuntFromPanel() {
+    const api = mapRallyRequireApi();
+    const operationId = (ui.mapRallyHuntOperationId?.value || "").trim();
+    if (!api || !operationId) {
+        if (!operationId) mapRallySetStatus("Informe o código da caçada ativa.");
+        return;
+    }
+    try {
+        const result = await api.resolveMapHuntV1(operationId);
+        mapRallySyncResources(result);
+        if (typeof api.getServerChestsV1 === "function") await syncServerVehicleLoadout({ render: false });
+        if (result.chestReward?.chestId) pushFeed("Vitória! Um Baú de Explorador foi enviado ao inventário do servidor.");
+        mapRallyShowCombat(result, "Combate da caçada resolvido.");
+    } catch (error) {
+        mapRallySetStatus(`Não foi possível resolver a caçada: ${error.message}`);
+    }
+}
+
+async function createMapRallyFromPanel() {
+    const api = mapRallyRequireApi();
+    if (!api) return;
+    if (!mapRallyHeroesLoaded) await refreshMapRallyHeroes();
+    const heroIds = mapRallySelectedHeroIds();
+    const troopCount = Number(ui.mapRallyTroops?.value);
+    if (!heroIds.length) return mapRallySetStatus("Selecione um herói retornado pelo servidor.");
+    if (!Number.isSafeInteger(troopCount) || troopCount < 1 || troopCount > 1_000_000) {
+        return mapRallySetStatus("Informe uma quantidade de tropas entre 1 e 1.000.000.");
+    }
+    const operationId = mapRallyNewOperationId("rally");
+    try {
+        const result = await api.createAllianceRallyV1({
+            targetId: ui.mapRallyTarget.value, heroIds, troopCount, operationId
+        });
+        if (ui.mapRallyOperationId) ui.mapRallyOperationId.value = operationId;
+        mapRallySyncResources(result);
+        mapRallySetStatus(`Incursão criada. Compartilhe este código com os membros da aliança: ${operationId}`);
+        mapRallyRenderDetails(result);
+    } catch (error) {
+        mapRallySetStatus(`Não foi possível criar a incursão: ${error.message}`);
+    }
+}
+
+async function joinMapRallyFromPanel() {
+    const api = mapRallyRequireApi();
+    if (!api) return;
+    if (!mapRallyHeroesLoaded) await refreshMapRallyHeroes();
+    const operationId = mapRallyGetOperationId();
+    const heroIds = mapRallySelectedHeroIds();
+    const troopCount = Number(ui.mapRallyTroops?.value);
+    if (!operationId) return mapRallySetStatus("Informe o código da incursão que deseja participar.");
+    if (!heroIds.length) return mapRallySetStatus("Selecione um herói retornado pelo servidor.");
+    if (!Number.isSafeInteger(troopCount) || troopCount < 1 || troopCount > 1_000_000) {
+        return mapRallySetStatus("Informe uma quantidade de tropas entre 1 e 1.000.000.");
+    }
+    try {
+        const result = await api.joinAllianceRallyV1({ operationId, heroIds, troopCount });
+        mapRallySyncResources(result);
+        mapRallySetStatus(`Você entrou na incursão ${operationId}.`);
+        mapRallyRenderDetails(result.rally);
+    } catch (error) {
+        mapRallySetStatus(`Não foi possível participar: ${error.message}`);
+    }
+}
+
+async function refreshMapRallyFromPanel() {
+    const api = mapRallyRequireApi();
+    const operationId = mapRallyGetOperationId();
+    if (!api || !operationId) {
+        if (!operationId) mapRallySetStatus("Informe o código da incursão para consultar.");
+        return;
+    }
+    try {
+        const result = await api.getAllianceRallyV1(operationId);
+        mapRallyRenderDetails(result.rally);
+        mapRallySetStatus(`Incursão ${operationId} consultada no servidor.`);
+    } catch (error) {
+        mapRallySetStatus(`Não foi possível consultar a incursão: ${error.message}`);
+    }
+}
+
+async function resolveMapRallyFromPanel() {
+    const api = mapRallyRequireApi();
+    const operationId = mapRallyGetOperationId();
+    if (!api || !operationId) {
+        if (!operationId) mapRallySetStatus("Informe o código da incursão.");
+        return;
+    }
+    try {
+        const result = await api.resolveAllianceRallyV1(operationId);
+        mapRallySyncResources(result);
+        if (typeof api.getServerChestsV1 === "function") await syncServerVehicleLoadout({ render: false });
+        if (result.rewardReceipt?.chestReward?.chestId) pushFeed("A incursão concedeu um Baú de Explorador, registrado no inventário do servidor.");
+        mapRallyRenderDetails(result.rally);
+        mapRallyShowCombat(result, "Resultado da incursão registrado.");
+    } catch (error) {
+        mapRallySetStatus(`Não foi possível resolver a incursão: ${error.message}`);
+    }
+}
+
+async function transitionMapRallyFromPanel(action) {
+    const api = mapRallyRequireApi();
+    const operationId = mapRallyGetOperationId();
+    if (!api || !operationId) {
+        if (!operationId) mapRallySetStatus("Informe o código da incursão.");
+        return;
+    }
+    const method = action === "close" ? api.closeAllianceRallyV1 : api.dispatchAllianceRallyV1;
+    try {
+        const result = await method(operationId);
+        mapRallyRenderDetails(result.rally);
+        mapRallySetStatus(action === "close" ? "Inscrições encerradas." : "Incursão despachada.");
+    } catch (error) {
+        mapRallySetStatus(`Não foi possível ${action === "close" ? "fechar as inscrições" : "despachar"}: ${error.message}`);
+    }
 }
 
 function renderAll() {
@@ -1925,6 +2582,7 @@ function renderAll() {
     renderAutomationButtons();
     renderVerticalSlicePanel();
     renderExpeditionPanel();
+    renderVehicleAccessoriesPanel();
 }
 
 async function pullStateFromBackend() {
@@ -1955,8 +2613,12 @@ async function pullStateFromBackend() {
             equipment: Array.isArray(remote.state.inventory?.equipment) ? remote.state.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : state.inventory.equipment,
             chests: Array.isArray(remote.state.inventory?.chests) ? remote.state.inventory.chests.slice(0, 100) : state.inventory.chests,
             chips: Array.isArray(state.inventory.chips) ? state.inventory.chips : [],
-            chipMaterials: Number.isFinite(state.inventory.chipMaterials) ? state.inventory.chipMaterials : 0
+            chipMaterials: Number.isFinite(state.inventory.chipMaterials) ? state.inventory.chipMaterials : 0,
+            appliedChestReceiptIds: Array.isArray(state.inventory.appliedChestReceiptIds) ? state.inventory.appliedChestReceiptIds.filter((id) => typeof id === "string").slice(-500) : []
         };
+        if (remote.state.vehicleAccessories && !state.vehicleAccessories?.inventory?.length) {
+            state.vehicleAccessories = window.IWVehicleAccessories.normalizeState(remote.state.vehicleAccessories);
+        }
         state.selectedHeroId = remote.state.selectedHeroId || state.selectedHeroId;
         state.activeHeroTab = remote.state.activeHeroTab || state.activeHeroTab;
         state.activeSquadSlot = Number.isFinite(remote.state.activeSquadSlot) ? remote.state.activeSquadSlot : state.activeSquadSlot;
@@ -1994,6 +2656,11 @@ async function pullStateFromBackend() {
             state.resources.gems = remote.economy.gems;
         }
 
+        try {
+            await syncServerVehicleLoadout({ render: false });
+        } catch (loadoutError) {
+            pushFeed(`Inventário de módulos não sincronizado: ${loadoutError.message}`);
+        }
         renderAll();
         saveState();
         pushFeed("Progresso sincronizado com servidor.");
@@ -2030,6 +2697,14 @@ function bindUiActions() {
         saveState();
     });
 
+    ui.vehicleAccessoriesPanel?.addEventListener("click", (event) => {
+        const actionTarget = event.target.closest("[data-action]");
+        if (!actionTarget) return;
+        if (actionTarget.dataset.action === "craft-accessory") craftVehicleAccessory();
+        if (actionTarget.dataset.action === "equip-accessory") equipVehicleAccessory(actionTarget.dataset.accessoryId, actionTarget.dataset.slotId);
+        if (actionTarget.dataset.action === "upgrade-accessory") upgradeVehicleAccessory(actionTarget.dataset.accessoryId);
+    });
+
     ui.heroTabContent.addEventListener("click", (event) => {
         const actionTarget = event.target.closest("[data-action]");
         if (!actionTarget) return;
@@ -2037,6 +2712,9 @@ function bindUiActions() {
         if (action === "upgrade-equip") upgradeEquipment(actionTarget.dataset.slot);
         if (action === "equip-item") equipInventoryItem(actionTarget.dataset.itemId);
         if (action === "equip-chip") equipChip(actionTarget.dataset.chipId);
+        if (action === "assign-vehicle-chip") assignVehicleChip(actionTarget.dataset.chipId);
+        if (action === "select-chip-preset") selectVehicleChipPreset(actionTarget.dataset.preset);
+        if (action === "remove-vehicle-chip") removeVehicleChip(actionTarget.dataset.slotId);
         if (action === "upgrade-chip") upgradeChip(actionTarget.dataset.chipId);
         if (action === "open-chest") openInventoryChest(actionTarget.dataset.chestId);
         if (action === "upgrade-skill") upgradeSkill(Number(actionTarget.dataset.skillIndex));
@@ -2062,10 +2740,26 @@ function bindUiActions() {
         openShopPanel();
     });
 
+    ui.openVehicleAccessoriesBtn?.addEventListener("click", () => {
+        if (ui.vehicleAccessoriesPanel.classList.contains("open")) closeVehicleAccessoriesPanel();
+        else openVehicleAccessoriesPanel();
+    });
+    ui.closeVehicleAccessoriesBtn?.addEventListener("click", closeVehicleAccessoriesPanel);
+
     ui.closeShopBtn.addEventListener("click", () => {
         closeShopPanel();
     });
 
+    if (ui.mapRallyRefreshHeroesBtn) ui.mapRallyRefreshHeroesBtn.addEventListener("click", refreshMapRallyHeroes);
+    if (ui.mapBattleHistoryRefreshBtn) ui.mapBattleHistoryRefreshBtn.addEventListener("click", refreshMapBattleHistory);
+    if (ui.mapHuntStartBtn) ui.mapHuntStartBtn.addEventListener("click", startMapHuntFromPanel);
+    if (ui.mapHuntResolveBtn) ui.mapHuntResolveBtn.addEventListener("click", resolveMapHuntFromPanel);
+    if (ui.mapRallyCreateBtn) ui.mapRallyCreateBtn.addEventListener("click", createMapRallyFromPanel);
+    if (ui.mapRallyJoinBtn) ui.mapRallyJoinBtn.addEventListener("click", joinMapRallyFromPanel);
+    if (ui.mapRallyRefreshBtn) ui.mapRallyRefreshBtn.addEventListener("click", refreshMapRallyFromPanel);
+    if (ui.mapRallyCloseBtn) ui.mapRallyCloseBtn.addEventListener("click", () => transitionMapRallyFromPanel("close"));
+    if (ui.mapRallyDispatchBtn) ui.mapRallyDispatchBtn.addEventListener("click", () => transitionMapRallyFromPanel("dispatch"));
+    if (ui.mapRallyResolveBtn) ui.mapRallyResolveBtn.addEventListener("click", resolveMapRallyFromPanel);
     if (ui.startExpeditionBtn) ui.startExpeditionBtn.addEventListener("click", startExpedition);
     if (ui.claimExpeditionBtn) ui.claimExpeditionBtn.addEventListener("click", claimExpeditionReward);
     if (ui.expeditionDestination) ui.expeditionDestination.addEventListener("change", () => {
@@ -2404,6 +3098,7 @@ setInterval(() => {
     renderTimers();
     renderVerticalSlicePanel();
     renderExpeditionPanel();
+    renderVehicleAccessoriesPanel();
 }, 1000);
 
 function gameLoop(currentTime) {

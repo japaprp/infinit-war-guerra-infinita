@@ -1,5 +1,6 @@
 ﻿import crypto from "crypto";
 import { ensureV1State, toPlayerProfile } from "./userService.js";
+import { ensureVehicleLoadout, getVehicleLoadout } from "./vehicleLoadoutService.js";
 
 function findHero(user, heroId) {
     ensureV1State(user);
@@ -77,6 +78,176 @@ export function startExpedition(user, payload = {}) {
     return { expeditionId, destinationId, objectiveId, startedAtMs: now, endsAtMs: now + 60000, resources: user.v1.resources, stateVersion: user.v1.stateVersion };
 }
 
+function ensureServerInventory(user) {
+    ensureV1State(user);
+    user.v1.inventory ||= {};
+    user.v1.inventory.chests = Array.isArray(user.v1.inventory.chests) ? user.v1.inventory.chests : [];
+    user.v1.inventory.chestReceipts ||= {};
+    user.v1.inventory.chipMaterials = Math.max(0, Number(user.v1.inventory.chipMaterials) || 0);
+    user.v1.inventory.shards ||= { bronze: 0, silver: 0, gold: 0 };
+    user.v1.inventory.equipment = Array.isArray(user.v1.inventory.equipment) ? user.v1.inventory.equipment : [];
+    return user.v1.inventory;
+}
+
+function serverChest(user, type) {
+    const inventory = ensureServerInventory(user);
+    const chest = {
+        id: `chest_${crypto.randomUUID()}`,
+        type,
+        name: type === "module" ? "Baú de Módulos" : "Baú de Explorador",
+        source: "server",
+        createdAtMs: nowMs()
+    };
+    inventory.chests.push(chest);
+    return chest;
+}
+
+export function grantCombatChestDrop(user, won, operationId, randomInt = crypto.randomInt) {
+    if (!operationId || typeof operationId !== "string") return null;
+    const inventory = ensureServerInventory(user);
+    inventory.combatChestReceipts ||= {};
+    // The operation receipt prevents retries from rerolling or duplicating a drop.
+    if (Object.hasOwn(inventory.combatChestReceipts, operationId)) {
+        return inventory.combatChestReceipts[operationId].chestReward
+            ? { ...inventory.combatChestReceipts[operationId].chestReward }
+            : null;
+    }
+
+    let chestReward = null;
+    if (won) {
+        // The original prototype's 10% chest drop chance is rolled server-side.
+        if (randomInt(0, 100) < 10) {
+            const chest = serverChest(user, "explorer");
+            chestReward = { chestId: chest.id, type: chest.type, name: chest.name, source: chest.source, operationId };
+        }
+    }
+
+    inventory.combatChestReceipts[operationId] = { operationId, chestReward, resolvedAtMs: nowMs() };
+    const receiptIds = Object.keys(inventory.combatChestReceipts);
+    for (const oldId of receiptIds.slice(0, Math.max(0, receiptIds.length - 500))) {
+        delete inventory.combatChestReceipts[oldId];
+    }
+    return chestReward ? { ...chestReward } : null;
+}
+
+export function getServerChests(user) {
+    const inventory = ensureServerInventory(user);
+    return { chests: inventory.chests.map(chest => ({ ...chest })), receipts: Object.values(inventory.chestReceipts).map(receipt => ({ ...receipt })), chipMaterials: inventory.chipMaterials, shards: { ...inventory.shards }, equipment: inventory.equipment.map(item => ({ ...item })) };
+}
+
+function rollWeighted(entries) {
+    const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
+    let cursor = crypto.randomInt(0, total);
+    for (const entry of entries) {
+        cursor -= entry.weight;
+        if (cursor < 0) return entry;
+    }
+    return entries[entries.length - 1];
+}
+
+export function openServerChest(user, chestId) {
+    const inventory = ensureServerInventory(user);
+    const id = String(chestId || "");
+    if (!id) return { error: { status: 400, message: "chestId is required" } };
+    if (inventory.chestReceipts[id]) return { ...inventory.chestReceipts[id], alreadyOpened: true };
+    const index = inventory.chests.findIndex(chest => chest.id === id);
+    if (index < 0) return { error: { status: 404, message: "Chest is not owned by this player" } };
+    const chest = inventory.chests[index];
+    let reward;
+    if (chest.type === "explorer") {
+        const roll = rollWeighted([
+            { id: "resources", weight: 45 },
+            { id: "shards", weight: 25 },
+            { id: "equipment", weight: 15 },
+            { id: "moduleChest", weight: 15 }
+        ]);
+        if (roll.id === "resources") {
+            reward = { type: "resources", gold: 250 + crypto.randomInt(0, 751), steel: 200 + crypto.randomInt(0, 601), food: 40 + crypto.randomInt(0, 81) };
+            for (const key of ["gold", "steel", "food"]) user.v1.resources[key] = Math.max(0, Number(user.v1.resources[key]) || 0) + reward[key];
+        } else if (roll.id === "shards") {
+            const pool = ["bronze", "silver", "gold"][crypto.randomInt(0, 3)];
+            const amount = pool === "bronze" ? 3 : pool === "silver" ? 2 : 1;
+            inventory.shards[pool] = (Number(inventory.shards[pool]) || 0) + amount;
+            reward = { type: "shards", pool, amount };
+        } else if (roll.id === "equipment") {
+            const equipment = { id: `equipment_${crypto.randomUUID()}`, slot: ["weapon", "armor", "boots"][crypto.randomInt(0, 3)], bonus: 8 + crypto.randomInt(0, 13), source: "explorer-chest" };
+            inventory.equipment.push(equipment);
+            reward = { type: "equipment", item: equipment };
+        } else {
+            const moduleChest = serverChest(user, "module");
+            reward = { type: "moduleChest", chest: moduleChest };
+        }
+    } else if (chest.type === "module") {
+        const roll = rollWeighted([
+            { id: "legendary", weight: 2 },
+            { id: "blue-a", weight: 75 },
+            { id: "blue-b", weight: 75 },
+            { id: "blue-c", weight: 75 },
+            { id: "blue-d", weight: 75 },
+            { id: "purple", weight: 300 },
+            { id: "materials", weight: 398 }
+        ]);
+        if (roll.id === "materials") {
+            const amount = 20 + crypto.randomInt(0, 41);
+            inventory.chipMaterials += amount;
+            reward = { type: "chipMaterials", amount };
+        } else {
+            const map = {
+                legendary: { typeId: "assault-module", level: 5, rarity: "Lendário" },
+                "blue-a": { typeId: "assault-module", level: 1, rarity: "Raro" },
+                "blue-b": { typeId: "gravity-barrier", level: 1, rarity: "Raro" },
+                "blue-c": { typeId: "recon-array", level: 1, rarity: "Raro" },
+                "blue-d": { typeId: "supply-core", level: 1, rarity: "Raro" },
+                purple: { typeId: ["assault-module", "gravity-barrier"][crypto.randomInt(0, 2)], level: 2, rarity: "Épico" }
+            };
+            const definition = map[roll.id];
+            const vehicle = ensureVehicleLoadout(user);
+            const chip = { id: `chip_${crypto.randomUUID()}`, ...definition, source: "module-chest" };
+            vehicle.chips.push({ id: chip.id, typeId: chip.typeId, level: chip.level, source: chip.source });
+            reward = { type: "chip", chip: getVehicleLoadout(user).inventory.find(item => item.id === chip.id) };
+        }
+    } else {
+        return { error: { status: 409, message: "Unsupported chest type" } };
+    }
+    inventory.chests.splice(index, 1);
+    const receipt = { chestId: id, chestType: chest.type, reward, remainingChests: inventory.chests.map(item => ({ ...item })), resources: { ...user.v1.resources }, chipMaterials: inventory.chipMaterials, shards: { ...inventory.shards }, equipment: inventory.equipment.map(item => ({ ...item })) };
+    inventory.chestReceipts[id] = receipt;
+    const receiptIds = Object.keys(inventory.chestReceipts);
+    for (const oldId of receiptIds.slice(0, Math.max(0, receiptIds.length - 500))) delete inventory.chestReceipts[oldId];
+    bumpStateVersion(user);
+    return receipt;
+}
+
+function grantFirstExpeditionVehicleChip(user, expedition) {
+    const vehicle = ensureVehicleLoadout(user);
+    if (vehicle.firstExpeditionRewardClaimed) return null;
+
+    // The first completed expedition grants one server-generated starter chip.
+    // The client never chooses the chip type, ID, level, or bonus.
+    const rewardTypes = expedition.objectiveId === "hunt"
+        ? ["recon-array", "assault-module"]
+        : expedition.objectiveId === "gather"
+            ? ["supply-core", "gravity-barrier"]
+            : ["recon-array", "supply-core"];
+    const typeId = rewardTypes[crypto.randomInt(0, rewardTypes.length)];
+    const chip = { id: `chip_${crypto.randomUUID()}`, typeId, level: 1, source: "first-expedition" };
+    vehicle.chips.push(chip);
+    vehicle.firstExpeditionRewardClaimed = true;
+    return getVehicleLoadout(user).inventory.find(item => item.id === chip.id) || null;
+}
+
+function grantExpeditionChest(user) {
+    const inventory = ensureServerInventory(user);
+    // A guaranteed first explorer chest introduces the server-owned chest flow;
+    // later expedition chest drops use the original prototype's 10% target.
+    if (!inventory.firstExpeditionChestGranted) {
+        inventory.firstExpeditionChestGranted = true;
+        return serverChest(user, "explorer");
+    }
+    if (crypto.randomInt(0, 100) < 10) return serverChest(user, "explorer");
+    return null;
+}
+
 export function claimExpedition(user, payload = {}) {
     ensureV1State(user);
     user.v1.expedition ||= { active: null, claimedIds: [], receipts: {} };
@@ -106,8 +277,10 @@ export function claimExpedition(user, payload = {}) {
     user.v1.expedition.claimedIds = [...new Set([...claimedIds, expeditionId])].slice(-500);
     user.v1.expedition.active = null;
     for (const [key, amount] of Object.entries(rewards)) user.v1.resources[key] = Math.max(0, Number(user.v1.resources[key]) || 0) + amount;
+    const vehicleChipReward = grantFirstExpeditionVehicleChip(user, expedition);
+    const chestReward = grantExpeditionChest(user);
     bumpStateVersion(user);
-    const receipt = { expeditionId, rewards, resources: { ...user.v1.resources }, stateVersion: user.v1.stateVersion };
+    const receipt = { expeditionId, rewards, vehicleChipReward, chestReward, resources: { ...user.v1.resources }, stateVersion: user.v1.stateVersion };
     user.v1.expedition.receipts[expeditionId] = receipt;
     const retainedIds = new Set(user.v1.expedition.claimedIds);
     user.v1.expedition.receipts = Object.fromEntries(Object.entries(user.v1.expedition.receipts).filter(([id]) => retainedIds.has(id)));

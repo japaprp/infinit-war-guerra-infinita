@@ -24,7 +24,7 @@ function releaseMemoryLock(key, owner) {
     }
 }
 
-export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
+export function createUserLockMiddleware({ redisClient, ttlSec = 6, keyResolver } = {}) {
     return async (req, res, next) => {
         if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
             return next();
@@ -34,7 +34,8 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
             return next();
         }
 
-        const lockKey = `lock:user:${req.user.sub}`;
+        const resolvedKey = typeof keyResolver === "function" ? keyResolver(req) : `lock:user:${req.user.sub}`;
+        const lockKey = typeof resolvedKey === "string" && resolvedKey.trim() ? resolvedKey : `lock:user:${req.user.sub}`;
         const owner = crypto.randomUUID();
 
         try {

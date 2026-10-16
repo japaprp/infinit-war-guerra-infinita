@@ -37,6 +37,7 @@ export function ensureV1State(user) {
             level: 1,
             power: 0,
             vipLevel: 0,
+            troops: 1000,
             resources: {
                 gold: 0,
                 wood: 0,
@@ -91,6 +92,8 @@ export function ensureV1State(user) {
             expedition: { active: null, claimedIds: [] }
         };
     }
+
+    if (!Number.isSafeInteger(user.v1.troops) || user.v1.troops < 0) user.v1.troops = 1000;
 
     user.v1.expedition ||= { active: null, claimedIds: [], receipts: {} };
     user.v1.expedition.receipts ||= {};
