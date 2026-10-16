@@ -15,6 +15,7 @@ export const env = {
     MYSQL_USER: process.env.MYSQL_USER || "root",
     MYSQL_PASSWORD: process.env.MYSQL_PASSWORD || "",
     MYSQL_SSL: String(process.env.MYSQL_SSL || "false").toLowerCase() === "true",
+    DATABASE_URL: process.env.DATABASE_URL || "",
     CORS_ORIGINS: process.env.CORS_ORIGINS || "",
     FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || "",
     REDIS_ENABLED: String(process.env.REDIS_ENABLED || "false").toLowerCase() === "true",
@@ -39,16 +40,13 @@ export function validateRuntimeConfig(config) {
         problems.push("JWT_SECRET and RECEIPT_SECRET must be different values");
     }
 
-    if (String(config.DATA_DRIVER || "").toLowerCase() !== "mysql") {
-        problems.push("DATA_DRIVER must be mysql for persistent hosted gameplay");
+    const driver = String(config.DATA_DRIVER || "").toLowerCase();
+    if (!["mysql", "postgres"].includes(driver)) problems.push("DATA_DRIVER must be mysql or postgres for persistent hosted gameplay");
+    if (driver === "mysql") {
+        for (const key of ["MYSQL_HOST", "MYSQL_DATABASE", "MYSQL_USER", "MYSQL_PASSWORD"]) if (!String(config[key] || "").trim()) problems.push(key + " is required");
+        if (!Number.isInteger(Number(config.MYSQL_PORT)) || Number(config.MYSQL_PORT) < 1 || Number(config.MYSQL_PORT) > 65535) problems.push("MYSQL_PORT must be an integer between 1 and 65535");
     }
-
-    for (const key of ["MYSQL_HOST", "MYSQL_DATABASE", "MYSQL_USER", "MYSQL_PASSWORD"]) {
-        if (!String(config[key] || "").trim()) problems.push(`${key} is required`);
-    }
-    if (!Number.isInteger(Number(config.MYSQL_PORT)) || Number(config.MYSQL_PORT) < 1 || Number(config.MYSQL_PORT) > 65535) {
-        problems.push("MYSQL_PORT must be an integer between 1 and 65535");
-    }
+    if (driver === "postgres" && !/^postgres(?:ql)?:\/\//i.test(String(config.DATABASE_URL || ""))) problems.push("DATABASE_URL must be a valid PostgreSQL connection URL when DATA_DRIVER=postgres");
 
     const origins = String(config.CORS_ORIGINS || "")
         .split(",")
