@@ -17,7 +17,8 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  # Keep running tests alive; GitHub replaces only older pending runs in this group.
+  cancel-in-progress: false
 
 jobs:
   integration-tests:
