@@ -394,7 +394,7 @@ function loadState() {
             equipment: Array.isArray(parsed.inventory?.equipment) ? parsed.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : [],
             chests: Array.isArray(parsed.inventory?.chests) ? parsed.inventory.chests.slice(0, 100) : [],
             chips: Array.isArray(parsed.inventory?.chips) ? parsed.inventory.chips.filter((item) => item && typeof item.id === "string" && CHIP_CATALOG.some((chip) => chip.id === item.typeId) && Number.isInteger(item.level) && item.level >= 1 && item.level <= CHIP_MAX_LEVEL).slice(0, 500) : [],
-            chipMaterials: Number.isFinite(parsed.inventory?.chipMaterials) && parsed.inventory.chipMaterials >= 0 ? Math.floor(parsed.inventory.chipMaterials) : 0
+            chipMaterials: Number.isFinite(parsed.inventory?.chipMaterials) && parsed.inventory.chipMaterials >= 0 ? Math.floor(parsed.inventory.chipMaterials) : 0,\n            appliedChestReceiptIds: Array.isArray(parsed.inventory?.appliedChestReceiptIds) ? parsed.inventory.appliedChestReceiptIds.filter((id) => typeof id === "string").slice(-500) : []
         };
         merged.vehicleChipLoadouts = window.IWChipLoadouts.normalizeLoadouts(
             parsed.vehicleChipLoadouts,
