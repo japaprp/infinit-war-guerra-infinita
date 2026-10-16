@@ -6,7 +6,8 @@ Esta pasta reúne evidências visuais usadas para análise comportamental e téc
 
 - `screenshots/`: capturas de tela originais usadas como evidência.
 - `index.md`: catálogo inicial das observações por arquivo, sistema, evidência e perguntas em aberto.
-- Total confirmado na branch durante a última verificação: **94 imagens**. O plano inicial previa 96; as duas restantes ainda precisam ser localizadas/confirmadas.
+- Auditoria da pasta `screenshots/` na branch: **94 arquivos de imagem** (`.jpg`), mais `.gitkeep`. A referência histórica era de 96 imagens; portanto, **2 imagens previstas não aparecem na pasta atual** e ainda precisam ser localizadas. O maior identificador é `WA0288`, não o total de imagens.
+- Cruzamento com `index.md`: **94 nomes únicos catalogados**, sem arquivos da pasta fora do catálogo e sem nomes catalogados ausentes da pasta. O inventário menciona `WA0288` duas vezes; isso é repetição no texto, não um arquivo adicional. Existe também `IMG-20261015-WA0213(1).jpg`, que deve ser preservado como nome original.
 
 ## Regras de análise
 
