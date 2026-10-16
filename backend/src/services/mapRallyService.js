@@ -211,7 +211,10 @@ export function resolveMapHunt(db, userId, user, operationId, nowMs = Date.now()
         resolvedAtMs: nowMs
     };
     grantResources(user, rewards);
-    const troopsLost = Math.floor((Number(hunt.troopCount) || 0) * (won ? 0.02 : 0.25));
+    const committedTroops = Math.max(0, Number(hunt.troopCount) || 0);
+    const baseLosses = Math.floor(committedTroops * (won ? 0.02 : 0.25));
+    const hpPct = Math.max(0, Math.min(500, Number(hunt.vehicleBonuses?.hpPct) || 0));
+    const troopsLost = Math.min(committedTroops, Math.floor(baseLosses * 100 / (100 + hpPct)));
     const troopsReturned = Math.max(0, (Number(hunt.troopCount) || 0) - troopsLost);
     user.v1.troops += troopsReturned;
     const receipt = { receiptId: `reward_${result.resultId}_${userId}`, playerId: userId, resultId: result.resultId, rewards, troopsCommitted: Number(hunt.troopCount) || 0, troopsLost, troopsReturned, grantedAtMs: nowMs };
@@ -257,7 +260,9 @@ export function resolveMapRally(db, userId, user, operationId, nowMs = Date.now(
         const rewards = rewardsFor(target, won);
         grantResources(participantUser, rewards);
         const troopsCommitted = Number(participant.troopCount) || 0;
-        const troopsLost = Math.floor(troopsCommitted * (won ? 0.02 : 0.25));
+        const baseLosses = Math.floor(troopsCommitted * (won ? 0.02 : 0.25));
+        const hpPct = Math.max(0, Math.min(500, Number(participant.vehicleBonuses?.hpPct) || 0));
+        const troopsLost = Math.min(troopsCommitted, Math.floor(baseLosses * 100 / (100 + hpPct)));
         const troopsReturned = Math.max(0, troopsCommitted - troopsLost);
         participantUser.v1.troops += troopsReturned;
         rewardReceipts[participant.playerId] = {
