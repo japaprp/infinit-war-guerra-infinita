@@ -221,6 +221,16 @@ test("alliance rally enforces membership, unique entry, leader transitions and p
         assert.equal(db.rallies["rally-op-1"].participants.length, 2);
         assert.equal(db.users["guest:rally_member"].v1.resources.gold, resolved.body.rewardReceipt.rewards.gold);
         assert.equal(db.users["guest:rally_member"].v1.troops, 750 + resolved.body.rewardReceipt.troopsReturned);
+        const history = await request(server.baseUrl, "GET", "/v1/world/battle-history?limit=10", { token: memberToken });
+        assert.equal(history.status, 200);
+        assert.equal(history.body.battles.length, 1);
+        assert.equal(history.body.battles[0].type, "alliance-rally");
+        assert.equal(history.body.battles[0].operationId, "rally-op-1");
+        assert.equal(history.body.battles[0].rewardReceipt.receiptId, resolved.body.rewardReceipt.receiptId);
+
+        const strangerHistory = await request(server.baseUrl, "GET", "/v1/world/battle-history?limit=10", { token: strangerToken });
+        assert.equal(strangerHistory.status, 200);
+        assert.equal(strangerHistory.body.battles.length, 0, "history must not disclose another player's rally");
     } finally {
         await server.stop();
     }
