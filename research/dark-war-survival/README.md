@@ -12,6 +12,8 @@ Esta pasta reúne evidências visuais usadas para análise comportamental e téc
 
 ## Artefatos estruturados adicionais
 
+- [Especificação de chips e Sincronia de Núcleo](../../docs/sistemas/chips_ressonancia.md): requisitos originais, evidências relatadas, regras ainda hipotéticas e testes de aceite.
+
 - `data/green-chip-chest-probabilities.json`: dataset estruturado de 32 resultados do baú verde observado, com probabilidades derivadas identificadas e nomes não confirmados deixados em aberto.
 - `video-analysis-protocol.md`: protocolo para análise dinâmica de vídeos de gameplay enviados por WhatsApp, com timestamps, pré/pós-ação, classificação de evidências e perguntas técnicas.
 - `chip-loadout-integration-test-plan.md`: casos de teste pendentes para validar presets, persistência, inventário, evolução e integração real com atributos de combate.
