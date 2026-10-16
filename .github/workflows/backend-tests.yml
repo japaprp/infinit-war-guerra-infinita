@@ -5,7 +5,9 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
+      - ".github/workflows/backend-integration.yml"
       - "api/**"
+      - "auth/**"
       - "index.html"
       - "game.html"
       - "render.yaml"
@@ -14,18 +16,27 @@ on:
     branches:
       - main
       - "fix/**"
+      - "feat/**"
     paths:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
+      - ".github/workflows/backend-integration.yml"
       - "api/**"
+      - "auth/**"
       - "index.html"
       - "game.html"
       - "render.yaml"
       - "DEPLOYMENT_PREPARATION.md"
+  workflow_dispatch:
+
+concurrency:
+  group: \${{ github.workflow }}-\${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: backend
@@ -42,5 +53,3 @@ jobs:
         run: npm ci
       - name: Test deployment readiness and configuration
         run: npm run test:deploy
-      - name: Test backend integration
-        run: npm run test:integration
