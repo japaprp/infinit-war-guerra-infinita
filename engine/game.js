@@ -491,6 +491,30 @@ function getApiClient() {
     return window.IWARApi || window.GDEApi || null;
 }
 
+async function syncServerVehicleLoadout({ render = true } = {}) {
+    const api = getApiClient();
+    if (!api?.hasToken?.() || typeof api.getVehicleLoadoutV1 !== "function") return null;
+    const remote = await api.getVehicleLoadoutV1();
+    const inventory = Array.isArray(remote.inventory) ? remote.inventory : [];
+    state.inventory.chips = inventory.map((chip) => ({
+        id: chip.id,
+        typeId: chip.typeId,
+        name: chip.name,
+        role: chip.role,
+        level: chip.level,
+        rarityLabel: chip.rarity || "Comum",
+        source: chip.source || "server",
+        obtainedAt: chip.obtainedAt || Date.now()
+    }));
+    state.vehicleChipLoadouts = window.IWChipLoadouts.normalizeLoadouts(
+        remote.presets,
+        new Set(state.inventory.chips.map((chip) => chip.id))
+    );
+    state.activeVehicleChipPreset = remote.activePreset || "I";
+    if (render) renderAll();
+    return remote;
+}
+
 function saveState() {
     const payload = {
         ...state,
@@ -1217,14 +1241,27 @@ function isChipEquipped(chipId) {
     return equippedByHero || savedInVehiclePreset;
 }
 
-function selectVehicleChipPreset(preset) {
+async function selectVehicleChipPreset(preset) {
     if (!window.IWChipLoadouts.PRESETS.includes(preset)) return;
+    const api = getApiClient();
+    if (api?.hasToken?.() && typeof api.setActiveVehiclePresetV1 === "function") {
+        try {
+            const remote = await api.setActiveVehiclePresetV1(preset);
+            state.activeVehicleChipPreset = remote.activePreset || preset;
+            state.vehicleChipLoadouts = window.IWChipLoadouts.normalizeLoadouts(remote.presets, new Set(state.inventory.chips.map((chip) => chip.id)));
+            renderTabContent();
+            saveState();
+        } catch (error) {
+            pushFeed(`Não foi possível trocar a configuração no servidor: ${error.message}`);
+        }
+        return;
+    }
     state.activeVehicleChipPreset = preset;
     renderTabContent();
     saveState();
 }
 
-function assignVehicleChip(chipId) {
+async function assignVehicleChip(chipId) {
     const chip = state.inventory.chips.find((item) => item.id === chipId);
     if (!chip) {
         pushFeed("Módulo não encontrado no inventário.");
@@ -1237,23 +1274,39 @@ function assignVehicleChip(chipId) {
         pushFeed("Esta configuração já tem quatro módulos. Remova um antes de substituir.");
         return;
     }
+    const api = getApiClient();
+    if (api?.hasToken?.() && typeof api.equipVehicleChipV1 === "function") {
+        try {
+            const remote = await api.equipVehicleChipV1({ chipId, slotId: slot.id, presetId: preset });
+            Object.values(state.heroes).forEach((hero) => {
+                for (const stat of ["attackPct", "hpPct"]) {
+                    if (hero.equippedChips?.[stat] === chipId) hero.equippedChips[stat] = null;
+                }
+            });
+            state.inventory.chips = (remote.inventory || []).map((item) => ({
+                id: item.id, typeId: item.typeId, name: item.name, role: item.role,
+                level: item.level, rarityLabel: item.rarity || "Comum", source: item.source || "server",
+                obtainedAt: item.obtainedAt || Date.now()
+            }));
+            state.vehicleChipLoadouts = window.IWChipLoadouts.normalizeLoadouts(remote.presets, new Set(state.inventory.chips.map((item) => item.id)));
+            pushFeed(`${chip.name} instalado na configuração ${preset}, espaço ${slot.label}.`);
+            renderAll();
+            saveState();
+        } catch (error) {
+            pushFeed(`O servidor recusou a instalação do módulo: ${error.message}`);
+        }
+        return;
+    }
     const result = window.IWChipLoadouts.assignChip(
-        state.vehicleChipLoadouts,
-        preset,
-        slot.id,
-        chipId,
+        state.vehicleChipLoadouts, preset, slot.id, chipId,
         new Set(state.inventory.chips.map((item) => item.id))
     );
     if (!result.ok) {
-        pushFeed(result.reason === "duplicate-in-preset"
-            ? "Este módulo já está em outro espaço desta configuração."
-            : "Não foi possível equipar o módulo.");
+        pushFeed(result.reason === "duplicate-in-preset" ? "Este módulo já está em outro espaço desta configuração." : "Não foi possível equipar o módulo.");
         return;
     }
     Object.values(state.heroes).forEach((hero) => {
-        for (const stat of ["attackPct", "hpPct"]) {
-            if (hero.equippedChips?.[stat] === chipId) hero.equippedChips[stat] = null;
-        }
+        for (const stat of ["attackPct", "hpPct"]) if (hero.equippedChips?.[stat] === chipId) hero.equippedChips[stat] = null;
     });
     state.vehicleChipLoadouts = result.loadouts;
     pushFeed(`${chip.name} instalado na configuração ${preset}, espaço ${slot.label}.`);
@@ -1261,13 +1314,21 @@ function assignVehicleChip(chipId) {
     saveState();
 }
 
-function removeVehicleChip(slotId) {
-    const result = window.IWChipLoadouts.clearSlot(
-        state.vehicleChipLoadouts,
-        state.activeVehicleChipPreset,
-        slotId,
-        new Set(state.inventory.chips.map((item) => item.id))
-    );
+async function removeVehicleChip(slotId) {
+    const api = getApiClient();
+    if (api?.hasToken?.() && typeof api.removeVehicleChipV1 === "function") {
+        try {
+            const remote = await api.removeVehicleChipV1({ slotId, presetId: state.activeVehicleChipPreset });
+            state.vehicleChipLoadouts = window.IWChipLoadouts.normalizeLoadouts(remote.presets, new Set(state.inventory.chips.map((chip) => chip.id)));
+            pushFeed("Módulo removido da configuração de viatura.");
+            renderAll();
+            saveState();
+        } catch (error) {
+            pushFeed(`Não foi possível remover o módulo no servidor: ${error.message}`);
+        }
+        return;
+    }
+    const result = window.IWChipLoadouts.clearSlot(state.vehicleChipLoadouts, state.activeVehicleChipPreset, slotId, new Set(state.inventory.chips.map((item) => item.id)));
     if (!result.ok) return;
     state.vehicleChipLoadouts = result.loadouts;
     pushFeed("Módulo removido da configuração de viatura.");
@@ -1275,7 +1336,7 @@ function removeVehicleChip(slotId) {
     saveState();
 }
 
-function upgradeChip(chipId) {
+async function upgradeChip(chipId) {
     const chip = state.inventory.chips.find((item) => item.id === chipId);
     const definition = chip && CHIP_CATALOG.find((item) => item.id === chip.typeId);
     if (!chip || !definition) {
@@ -1286,10 +1347,29 @@ function upgradeChip(chipId) {
         pushFeed("Este módulo já atingiu o nível máximo.");
         return;
     }
-    // Módulos equipados em qualquer herói não podem ser consumidos como cópias.
-    const duplicates = state.inventory.chips.filter((item) =>
-        item.typeId === chip.typeId && item.id !== chip.id && !isChipEquipped(item.id)
-    );
+    const api = getApiClient();
+    if (api?.hasToken?.() && typeof api.upgradeVehicleChipV1 === "function") {
+        try {
+            const remote = await api.upgradeVehicleChipV1(chipId);
+            state.inventory.chips = (remote.inventory || []).map((item) => ({
+                id: item.id, typeId: item.typeId, name: item.name, role: item.role,
+                level: item.level, rarityLabel: item.rarity || "Comum", source: item.source || "server",
+                obtainedAt: item.obtainedAt || Date.now()
+            }));
+            state.vehicleChipLoadouts = window.IWChipLoadouts.normalizeLoadouts(remote.presets, new Set(state.inventory.chips.map((item) => item.id)));
+            pushFeed(`${chip.name} evoluiu no servidor.`);
+            renderAll();
+            saveState();
+        } catch (error) {
+            pushFeed(`Não foi possível evoluir o módulo: ${error.message}`);
+        }
+        return;
+    }
+    if (isChipEquipped(chipId)) {
+        pushFeed("Remova este módulo das configurações antes de usá-lo como base de evolução.");
+        return;
+    }
+    const duplicates = state.inventory.chips.filter((item) => item.typeId === chip.typeId && item.id !== chip.id && !isChipEquipped(item.id));
     if (duplicates.length < definition.upgradeCopies) {
         pushFeed(`Evolução exige ${definition.upgradeCopies} cópias adicionais não equipadas. Disponíveis: ${duplicates.length}.`);
         return;
