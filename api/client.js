@@ -122,6 +122,15 @@
         request("POST", `/v1/world/alliance-rallies/${encodeURIComponent(operationId)}/resolve`, {});
     const purchaseSkuV1 = async ({ sku, quantity = 1, idempotencyKey }) =>
         request("POST", "/v1/shop/purchase", { sku, quantity, idempotencyKey });
+    const getVehicleLoadoutV1 = async () => request("GET", "/v1/vehicle/loadout");
+    const setActiveVehiclePresetV1 = async (presetId) =>
+        request("POST", "/v1/vehicle/presets/active", { presetId });
+    const equipVehicleChipV1 = async ({ chipId, slotId, presetId }) =>
+        request("POST", "/v1/vehicle/chips/equip", { chipId, slotId, presetId });
+    const removeVehicleChipV1 = async ({ slotId, presetId }) =>
+        request("POST", "/v1/vehicle/chips/remove", { slotId, presetId });
+    const upgradeVehicleChipV1 = async (chipId) =>
+        request("POST", `/v1/vehicle/chips/${encodeURIComponent(chipId)}/upgrade`, {});
 
     const api = {
         setToken,
@@ -151,7 +160,12 @@
         closeAllianceRallyV1,
         dispatchAllianceRallyV1,
         resolveAllianceRallyV1,
-        purchaseSkuV1
+        purchaseSkuV1,
+        getVehicleLoadoutV1,
+        setActiveVehiclePresetV1,
+        equipVehicleChipV1,
+        removeVehicleChipV1,
+        upgradeVehicleChipV1
     };
 
     window.IWARApi = api;
