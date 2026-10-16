@@ -540,13 +540,20 @@ function getHeroRuntime(heroId) {
     const equippedChips = Object.values(heroState.equippedChips || {}).filter(Boolean)
         .map((chipId) => state.inventory.chips.find((chip) => chip.id === chipId))
         .filter(Boolean);
-    // Original Guerra Infinita prototype progression only. The reference captures show
-    // two before/after values, not a complete level formula; do not present this as verified
-    // Dark War: Survival behavior.
-    const chipPct = (stat) => equippedChips.reduce((sum, item) => {
+    // Original Guerra Infinita rule: only the selected vehicle preset contributes its
+    // installed chips to combat stats. Alternate presets are saved plans, not stacked bonuses.
+    const vehicleChipBonuses = window.IWVehicleChipCombat.calculatePresetBonuses(
+        state.vehicleChipLoadouts,
+        state.activeVehicleChipPreset,
+        state.inventory.chips,
+        CHIP_CATALOG
+    );
+    // This progression formula belongs to our prototype; it is not claimed to reproduce
+    // Dark War: Survival's undocumented full chip-level formula.
+    const chipPct = (stat) => (equippedChips.reduce((sum, item) => {
         const definition = CHIP_CATALOG.find((chip) => chip.id === item.typeId);
         return sum + (definition?.stat === stat ? definition.basePct + (item.level - 1) * 9.6 : 0);
-    }, 0) / 100;
+    }, 0) + (vehicleChipBonuses[stat] || 0)) / 100;
     const starMultiplier = 1 + (heroState.stars - 1) * 0.08 + (heroState.starStep || 0) * 0.01;
 
     const atk = Math.floor((template.baseStats.atk + equipBonusAtk + skillAtkBonus) * starMultiplier * (1 + chipPct("attackPct")));
