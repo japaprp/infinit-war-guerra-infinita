@@ -1,7 +1,7 @@
 # Catálogo de evidências — Dark War: Survival
 
 **Projeto de destino:** Guerra Infinita (implementação original)  
-**Estado:** primeira leitura visual concluída para os 94 arquivos atualmente listados nesta branch.  
+**Estado:** catálogo atualizado até `IMG-20261015-WA0288.jpg`. A contagem antiga de 94 arquivos é histórica e está pendente de auditoria da pasta real; não equivale ao total atual.  
 **Branch de evidências:** `research/dark-war-survival-captures`  
 **Regra:** este catálogo descreve apenas elementos visíveis nas capturas; não afirma acesso ao código-fonte interno do jogo.
 
@@ -154,7 +154,8 @@ Esses itens ficam como **PRECISA DE TESTE**. Uma captura estática não revela l
 
 ## Próxima etapa recomendada
 
-1. Confirmar se existem mais duas imagens fora da lista atual: esta branch ainda lista **94 arquivos de imagem**, apesar do catálogo inicialmente prever 96.
-2. Fazer uma segunda passagem para transcrever valores exatos em CSV: probabilidades, custos, bônus e pontos de evento.
-3. Planejar testes controlados de combate, upgrades e baús com antes/depois e múltiplas amostras.
-4. Transformar apenas regras bem sustentadas em especificações do Guerra Infinita; manter nomes, arte, código e balanceamento próprios.
+1. Auditar a pasta `screenshots/` e comparar os nomes reais com o catálogo, usando `WA0288` como maior identificador observado — não como contagem total.
+2. Registrar lacunas na sequência, duplicatas (incluindo sufixos como `(1)`) e arquivos não catalogados, preservando os nomes originais.
+3. Fazer uma segunda passagem para transcrever valores exatos em CSV: probabilidades, custos, bônus e pontos de evento.
+4. Planejar testes controlados de combate, upgrades e baús com antes/depois e múltiplas amostras.
+5. Transformar apenas regras bem sustentadas em especificações do Guerra Infinita; manter nomes, arte, código e balanceamento próprios.
