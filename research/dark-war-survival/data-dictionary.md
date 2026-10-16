@@ -14,10 +14,14 @@
 
 | Arquivo | Chip / categoria observada | Atributo | Valor exibido | Contexto | Estado | Pergunta de validação |
 |---|---|---|---:|---|---|---|
-| IMG-20261015-WA0172.jpg | Módulo de Assalto — Guerreiro | Dano de combate dos guerreiros | +71% | Detalhe do chip | RELATADO NA INTERFACE | É aditivo ou multiplicativo? Aplica-se a todos os modos? |
-| IMG-20261015-WA0173.jpg | Módulo de Assalto — Guerreiro | Dano de combate dos guerreiros | +71% → +80,6% | Prévia de evolução; progresso 4/10; requisito visível 1/5 | CONFIRMADO VISUALMENTE / projeção da interface | A prévia se confirma após a evolução? Qual custo total? |
-| IMG-20261015-WA0174.jpg | Barreira Gravitacional — Guerreiro | Vida útil do Guerreiro | +45,2% | Detalhe do chip; texto também descreve mitigação/escudo | RELATADO NA INTERFACE | Qual a duração, o gatilho e o limite do escudo? |
-| IMG-20261015-WA0175.jpg | Barreira Gravitacional — Guerreiro | Vida útil do Guerreiro | +45,2% → +54,8% | Prévia de evolução; progresso 4/10; requisito visível 0/3 | CONFIRMADO VISUALMENTE / projeção da interface | A prévia se confirma? Como o requisito varia por estrela? |
+| IMG-20261015-WA0172.jpg | Módulo de Assalto — Guerreiro | Dano de combate dos guerreiros | +71% | Detalhe do chip; poder mostrado 2.390.000 | RELATADO NA INTERFACE | É aditivo ou multiplicativo? Aplica-se a todos os modos? |
+| IMG-20261015-WA0173.jpg | Módulo de Assalto — Guerreiro | Dano de combate dos guerreiros | +71% → +80,6% | Prévia de evolução; progresso 4/10; poder mostrado 2.390.000 → 2.720.000; requisito visível 1/5 | CONFIRMADO VISUALMENTE / projeção da interface | A prévia se confirma após a evolução? Qual custo total? |
+| IMG-20261015-WA0174.jpg | Barreira Gravitacional — Guerreiro | Vida útil do Guerreiro | +45,2% | Detalhe do chip; poder mostrado 1.530.000 | RELATADO NA INTERFACE | Qual a duração, o gatilho e o limite do escudo? |
+| IMG-20261015-WA0174.jpg | Barreira Gravitacional — Guerreiro | Redução de dano recebido | 2% | Texto diz que ocorre ao entrar em combate e dura até o fim do combate | RELATADO NA INTERFACE | O efeito é constante, acumulável ou limitado por modo? |
+| IMG-20261015-WA0174.jpg | Barreira Gravitacional — Guerreiro | Absorção de dano por escudo | 50% do dano recebido; limite máximo 200% do poder de ataque em dano | Texto diz que o escudo é ativado após o veículo modificado usar uma habilidade | RELATADO NA INTERFACE | Como se calcula o limite e quando o escudo termina? |
+| IMG-20261015-WA0173.jpg | Módulo de Assalto — Guerreiro | Dano adicional ao atacar pela unidade | 40% | Texto complementar no detalhe/prévia | RELATADO NA INTERFACE | Se aplica ao dano base, bônus ou dano final? |
+| IMG-20261015-WA0173.jpg | Módulo de Assalto — Guerreiro | Dano adicional de habilidades do veículo modificado | 800% | Texto complementar no detalhe/prévia | RELATADO NA INTERFACE | Qual é a base de cálculo e como interage com outros bônus? |
+| IMG-20261015-WA0175.jpg | Barreira Gravitacional — Guerreiro | Vida útil do Guerreiro | +45,2% → +54,8% | Prévia de evolução; progresso 4/10; poder 1.530.000 → 1.850.000; requisito visível 0/3 | CONFIRMADO VISUALMENTE / projeção da interface | A prévia se confirma? Como o requisito varia por estrela? |
 
 ### Campos obrigatórios para novas linhas
 `source_file`, `system`, `item_id_original`, `original_label_observed`, `stat`, `value`, `unit`, `level_or_star`, `cost_items`, `cost_amounts`, `state`, `test_id`, `notes`.
@@ -26,9 +30,19 @@
 
 | Arquivo | Pool / baú observado | Recompensa | Probabilidade exibida | Quantidade | Estado | Pendência |
 |---|---|---|---:|---|---|---|
-| IMG-20261015-WA0185.jpg | Baú de chip; pool exato a confirmar | Chip laranja | 0,2% | Não transcrito | RELATADO NA INTERFACE | Transcrever todas as linhas do mesmo modal; verificar denominador e pity |
-| IMG-20261015-WA0186.jpg | Grupo de chips azuis | Grupo azul | 30,0% | Não transcrita | RELATADO NA INTERFACE | Confirmar se 30% é subtotal do grupo |
-| IMG-20261015-WA0186.jpg | Grupo de chips azuis | Cada um de quatro resultados azuis | 7,5% cada | Não transcrita | RELATADO NA INTERFACE | Confirmar os quatro rótulos e se as chances somam o subtotal |
+| IMG-20261015-WA0185.jpg | Anúncio de probabilidade; pool de chips | Grupo de chips laranja | 0,2% | — | RELATADO NA INTERFACE | Parte da grade está coberta por notificação; transcrever o restante em captura limpa |
+| IMG-20261015-WA0185.jpg | Anúncio de probabilidade; pool de chips | Grupo de chips roxos | 4,8% | — | RELATADO NA INTERFACE | Captura mostra o cabeçalho, mas a grade completa continua na próxima imagem |
+| IMG-20261015-WA0186.jpg | Grupo roxo | 12 resultados roxos | 0,4% cada | x1 por item (aparente na grade) | RELATADO NA INTERFACE | 12 × 0,4% = 4,8%; consistência aritmética, não prova RNG |
+| IMG-20261015-WA0186.jpg | Grupo azul | Quatro tipos de chip azul | 7,5% cada; subtotal 30,0% | — | RELATADO NA INTERFACE | Nomes de cada chip não aparecem como texto; subtotal confere aritmeticamente |
+| IMG-20261015-WA0187.jpg | Baú de chip verde | Baú selecionável | Sem chance nesta tela | Inventário: 4 verdes, 19 azuis, 0 roxos, 0 laranjas | CONFIRMADO VISUALMENTE | Modal não mostra o resultado de uma abertura |
+| IMG-20261015-WA0189.jpg | Pool provisório; material avançado x1 | Material de chip avançado | 100,000% | x1 | RELATADO NA INTERFACE | Confirmar qual baú gera esta lista e se a lista continua abaixo |
+| IMG-20261015-WA0189.jpg | Pool provisório; Guerreiro | Implantação Avançada, Módulo de Assalto, Campo de Supressão e Barreira Gravitacional | 0,0167% cada | x1 | RELATADO NA INTERFACE | Não é pool completo; associar ao baú correto |
+| IMG-20261015-WA0190.jpg | Pool provisório; material avançado x5 | Material de chip avançado | 100,000% | x5 | RELATADO NA INTERFACE | Separar do pool x1 até identificar o baú |
+| IMG-20261015-WA0190.jpg | Pool provisório; Guerreiro | Implantação Avançada, Módulo de Assalto, Campo de Supressão e Barreira Gravitacional | 0,167% cada | x1 | RELATADO NA INTERFACE | Percentual é dez vezes maior que 0,0167%; não normalizar |
+| IMG-20261015-WA0191.jpg | Pool provisório; Atirador | Implantação Avançada, Módulo de Assalto, Campo de Supressão e Barreira Gravitacional | 0,0167% cada | x1 | RELATADO NA INTERFACE | Vincular ao baú/pool correto |
+| IMG-20261015-WA0193.jpg | Pool provisório; Atirador | Implantação Avançada, Módulo de Assalto, Campo de Supressão e Barreira Gravitacional | 0,167% cada | x1 | RELATADO NA INTERFACE | Manter separado de WA0191 até identificar o baú |
+| IMG-20261015-WA0192.jpg | Inventário Especial | Baú de chip azul | Sem chance nesta tela | Inventário: 19 | CONFIRMADO VISUALMENTE | Texto promete um chip azul ou superior e 5 materiais avançados; não comprova RNG |
+| IMG-20261015-WA0193.jpg | Pool provisório; Cavalaria | Implantação Avançada — Cavalaria | 0,166% | x1 | RELATADO NA INTERFACE | Manter separado até identificar o pool exato |
 
 ### Campos obrigatórios para cada resultado
 `source_file`, `chest_type`, `pool_id`, `reward_label_observed`, `rarity_observed`, `probability_displayed`, `quantity_min`, `quantity_max`, `opening_cost`, `state`, `test_id`, `notes`.
