@@ -233,7 +233,9 @@ const ui = {
     mapRallyCloseBtn: document.getElementById("mapRallyCloseBtn"),
     mapRallyDispatchBtn: document.getElementById("mapRallyDispatchBtn"),
     mapRallyResolveBtn: document.getElementById("mapRallyResolveBtn"),
-    mapRallyDetails: document.getElementById("mapRallyDetails")
+    mapRallyDetails: document.getElementById("mapRallyDetails"),
+    mapBattleHistoryRefreshBtn: document.getElementById("mapBattleHistoryRefreshBtn"),
+    mapBattleHistory: document.getElementById("mapBattleHistory")
 };
 
 const heroDetail = {
@@ -2140,6 +2142,39 @@ function mapRallyRequireApi() {
     return api;
 }
 
+async function refreshMapBattleHistory() {
+    const api = mapRallyRequireApi();
+    if (!api) return;
+    if (typeof api.getMapBattleHistoryV1 !== "function") {
+        if (ui.mapBattleHistory) ui.mapBattleHistory.textContent = "O histórico não está disponível nesta versão da API.";
+        return;
+    }
+    try {
+        const response = await api.getMapBattleHistoryV1(20);
+        const battles = Array.isArray(response?.battles) ? response.battles : [];
+        if (!ui.mapBattleHistory) return;
+        if (!battles.length) {
+            ui.mapBattleHistory.textContent = "Nenhuma batalha registrada ainda.";
+            return;
+        }
+        ui.mapBattleHistory.replaceChildren();
+        for (const battle of battles) {
+            const item = document.createElement("p");
+            const outcome = battle.result?.outcome === "victory" ? "Vitória"
+                : battle.result?.outcome === "defeat" ? "Derrota" : "Pendente";
+            const type = battle.type === "alliance-rally" ? "Incursão de aliança" : "Caçada";
+            const rewards = battle.rewardReceipt?.rewards;
+            const rewardText = rewards
+                ? ` · +${rewards.gold} ouro, +${rewards.food} alimento, +${rewards.steel} aço`
+                : "";
+            item.textContent = `${type} · ${battle.targetId} · ${battle.status} · ${outcome}${rewardText} · ID: ${battle.operationId}`;
+            ui.mapBattleHistory.appendChild(item);
+        }
+    } catch (error) {
+        if (ui.mapBattleHistory) ui.mapBattleHistory.textContent = `Falha ao carregar histórico: ${error.message}`;
+    }
+}
+
 async function refreshMapRallyHeroes() {
     const api = mapRallyRequireApi();
     if (!api) return;
@@ -2549,6 +2584,7 @@ function bindUiActions() {
     });
 
     if (ui.mapRallyRefreshHeroesBtn) ui.mapRallyRefreshHeroesBtn.addEventListener("click", refreshMapRallyHeroes);
+    if (ui.mapBattleHistoryRefreshBtn) ui.mapBattleHistoryRefreshBtn.addEventListener("click", refreshMapBattleHistory);
     if (ui.mapHuntStartBtn) ui.mapHuntStartBtn.addEventListener("click", startMapHuntFromPanel);
     if (ui.mapHuntResolveBtn) ui.mapHuntResolveBtn.addEventListener("click", resolveMapHuntFromPanel);
     if (ui.mapRallyCreateBtn) ui.mapRallyCreateBtn.addEventListener("click", createMapRallyFromPanel);
