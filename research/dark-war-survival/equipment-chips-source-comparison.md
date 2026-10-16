@@ -166,3 +166,44 @@ Essa separação pode justificar duas regras próprias no motor de combate de Gu
 - **Duelo de heróis:** os atributos do equipamento pertencem ao herói equipado e afetam seus ataques/defesas individuais.
 
 São propostas arquiteturais para o nosso jogo, não uma promessa de reproduzir perfeitamente a implementação interna de Dark War: Survival. A progressão e os valores continuam originais e começam no nível 1.
+
+
+## Auditoria de divergências: ressonância de chips e relatório de combate — 2026-10-16
+
+### Nova fonte comunitária sobre chips
+
+- [RDRZ Team — Dark War Survival Chip System Guide (2026)](https://rdrzteam.com/dark-war-survival-chip-system-guide-2026/): descreve quatro slots de chip por viatura e afirma que a ressonância é ativada por quatro chips da mesma raridade. Também trata cada viatura como configuração de uma marcha. É fonte comunitária e não deve ser considerada prova oficial.
+
+### Divergência que não deve ser apagada
+
+A fonte RDRZ descreve ressonância por conjunto de quatro chips de mesma raridade. Já as capturas catalogadas do projeto mostram presets I–IV e indicadores de ressonância como 2/5, 1/5 e 0/5, além de chips com estrelas individuais. Esses sinais não bastam para concluir que o indicador “2/5” é a mesma mecânica que um bônus de conjunto por raridade. Possíveis explicações incluem sistemas diferentes, versões distintas, tradução/nomenclatura ambígua ou uma descrição comunitária imprecisa.
+
+**Decisão:** manter separadas, até prova visual direta, estas entidades:
+- chipStars: progressão individual do chip;
+- presetId: conjunto/configuração I–IV;
+- resonanceProgress: indicador visual observado, sem fórmula presumida;
+- raritySetBonus: possível bônus por conjunto de raridade, ainda não confirmado.
+
+Não implementar “quatro chips da mesma raridade = ressonância” como regra comprovada. A regra de ressonância de Guerra Infinita deve ser original, documentada e coberta por testes.
+
+### Relatório de batalha: evidência mais útil
+
+A página [Troop Battles — How to Read a Combat Report](https://www.dark-war.com/troop-battles) apresenta exemplos comunitários de uma seção “Troop Buffs” com linhas separadas para Heroes, Hero Equipment, Technologies, Mod Vehicle e Faction Bonus, além de valores de ATK, DEF, HP e DMG. Isso fornece uma lista concreta de campos para procurar nas capturas do usuário. Os números publicados são exemplos de outra conta/servidor e **não** devem ser usados como valores iniciais ou fórmulas do Guerra Infinita.
+
+### Registro de confiança atualizado
+
+| Afirmação | Confiança atual | Motivo / ação |
+|---|---|---|
+| A interface observada possui quatro posições de chip | Alta para a captura catalogada | Evidência visual transcrita; revisar a imagem original quando acessível |
+| Existem presets I–IV | Alta para a captura catalogada | Evidência visual transcrita |
+| O indicador de ressonância aparece como N/5 | Alta para a captura catalogada | Não prova como é calculado |
+| Ressonância exige quatro chips de mesma raridade | Baixa a moderada | Fonte comunitária isolada; confronta-se com a ambiguidade dos indicadores N/5 |
+| Batalhas de tropas mostram bônus de equipamento agregado | Moderada como hipótese externa | Várias páginas comunitárias concordam; falta teste direto na conta |
+| Equipamento afeta atributos individuais em Hero Battles/Adventure | Moderada como hipótese externa | Guias comunitários concordam; falta comparação controlada na conta |
+
+### Próxima sequência de validação
+
+1. Procurar nas capturas WA0155 e WA0180 texto explicativo junto ao indicador de ressonância e aos presets.
+2. Procurar uma tela de detalhes de chip com requisitos para avançar a ressonância; distinguir estrelas individuais, cópias exigidas e bônus do conjunto.
+3. Se houver relatório de combate, transcrever os campos de bônus sem substituir números ilegíveis por estimativas.
+4. Só então definir um esquema final de ressonância para o protótipo. Até lá, manter o motor de combate independente da apresentação visual.
