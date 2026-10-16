@@ -14,6 +14,7 @@ Esta pasta reúne evidências visuais usadas para análise comportamental e téc
 
 - `data/green-chip-chest-probabilities.json`: dataset estruturado de 32 resultados do baú verde observado, com probabilidades derivadas identificadas e nomes não confirmados deixados em aberto.
 - `video-analysis-protocol.md`: protocolo para análise dinâmica de vídeos de gameplay enviados por WhatsApp, com timestamps, pré/pós-ação, classificação de evidências e perguntas técnicas.
+- `chip-loadout-integration-test-plan.md`: casos de teste pendentes para validar presets, persistência, inventário, evolução e integração real com atributos de combate.
 
 ## Regras de análise
 
