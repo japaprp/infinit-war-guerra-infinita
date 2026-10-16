@@ -1,13 +1,13 @@
 # Deployment preparation
 
-This repository has a staged browser-only package and a hosted API blueprint, but it is **not deploy-ready until tests pass and the actual frontend/API origins are confirmed**.
+This repository has a staged browser-only package and a hosted API blueprint, but it is **not deploy-ready until tests pass, the frontend origin is confirmed, and production database configuration is complete**.
 
 ## Frontend API URL
 
 - Local development on `localhost` or `127.0.0.1` defaults to `http://localhost:4000`.
-- Hosted environments intentionally have no implicit API URL. The pages under `frontend/public/` expose `<meta name="iwar-api-base-url" content="">`; once the backend URL is known, set that value to the confirmed HTTPS API origin in both pages. `api/config.js` reads this metadata while preserving the local-only localhost default.
+- Hosted environments intentionally have no implicit API URL. The API origin is confirmed as `https://infinit-war-api.onrender.com`; both source pages and their staged copies now set this exact value in `iwar-api-base-url`. `api/config.js` reads this metadata while preserving the local-only localhost default.
 - Do not commit secrets or invent a production URL.
-- The current Content Security Policies still mention localhost. Once the actual API hostname is confirmed, add that exact HTTPS origin to `connect-src`; do not use a broad wildcard.
+- Both source pages and staged copies include the exact API hostname in `connect-src`, alongside localhost for development. Do not add broad wildcards for the API.
 
 ## Public frontend package
 
@@ -42,7 +42,7 @@ The backend exposes `GET /health`. After the service is deployed, validate:
 
 ## Explicit blockers
 
-No hosting service, database, DNS record, production secret, or deployment was created or changed. The public frontend origin and API URL are still unknown, and PR #14's expedition routes must be reviewed and integrated before the production branch can serve those routes. PRs for packaging and deployment remain drafts until checks and review complete.
+No new hosting service, database, DNS record, or production secret was created. The existing API service is configured, but its latest deploy fails because database credentials and the exact frontend origin are not fully configured. The public frontend origin remains unknown, and PR #14's expedition routes must be reviewed and integrated before the production branch can serve those routes. PRs for packaging and deployment remain drafts until checks and review complete.
 
 ## Free database provider decision
 
