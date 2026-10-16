@@ -92,6 +92,6 @@ test("production configuration rejects origins containing paths", () => {
             MYSQL_PASSWORD: "database-password",
             CORS_ORIGINS: "https://game.example.test/path"
         }),
-        /exact HTTP\(S\) origin/
+        /exact HTTPS origin/
     );
 });
