@@ -167,6 +167,9 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         const login = await api(server.baseUrl, "POST", "/v1/auth/login", { body: { platform: "guest", externalId: "it_expedition_1" } });
         assert.equal(login.status, 200);
         const token = login.body.accessToken;
+        const initialLoadout = await api(server.baseUrl, "GET", "/v1/vehicle/loadout", { token });
+        assert.equal(initialLoadout.status, 200);
+        assert.equal(initialLoadout.body.inventory.length, 0, "new players start without vehicle chips");
         const invalid = await api(server.baseUrl, "POST", "/v1/expeditions/start", {
             token, body: { destinationId: "unknown-map", objectiveId: "explore" }
         });
@@ -196,6 +199,13 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.equal(first.body.resources.steel, first.body.rewards.steel);
         assert.equal(first.body.resources.food, first.body.rewards.food);
         assert.equal(first.body.resources.energy, 85);
+        assert.ok(first.body.vehicleChipReward, "the first completed expedition grants a server-owned starter chip");
+        assert.ok(["recon-array", "supply-core"].includes(first.body.vehicleChipReward.typeId));
+        assert.equal(first.body.vehicleChipReward.level, 1);
+        assert.equal(first.body.vehicleChipReward.source, "first-expedition");
+        const loadoutAfterClaim = await api(server.baseUrl, "GET", "/v1/vehicle/loadout", { token });
+        assert.equal(loadoutAfterClaim.body.inventory.length, 1);
+        assert.equal(loadoutAfterClaim.body.inventory[0].id, first.body.vehicleChipReward.id);
 
         // Simulate a lost HTTP response: retry with the same idempotency key.
         const sameKeyRetry = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
@@ -204,6 +214,7 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         });
         assert.equal(sameKeyRetry.status, 200);
         assert.deepEqual(sameKeyRetry.body.rewards, first.body.rewards);
+        assert.deepEqual(sameKeyRetry.body.vehicleChipReward, first.body.vehicleChipReward);
         assert.deepEqual(sameKeyRetry.body.resources, first.body.resources);
 
         await server.stop();
@@ -219,6 +230,7 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.equal(sameKeyAfterRestart.status, 200);
         assert.equal(sameKeyAfterRestart.body.alreadyClaimed, true);
         assert.deepEqual(sameKeyAfterRestart.body.rewards, first.body.rewards);
+        assert.deepEqual(sameKeyAfterRestart.body.vehicleChipReward, first.body.vehicleChipReward);
         assert.deepEqual(sameKeyAfterRestart.body.resources, first.body.resources);
 
         const second = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
@@ -237,6 +249,8 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.equal(persisted.users["guest:it_expedition_1"].v1.resources.food, first.body.resources.food);
         assert.equal(persisted.users["guest:it_expedition_1"].v1.resources.energy, 85);
         assert.equal(persisted.users["guest:it_expedition_1"].v1.expedition.claimedIds.filter(id => id === start.body.expeditionId).length, 1);
+        assert.equal(persisted.users["guest:it_expedition_1"].v1.vehicle.chips.length, 1, "retry and restart must not duplicate the starter chip");
+        assert.equal(persisted.users["guest:it_expedition_1"].v1.vehicle.firstExpeditionRewardClaimed, true);
         assert.equal(Object.keys(persisted.users["guest:it_expedition_1"].v1.expedition.receipts).length, 1);
     } finally {
         await server.stop();
