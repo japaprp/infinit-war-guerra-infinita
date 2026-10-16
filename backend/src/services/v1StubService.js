@@ -1,5 +1,6 @@
 ﻿import crypto from "crypto";
 import { ensureV1State, toPlayerProfile } from "./userService.js";
+import { ensureVehicleLoadout, getVehicleLoadout, VEHICLE_CHIP_CATALOG } from "./vehicleLoadoutService.js";
 
 function findHero(user, heroId) {
     ensureV1State(user);
@@ -77,6 +78,24 @@ export function startExpedition(user, payload = {}) {
     return { expeditionId, destinationId, objectiveId, startedAtMs: now, endsAtMs: now + 60000, resources: user.v1.resources, stateVersion: user.v1.stateVersion };
 }
 
+function grantFirstExpeditionVehicleChip(user, expedition) {
+    const vehicle = ensureVehicleLoadout(user);
+    if (vehicle.firstExpeditionRewardClaimed) return null;
+
+    // The first completed expedition grants one server-generated starter chip.
+    // The client never chooses the chip type, ID, level, or bonus.
+    const rewardTypes = expedition.objectiveId === "hunt"
+        ? ["recon-array", "assault-module"]
+        : expedition.objectiveId === "gather"
+            ? ["supply-core", "gravity-barrier"]
+            : ["recon-array", "supply-core"];
+    const typeId = rewardTypes[crypto.randomInt(0, rewardTypes.length)];
+    const chip = { id: `chip_${crypto.randomUUID()}`, typeId, level: 1, source: "first-expedition" };
+    vehicle.chips.push(chip);
+    vehicle.firstExpeditionRewardClaimed = true;
+    return getVehicleLoadout(user).inventory.find(item => item.id === chip.id) || null;
+}
+
 export function claimExpedition(user, payload = {}) {
     ensureV1State(user);
     user.v1.expedition ||= { active: null, claimedIds: [], receipts: {} };
@@ -106,8 +125,9 @@ export function claimExpedition(user, payload = {}) {
     user.v1.expedition.claimedIds = [...new Set([...claimedIds, expeditionId])].slice(-500);
     user.v1.expedition.active = null;
     for (const [key, amount] of Object.entries(rewards)) user.v1.resources[key] = Math.max(0, Number(user.v1.resources[key]) || 0) + amount;
+    const vehicleChipReward = grantFirstExpeditionVehicleChip(user, expedition);
     bumpStateVersion(user);
-    const receipt = { expeditionId, rewards, resources: { ...user.v1.resources }, stateVersion: user.v1.stateVersion };
+    const receipt = { expeditionId, rewards, vehicleChipReward, resources: { ...user.v1.resources }, stateVersion: user.v1.stateVersion };
     user.v1.expedition.receipts[expeditionId] = receipt;
     const retainedIds = new Set(user.v1.expedition.claimedIds);
     user.v1.expedition.receipts = Object.fromEntries(Object.entries(user.v1.expedition.receipts).filter(([id]) => retainedIds.has(id)));
