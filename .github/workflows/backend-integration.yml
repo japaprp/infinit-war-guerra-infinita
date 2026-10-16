@@ -12,7 +12,6 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/backend-integration.yml"
-      - ".github/workflows/backend-tests.yml"
       - "api/**"
   workflow_dispatch:
 
