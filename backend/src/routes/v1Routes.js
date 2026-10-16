@@ -26,6 +26,7 @@ import {
     claimExpedition
 } from "../services/v1StubService.js";
 import { createAuthMiddleware } from "../middlewares/authMiddleware.js";
+import { getVehicleLoadout, setActiveVehiclePreset, equipVehicleChip, removeVehicleChip, upgradeVehicleChip } from "../services/vehicleLoadoutService.js";
 import { createUserLockMiddleware } from "../middlewares/userLockMiddleware.js";
 import { createIdempotencyMiddleware } from "../middlewares/idempotencyMiddleware.js";
 import {
@@ -321,6 +322,53 @@ export function createV1Routes(env, runtime = {}) {
     router.post("/world/alliance-rallies/:operationId/dispatch", userLock, rallyLock, async (req, res) => {
         const db = await readDb();
         const result = dispatchMapRally(db, req.user.sub, req.params.operationId);
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.get("/vehicle/loadout", async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        res.json(getVehicleLoadout(user));
+    });
+
+    router.post("/vehicle/presets/active", userLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = setActiveVehiclePreset(user, req.body?.presetId);
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.post("/vehicle/chips/equip", userLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = equipVehicleChip(user, req.body || {});
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.post("/vehicle/chips/remove", userLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = removeVehicleChip(user, req.body || {});
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.post("/vehicle/chips/:chipId/upgrade", userLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = upgradeVehicleChip(user, req.params.chipId);
         if (asError(res, result)) return;
         await writeDb(db);
         res.json(result);
