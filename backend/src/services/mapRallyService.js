@@ -270,6 +270,41 @@ export function resolveMapRally(db, userId, user, operationId, nowMs = Date.now(
     return { rally, rewardReceipt: rewardReceipts[userId] || null, resources: { ...user.v1.resources }, troops: user.v1.troops, replayed: false };
 }
 
+export function listMapBattleHistory(db, userId, user, limit = 20) {
+    ensureV1State(user);
+    const safeLimit = Number.isSafeInteger(limit) ? Math.max(1, Math.min(50, limit)) : 20;
+    const hunts = Object.values(db.hunts || {})
+        .filter(hunt => hunt.playerId === userId)
+        .map(hunt => ({
+            type: "hunt",
+            operationId: hunt.operationId,
+            targetId: hunt.targetId,
+            status: hunt.status,
+            startedAtMs: hunt.startedAtMs,
+            completedAtMs: hunt.completedAtMs || null,
+            result: hunt.result || null,
+            rewardReceipt: hunt.rewardReceipt || null
+        }));
+    const rallies = Object.values(db.rallies || {})
+        .filter(rally => isAllianceMember(user, rally.allianceId) &&
+            (rally.participants || []).some(participant => participant.playerId === userId))
+        .map(rally => ({
+            type: "alliance-rally",
+            operationId: rally.operationId,
+            targetId: rally.targetId,
+            status: rally.status,
+            startedAtMs: rally.dispatchedAtMs || rally.createdAtMs,
+            completedAtMs: rally.completedAtMs || null,
+            result: rally.result || null,
+            rewardReceipt: rally.rewardReceipts?.[userId] || null
+        }));
+    return {
+        battles: [...hunts, ...rallies]
+            .sort((a, b) => (b.completedAtMs || b.startedAtMs || 0) - (a.completedAtMs || a.startedAtMs || 0))
+            .slice(0, safeLimit)
+    };
+}
+
 export function getMapRally(db, userId, user, operationId) {
     ensureV1State(user);
     const rally = db.rallies?.[operationId];
