@@ -17,6 +17,7 @@ test("Render blueprint is an explicitly free backend template with a health chec
     assert.match(yaml, /healthCheckPath: \/health/);
     assert.match(yaml, /key: DATA_DRIVER\s+value: mysql/);
     assert.match(yaml, /key: MYSQL_SSL\s+value: "true"/);
+    assert.match(yaml, /key: FIREBASE_PROJECT_ID\s+sync: false/);
     assert.match(yaml, /key: JWT_SECRET\s+generateValue: true/);
     assert.match(yaml, /key: RECEIPT_SECRET\s+generateValue: true/);
     for (const key of ["CORS_ORIGINS", "MYSQL_HOST", "MYSQL_PORT", "MYSQL_DATABASE", "MYSQL_USER", "MYSQL_PASSWORD"]) {
