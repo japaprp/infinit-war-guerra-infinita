@@ -104,7 +104,7 @@ function serverChest(user, type) {
 
 export function getServerChests(user) {
     const inventory = ensureServerInventory(user);
-    return { chests: inventory.chests.map(chest => ({ ...chest })), chipMaterials: inventory.chipMaterials, shards: { ...inventory.shards }, equipment: inventory.equipment.map(item => ({ ...item })) };
+    return { chests: inventory.chests.map(chest => ({ ...chest })), receipts: Object.values(inventory.chestReceipts).map(receipt => ({ ...receipt })), chipMaterials: inventory.chipMaterials, shards: { ...inventory.shards }, equipment: inventory.equipment.map(item => ({ ...item })) };
 }
 
 function rollWeighted(entries) {
