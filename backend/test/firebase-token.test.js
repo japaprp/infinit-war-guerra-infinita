@@ -64,3 +64,51 @@ test("certificate cache can be reset between tests", () => {
     clearFirebaseCertificateCacheForTests();
     assert.ok(true);
 });
+
+test("Firebase verifier rejects issue times in the future", async () => {
+    const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
+    const now = 10_000;
+    const token = [
+        encode({ alg: "RS256", kid: "test-key" }),
+        encode({
+            aud: "infinit-war-test",
+            iss: "https://securetoken.google.com/infinit-war-test",
+            sub: "someone",
+            exp: 20,
+            iat: 20,
+            auth_time: 10
+        }),
+        "signature"
+    ].join(".");
+    await assert.rejects(
+        () => verifyFirebaseIdToken(token, "infinit-war-test", {
+            now,
+            fetchImpl: async () => { throw new Error("network should not be called"); }
+        }),
+        /issue time is invalid/
+    );
+});
+
+test("Firebase verifier rejects implausibly long token lifetimes", async () => {
+    const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
+    const now = 10_000_000;
+    const token = [
+        encode({ alg: "RS256", kid: "test-key" }),
+        encode({
+            aud: "infinit-war-test",
+            iss: "https://securetoken.google.com/infinit-war-test",
+            sub: "someone",
+            exp: Math.floor(now / 1000) + 7200,
+            iat: Math.floor(now / 1000),
+            auth_time: Math.floor(now / 1000)
+        }),
+        "signature"
+    ].join(".");
+    await assert.rejects(
+        () => verifyFirebaseIdToken(token, "infinit-war-test", {
+            now,
+            fetchImpl: async () => { throw new Error("network should not be called"); }
+        }),
+        /issue time is invalid/
+    );
+});
