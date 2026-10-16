@@ -10,6 +10,11 @@ Esta pasta reúne evidências visuais usadas para análise comportamental e téc
 - Cruzamento com `index.md`: **94 nomes únicos catalogados**, sem arquivos da pasta fora do catálogo e sem nomes catalogados ausentes da pasta. O inventário menciona `WA0288` duas vezes; isso é repetição no texto, não um arquivo adicional. Existe também `IMG-20261015-WA0213(1).jpg`, que deve ser preservado como nome original.
 - Busca adicional nas árvores de todas as branches acessíveis do repositório: não localizei as duas imagens faltantes. Foram encontrados arquivos com identificadores de WhatsApp em outras branches (`IMG-20261015-WA0039.jpg` e `IMG-20261015-WA9463.jpg`), mas não há evidência de que sejam as duas imagens previstas; não os contei como parte deste conjunto.
 
+## Artefatos estruturados adicionais
+
+- `data/green-chip-chest-probabilities.json`: dataset estruturado de 32 resultados do baú verde observado, com probabilidades derivadas identificadas e nomes não confirmados deixados em aberto.
+- `video-analysis-protocol.md`: protocolo para análise dinâmica de vídeos de gameplay enviados por WhatsApp, com timestamps, pré/pós-ação, classificação de evidências e perguntas técnicas.
+
 ## Regras de análise
 
 1. Registrar somente o que a captura realmente mostra; marcar inferências como hipóteses.
