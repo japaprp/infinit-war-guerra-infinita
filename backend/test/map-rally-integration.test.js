@@ -249,6 +249,18 @@ test("vehicle chip loadouts are server-owned and upgrades consume only unequippe
         const empty = await request(server.baseUrl, "GET", "/v1/vehicle/loadout", { token });
         assert.equal(empty.status, 200);
         assert.equal(empty.body.inventory.length, 0);
+        assert.deepEqual(empty.body.presetIds, ["I", "II", "III", "IV"]);
+        assert.deepEqual(empty.body.slots, ["assault", "vanguard", "suppression", "gravity"]);
+
+        const invalidPreset = await request(server.baseUrl, "POST", "/v1/vehicle/presets/active", {
+            token, body: { presetId: "V" }
+        });
+        assert.equal(invalidPreset.status, 400, "unknown preset IDs must be rejected");
+
+        const invalidSlot = await request(server.baseUrl, "POST", "/v1/vehicle/chips/equip", {
+            token, body: { chipId: "not-owned", slotId: "turbo", presetId: "I" }
+        });
+        assert.equal(invalidSlot.status, 400, "unknown slot IDs must be rejected before inventory checks");
 
         // Seed inventory as if granted by a trusted server-side reward; never from a client sync payload.
         const db = await readDb();
