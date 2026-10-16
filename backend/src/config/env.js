@@ -8,7 +8,8 @@ export const env = {
     GRPC_PORT: Number(process.env.GRPC_PORT || 50051),
     JWT_SECRET: process.env.JWT_SECRET || "unsafe_dev_secret",
     RECEIPT_SECRET: process.env.RECEIPT_SECRET || "unsafe_receipt_secret",
-    DATA_DRIVER: (process.env.DATA_DRIVER || "json").toLowerCase(),
+    // Prefer the dedicated PostgreSQL selector when present; preserve legacy MySQL DATA_DRIVER.
+    DATA_DRIVER: (process.env.DATA_DRIVER_POSTGRES || process.env.DATA_DRIVER || "json").toLowerCase(),
     MYSQL_HOST: process.env.MYSQL_HOST || "127.0.0.1",
     MYSQL_PORT: Number(process.env.MYSQL_PORT || 3306),
     MYSQL_DATABASE: process.env.MYSQL_DATABASE || "infinitwar",
