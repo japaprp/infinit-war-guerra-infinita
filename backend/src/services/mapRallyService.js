@@ -214,7 +214,7 @@ export function resolveMapRally(db, userId, user, operationId, nowMs = Date.now(
     if (!rally) return businessError(404, "Rally not found");
     if (!isAllianceMember(user, rally.allianceId)) return businessError(403, "Only alliance members can resolve this rally");
     if (rally.result && rally.status === "completed") {
-        return { rally, rewardReceipt: rally.rewardReceipts?.[userId] || null, replayed: true };
+        return { rally, rewardReceipt: rally.rewardReceipts?.[userId] || null, resources: { ...user.v1.resources }, replayed: true };
     }
     if (rally.status !== "marching") return businessError(409, "Rally must be marching before resolution");
     if (nowMs < rally.arrivesAtMs) return businessError(409, "The rally has not arrived yet");
@@ -250,7 +250,7 @@ export function resolveMapRally(db, userId, user, operationId, nowMs = Date.now(
     rally.result = result;
     rally.rewardReceipts = rewardReceipts;
     rally.completedAtMs = nowMs;
-    return { rally, rewardReceipt: rewardReceipts[userId] || null, replayed: false };
+    return { rally, rewardReceipt: rewardReceipts[userId] || null, resources: { ...user.v1.resources }, replayed: false };
 }
 
 export function getMapRally(db, userId, user, operationId) {
