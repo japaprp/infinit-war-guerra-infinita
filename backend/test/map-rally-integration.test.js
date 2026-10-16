@@ -289,6 +289,21 @@ test("vehicle chip loadouts are server-owned and upgrades consume only unequippe
         assert.equal(upgrade.body.inventory[0].level, 2);
         assert.equal(upgrade.body.presets["preset-1"]["slot-1"], "assault-main", "upgrading preserves the equipped main chip");
         assert.equal(upgrade.body.inventory[0].bonusPct, 42.2);
+
+        const hunt = await request(server.baseUrl, "POST", "/v1/world/hunts/start", {
+            token,
+            body: {
+                targetId: "grey-forest-stalker",
+                heroIds: ["lucas"],
+                troopCount: 0,
+                operationId: "vehicle-bonus-hunt",
+                combatBonuses: { attackPct: 999999 }
+            }
+        });
+        assert.equal(hunt.status, 200);
+        const storedHunt = (await readDb()).hunts["vehicle-bonus-hunt"];
+        assert.equal(storedHunt.vehicleBonuses.attackPct, 42.2, "combat uses the server-owned active preset, not client bonuses");
+        assert.equal(storedHunt.combatBonuses, undefined);
     } finally {
         await server.stop();
     }
