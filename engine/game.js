@@ -1388,7 +1388,13 @@ function openInventoryChest(chestId) {
         pushFeed("Baú não encontrado no inventário.");
         return;
     }
-    const [chest] = state.inventory.chests.splice(chestIndex, 1);
+    const chest = state.inventory.chests[chestIndex];
+    const api = getApiClient();
+    if (chest.type === "module" && api?.hasToken?.()) {
+        pushFeed("Baús de módulos online aguardam a migração para resgate seguro no servidor. O baú foi preservado.");
+        return;
+    }
+    state.inventory.chests.splice(chestIndex, 1);
     if (chest.type === "module") {
         const result = rollModuleChestReward();
         if (result.id === "materials") {
@@ -2156,6 +2162,7 @@ async function claimExpeditionReward() {
     }
     const destination = getExpeditionDestination();
     const objective = getExpeditionObjective();
+    let vehicleChipReward = null;
     let gold;
     let silver;
     let food;
@@ -2172,6 +2179,7 @@ async function claimExpeditionReward() {
         gold = result.rewards.gold;
         silver = result.rewards.steel;
         food = result.rewards.food;
+        vehicleChipReward = result.vehicleChipReward || null;
         state.resources.energy = result.resources.energy;
     } else {
         const multiplier = destination.rewardMultiplier * objective.rewardMultiplier;
@@ -2192,6 +2200,14 @@ async function claimExpeditionReward() {
     state.resources.silver += silver;
     state.resources.food += food;
     pushFeed(`Recompensa de ${destination.label}: +${gold} ouro, +${silver} prata e +${food} alimento.`);
+    if (vehicleChipReward) {
+        try {
+            await syncServerVehicleLoadout({ render: false });
+            pushFeed(`Primeiro módulo de viatura recebido: ${vehicleChipReward.name || vehicleChipReward.typeId}, nível ${vehicleChipReward.level}.`);
+        } catch (error) {
+            pushFeed(`Recompensa de módulo registrada no servidor; sincronização pendente: ${error.message}`);
+        }
+    }
     renderAll();
     saveState();
 }
@@ -2574,6 +2590,11 @@ async function pullStateFromBackend() {
             state.resources.gems = remote.economy.gems;
         }
 
+        try {
+            await syncServerVehicleLoadout({ render: false });
+        } catch (loadoutError) {
+            pushFeed(`Inventário de módulos não sincronizado: ${loadoutError.message}`);
+        }
         renderAll();
         saveState();
         pushFeed("Progresso sincronizado com servidor.");
