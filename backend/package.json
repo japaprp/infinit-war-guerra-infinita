@@ -8,7 +8,7 @@
     "start": "node src/index.js",
     "dev:grpc": "node src/grpc/server.js",
     "migrate:mysql": "node src/scripts/migrate.js",
-    "test:integration": "node --test test/integration.test.js",
+    "test:integration": "node --test test/integration.test.js test/auth-verification.integration.test.js",
     "test:config": "node --test test/deployment-config.test.js",
     "test:deploy": "node --test test/deployment-config.test.js test/deployment-artifacts.test.js test/firebase-token.test.js"
   },
