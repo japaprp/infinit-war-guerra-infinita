@@ -122,3 +122,36 @@ Implicações de implementação:
 - Desbloquear sistemas gradualmente por marcos de progressão; não apresentar todos os sistemas de garagem, seis acessórios, evolução de veículo, quatro presets e baús avançados de uma só vez no tutorial.
 - Tratar os números de nível 267, 27.178.500 de poder e custos de acessórios como dados de referência avançada, nunca como valores de início.
 - Construir e testar uma trilha separada de nível 1 em diante. Os valores exatos de XP, custos e nível de desbloqueio ainda precisam ser definidos pelo balanceamento original de Guerra Infinita, não inferidos da conta avançada.
+
+
+## Cruzamento com fontes públicas da comunidade — 2026-10-16
+
+### Discord: o que está confirmado e o que não está
+
+- A listagem pública do [servidor Dark War: Survival no Discord](https://discord.com/servers/dark-war-survival-1263473266387845212) identifica-o como servidor oficial e anuncia guias, progressão e estratégias. A página pública não dá, por si só, acesso ao histórico integral dos canais ou a canais privados; não afirmar que todas as mensagens foram varridas.
+- O [DWSI / Atlantis Hub](https://atlantisdws.com/dwsi) descreve um hub comunitário com canais/coleções sobre chips e APC, dados de heróis, eventos e temporadas. A própria página mostra prévia de diretório, não o conteúdo integral do Discord.
+- Resultado operacional: tratar Discord como uma fonte a monitorar quando o conteúdo for público ou fornecido; nunca registrar uma mensagem específica como lida sem ter o conteúdo dela disponível.
+
+### Comparação independente: baús e materiais de chip
+
+Fontes secundárias consultadas:
+- [Reddit — Chips & chip factory (17–19 mar. 2026)](https://www.reddit.com/r/darkwarsurvival/comments/1rw61la/chips_chip_factory/): jogadores descrevem quatro slots, foco em uma marcha, importância da ressonância e custo de 800 materiais avançados para fabricar um chip. Um comentário descreve o baú verde com 65% verde, 30% azul, 4,8% roxo e 0,2% laranja, compatível com a transcrição do usuário.
+- [Vídeo com transcrição em espanhol sobre chips de veículo](https://www.youtubetranslate.net/en/watch?v=F7xblHuCq4U): relata a mesma distribuição para o baú verde; menciona também baú roxo com 85% roxo/15% laranja e baú laranja com chip laranja garantido. É transcrição secundária, não tabela oficial versionada.
+- [Atlantis Hub — calculadora de chips](https://atlantisdws.com/chip-calculator) e [guia de ressonância](https://atlantisdws.com/dark-war-survival/chips): afirmam que 800 materiais avançados fabricam um chip e que a ressonância corresponde ao menor nível de estrelas entre os quatro chips equipados. A página estima 500 cópias para levar um chip do nível inicial até 10 estrelas e 1.600.000 materiais para um conjunto de quatro no máximo.
+- [Treyex Gaming — guia de chips](https://www.treyexgaming.com/dark-war-survival-chip-system-guide-chip-factions-skills/): também descreve baú roxo como 85% roxo/15% laranja e baú laranja como garantido, mas permanece fonte secundária.
+- [Facebook — resultado público de grupo](https://www.facebook.com/groups/1687468042051515/posts/1846305329501118/): o conteúdo visível é limitado por login e não confirmou detalhes úteis sobre garagem/chips nesta consulta.
+
+### Conclusões com grau de confiança
+
+1. **Corroboração moderada:** a tabela transcrita para o baú verde (65% verde, 30% azul, 4,8% roxo, 0,2% laranja) aparece também em uma transcrição de vídeo e em uma discussão comunitária. Manter como probabilidade provisória daquele tipo de baú, com versão e fonte; não assumir que vale para todos os baús.
+2. **Corroboração comunitária, ainda não oficial:** 800 materiais avançados por chip aparece no Atlantis Hub e em relatos do Reddit. Pode orientar um teste/benchmark, mas não deve ser tratado como regra oficial nem copiado automaticamente para o balanceamento do Guerra Infinita.
+3. **Hipótese forte a validar nas capturas:** a ressonância é limitada pelo chip de menor estrela. A calculadora e o guia do Atlantis Hub dizem isso, mas a transcrição do usuário mostra apenas um indicador 0–5 e não revela a fórmula. Não ativar a mecânica do Guerra Infinita sem uma decisão explícita de design própria.
+4. **Custos de ascensão variam por etapa:** a calculadora comunitária lista requisitos crescentes e checkpoints múltiplos por estrela. O requisito transcrito de 1/3 chips iguais em “Campo de Supressão” não é suficiente para provar essa tabela completa; preservar a distinção.
+5. **Relatos de estratégia não são regras de sistema:** recomendações como focar a marcha principal, equilibrar estrelas para ressonância ou guardar baús para o evento de duelo são opiniões contextuais de jogadores, úteis para analisar loops de retenção/monetização, não requisitos funcionais do nosso jogo.
+
+### Próximas verificações
+
+- Comparar cada tipo de baú individualmente antes de fixar odds; não combinar as probabilidades do baú verde com as do roxo/laranja.
+- Verificar se as fontes comunitárias se referem à mesma versão, temporada e região do jogo.
+- Obter acesso a mensagens específicas do Discord somente por páginas públicas, links de mensagens acessíveis ou exportações/capturas fornecidas; não presumir acesso a canais privados.
+- Para Guerra Infinita, decidir separadamente o custo de fabricação, a curva de ascensão e a fórmula de ressonância; usar as fontes apenas como referências comparativas.
