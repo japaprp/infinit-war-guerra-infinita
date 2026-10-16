@@ -102,6 +102,18 @@
         request("POST", "/v1/buildings/start", { buildingType, slotCode, targetLevel });
     const completeBuildV1 = async (taskId) => request("POST", "/v1/buildings/complete", { taskId });
     const queryTilesV1 = async ({ x, y, radius }) => request("GET", `/v1/world/tiles?x=${x}&y=${y}&radius=${radius}`);
+    const startMapHuntV1 = async ({ targetId, heroIds, operationId }) =>
+        request("POST", "/v1/world/hunts/start", { targetId, heroIds, operationId });
+    const createAllianceRallyV1 = async ({ targetId, heroIds, troopCount, operationId }) =>
+        request("POST", "/v1/world/alliance-rallies", { targetId, heroIds, troopCount, operationId });
+    const getAllianceRallyV1 = async (operationId) =>
+        request("GET", `/v1/world/alliance-rallies/${encodeURIComponent(operationId)}`);
+    const joinAllianceRallyV1 = async ({ operationId, heroIds, troopCount }) =>
+        request("POST", `/v1/world/alliance-rallies/${encodeURIComponent(operationId)}/join`, { heroIds, troopCount });
+    const closeAllianceRallyV1 = async (operationId) =>
+        request("POST", `/v1/world/alliance-rallies/${encodeURIComponent(operationId)}/close`, {});
+    const dispatchAllianceRallyV1 = async (operationId) =>
+        request("POST", `/v1/world/alliance-rallies/${encodeURIComponent(operationId)}/dispatch`, {});
     const purchaseSkuV1 = async ({ sku, quantity = 1, idempotencyKey }) =>
         request("POST", "/v1/shop/purchase", { sku, quantity, idempotencyKey });
 
@@ -124,6 +136,12 @@
         startBuildV1,
         completeBuildV1,
         queryTilesV1,
+        startMapHuntV1,
+        createAllianceRallyV1,
+        getAllianceRallyV1,
+        joinAllianceRallyV1,
+        closeAllianceRallyV1,
+        dispatchAllianceRallyV1,
         purchaseSkuV1
     };
 
