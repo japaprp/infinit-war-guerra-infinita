@@ -78,6 +78,7 @@ test("map hunt validates owned heroes, charges once, and persists an idempotent 
         assert.equal(retry.status, 200);
         assert.equal(retry.body.replayed, true);
         assert.equal(retry.body.huntId, first.body.huntId);
+        assert.equal(retry.body.resources.energy, 85, "retry returns the current balance without charging again");
 
         const db = await readDb();
         assert.equal(db.hunts["hunt-op-1"].huntId, first.body.huntId);
