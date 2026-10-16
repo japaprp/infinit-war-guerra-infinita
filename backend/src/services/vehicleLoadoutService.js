@@ -1,8 +1,8 @@
 const CHIP_CATALOG = Object.freeze({
-    "assault-module": { stat: "attackPct", basePct: 32.6, upgradeCopies: 5, maxLevel: 10 },
-    "gravity-barrier": { stat: "hpPct", basePct: 6.8, upgradeCopies: 3, maxLevel: 10 },
-    "recon-array": { stat: "attackPct", basePct: 12, upgradeCopies: 4, maxLevel: 10 },
-    "supply-core": { stat: "hpPct", basePct: 10, upgradeCopies: 4, maxLevel: 10 }
+    "assault-module": { name: "Módulo de Assalto", role: "Guerreiro", stat: "attackPct", statLabel: "Dano de combate", basePct: 32.6, upgradeCopies: 5, maxLevel: 10, rarity: "Épico" },
+    "gravity-barrier": { name: "Barreira Gravitacional", role: "Guerreiro", stat: "hpPct", statLabel: "Vida e proteção", basePct: 6.8, upgradeCopies: 3, maxLevel: 10, rarity: "Épico" },
+    "recon-array": { name: "Matriz de Reconhecimento", role: "Batedor", stat: "attackPct", statLabel: "Dano de combate", basePct: 12, upgradeCopies: 4, maxLevel: 10, rarity: "Raro" },
+    "supply-core": { name: "Núcleo de Suprimentos", role: "Suporte", stat: "hpPct", statLabel: "Vida e proteção", basePct: 10, upgradeCopies: 4, maxLevel: 10, rarity: "Raro" }
 });
 const SLOT_IDS = Object.freeze(["assault", "vanguard", "suppression", "gravity"]);
 const PRESET_IDS = Object.freeze(["I", "II", "III", "IV"]);
@@ -50,7 +50,7 @@ export function ensureVehicleLoadout(user) {
 
 function publicChip(chip) {
     const definition = CHIP_CATALOG[chip.typeId];
-    return { ...chip, stat: definition.stat, bonusPct: Number((definition.basePct + (chip.level - 1) * 9.6).toFixed(2)) };
+    return { ...chip, name: definition.name, role: definition.role, rarity: definition.rarity, stat: definition.stat, statLabel: definition.statLabel, basePct: definition.basePct, upgradeCopies: definition.upgradeCopies, maxLevel: definition.maxLevel, bonusPct: Number((definition.basePct + (chip.level - 1) * 9.6).toFixed(2)) };
 }
 
 export function getVehicleLoadout(user) {
