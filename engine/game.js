@@ -1768,17 +1768,27 @@ function renderTabContent() {
 
     if (state.activeHeroTab === "modulos") {
         const chips = state.inventory.chips || [];
+        const activePreset = state.activeVehicleChipPreset;
+        const activeLoadout = state.vehicleChipLoadouts[activePreset];
+        const filledVehicleSlots = window.IWChipLoadouts.filledSlotCount(state.vehicleChipLoadouts, activePreset);
+        const presetButtons = window.IWChipLoadouts.PRESETS.map((preset) => `<button class="inline-action" data-action="select-chip-preset" data-preset="${preset}" ${preset === activePreset ? "disabled" : ""}>Preset ${preset}${preset === activePreset ? " · ativo" : ""}</button>`).join("");
+        const vehicleSlotRows = window.IWChipLoadouts.SLOTS.map((slot) => {
+            const chipId = activeLoadout[slot.id];
+            const chip = chips.find((item) => item.id === chipId);
+            return `<article class="inventory-item"><span><strong>${slot.label}</strong><small>${chip ? `${chip.name} · Nv.${chip.level}` : "Espaço vazio"}</small></span><button class="inline-action" data-action="remove-vehicle-chip" data-slot-id="${slot.id}" ${chip ? "" : "disabled"}>Remover</button></article>`;
+        }).join("");
         const oddsRows = MODULE_CHEST_ODDS.map((item) => `<tr><td>${item.label}</td><td>${item.chance.toLocaleString("pt-BR")}%</td></tr>`).join("");
         const chipRows = chips.length ? chips.map((chip) => {
             const definition = CHIP_CATALOG.find((item) => item.id === chip.typeId);
             const equipped = hero.heroState.equippedChips?.[definition?.stat] === chip.id;
             const pct = definition ? definition.basePct + (chip.level - 1) * 9.6 : 0;
             const copies = chips.filter((item) => item.typeId === chip.typeId && item.id !== chip.id && !isChipEquipped(item.id)).length;
-            return `<article class="inventory-item"><span><strong>${chip.name} · Nv.${chip.level}</strong><small>${chip.role} · ${chip.rarityLabel} · +${pct.toLocaleString("pt-BR")}% ${definition?.statLabel || ""} · cópias extras: ${copies}</small></span><div><button class="inline-action" data-action="equip-chip" data-chip-id="${chip.id}" ${equipped ? "disabled" : ""}>${equipped ? "Equipado" : "Equipar"}</button><button class="inline-action" data-action="upgrade-chip" data-chip-id="${chip.id}" ${chip.level >= CHIP_MAX_LEVEL || copies < (definition?.upgradeCopies || 999) ? "disabled" : ""}>Evoluir (${definition?.upgradeCopies || "—"} cópias)</button></div></article>`;
+            return `<article class="inventory-item"><span><strong>${chip.name} · Nv.${chip.level}</strong><small>${chip.role} · ${chip.rarityLabel} · +${pct.toLocaleString("pt-BR")}% ${definition?.statLabel || ""} · cópias extras: ${copies}</small></span><div><button class="inline-action" data-action="equip-chip" data-chip-id="${chip.id}" ${equipped ? "disabled" : ""}>${equipped ? "Equipado/salvo" : "Equipar no herói"}</button><button class="inline-action" data-action="assign-vehicle-chip" data-chip-id="${chip.id}" ${window.IWChipLoadouts.isChipInPreset(state.vehicleChipLoadouts, activePreset, chip.id) || filledVehicleSlots >= 4 ? "disabled" : ""}>Instalar na viatura</button><button class="inline-action" data-action="upgrade-chip" data-chip-id="${chip.id}" ${chip.level >= CHIP_MAX_LEVEL || copies < (definition?.upgradeCopies || 999) ? "disabled" : ""}>Evoluir (${definition?.upgradeCopies || "—"} cópias)</button></div></article>`;
         }).join("") : "<p>Nenhum módulo no inventário. Encontre um Baú de Módulos em baús de explorador.</p>";
         const moduleChests = state.inventory.chests.filter((chest) => chest.type === "module");
         ui.heroTabContent.innerHTML = `
-            <section class="inventory-section"><h3>Módulos equipados · ${hero.template.name}</h3><p>ATQ base com módulos: ${hero.atk.toLocaleString("pt-BR")} · Unidades protegidas: ${hero.troops.toLocaleString("pt-BR")}</p>
+            <section class="inventory-section"><h3>Configuração de viatura · Preset ${activePreset}</h3><p>Configuração original com quatro espaços. A ressonância ainda não concede bônus até sua regra ser definida e testada.</p><div class="preset-switcher">${presetButtons}</div><p>Espaços ocupados: <strong>${filledVehicleSlots}/4</strong></p>${vehicleSlotRows}</section>
+            <section class="inventory-section"><h3>Módulos do herói · ${hero.template.name}</h3><p>ATQ calculado: ${hero.atk.toLocaleString("pt-BR")} · Unidades: ${hero.troops.toLocaleString("pt-BR")}</p>
             <p>Materiais de módulo: <strong>${state.inventory.chipMaterials || 0}</strong></p></section>
             <section class="inventory-section"><h3>Baús de Módulos (${moduleChests.length})</h3>
             ${moduleChests.length ? moduleChests.map((chest) => `<article class="inventory-item"><span><strong>${chest.name}</strong><small>Recompensas e probabilidades transparentes</small></span><button class="inline-action" data-action="open-chest" data-chest-id="${chest.id}">Abrir</button></article>`).join("") : "<p>Abra um baú de explorador para ter chance de encontrar um Baú de Módulos.</p>"}</section>
@@ -2112,6 +2122,9 @@ function bindUiActions() {
         if (action === "upgrade-equip") upgradeEquipment(actionTarget.dataset.slot);
         if (action === "equip-item") equipInventoryItem(actionTarget.dataset.itemId);
         if (action === "equip-chip") equipChip(actionTarget.dataset.chipId);
+        if (action === "assign-vehicle-chip") assignVehicleChip(actionTarget.dataset.chipId);
+        if (action === "select-chip-preset") selectVehicleChipPreset(actionTarget.dataset.preset);
+        if (action === "remove-vehicle-chip") removeVehicleChip(actionTarget.dataset.slotId);
         if (action === "upgrade-chip") upgradeChip(actionTarget.dataset.chipId);
         if (action === "open-chest") openInventoryChest(actionTarget.dataset.chestId);
         if (action === "upgrade-skill") upgradeSkill(Number(actionTarget.dataset.skillIndex));
