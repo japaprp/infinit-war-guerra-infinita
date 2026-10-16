@@ -36,7 +36,8 @@ import {
     dispatchMapRally,
     getMapRally,
     resolveMapHunt,
-    resolveMapRally
+    resolveMapRally,
+    listMapBattleHistory
 } from "../services/mapRallyService.js";
 
 function asError(res, result) {
@@ -250,6 +251,14 @@ export function createV1Routes(env, runtime = {}) {
         if (asError(res, result)) return;
         await writeDb(db);
         res.json(result);
+    });
+
+    router.get("/world/battle-history", async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const limit = Number.parseInt(req.query.limit, 10);
+        res.json(listMapBattleHistory(db, req.user.sub, user, Number.isFinite(limit) ? limit : 20));
     });
 
     router.post("/world/hunts/start", userLock, async (req, res) => {
