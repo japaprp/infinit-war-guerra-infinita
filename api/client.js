@@ -102,6 +102,8 @@
         request("POST", "/v1/buildings/start", { buildingType, slotCode, targetLevel });
     const completeBuildV1 = async (taskId) => request("POST", "/v1/buildings/complete", { taskId });
     const queryTilesV1 = async ({ x, y, radius }) => request("GET", `/v1/world/tiles?x=${x}&y=${y}&radius=${radius}`);
+    const getMapBattleHistoryV1 = async (limit = 20) =>
+        request("GET", `/v1/world/battle-history?limit=${encodeURIComponent(limit)}`);
     const startMapHuntV1 = async ({ targetId, heroIds, operationId, troopCount = 0 }) =>
         request("POST", "/v1/world/hunts/start", { targetId, heroIds, operationId, troopCount });
     const resolveMapHuntV1 = async (operationId) =>
@@ -141,6 +143,7 @@
         completeBuildV1,
         queryTilesV1,
         startMapHuntV1,
+        getMapBattleHistoryV1,
         resolveMapHuntV1,
         createAllianceRallyV1,
         getAllianceRallyV1,
