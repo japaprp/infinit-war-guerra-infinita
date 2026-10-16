@@ -14,6 +14,8 @@ services:
         value: mysql
       - key: MYSQL_SSL
         value: "true"
+      - key: FIREBASE_PROJECT_ID
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: RECEIPT_SECRET
