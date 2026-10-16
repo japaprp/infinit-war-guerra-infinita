@@ -126,3 +126,38 @@ Cada linha futura deve conter:
 3. Confirmar se os percentuais são por abertura, se os grupos são mutuamente exclusivos e se há sistema de garantia (*pity*).
 4. Somente depois, conferir a soma de cada pool. Não somar linhas de capturas que podem representar baús diferentes.
 5. Fazer simulação estatística usando apenas uma tabela completa e identificada; a simulação verifica o código, não prova que o jogo original usa o mesmo RNG.
+
+
+## 8. Revisão cruzada com a tabela do protótipo — 2026-10-16
+
+Foi feita uma leitura do catálogo de evidências e da tabela `MODULE_CHEST_ODDS` em `engine/game.js`, branch `feat/chips-equipment-chests`.
+
+### Distribuição exibida para o baú verde de referência
+
+A transcrição consolidada do usuário registra:
+- Laranja: 0,2% no total, distribuído por 12 itens (aprox. 0,0166667% cada).
+- Roxo: 4,8% no total, 12 itens a 0,4% cada.
+- Azul: 30% no total, 4 itens a 7,5% cada.
+- Verde: 65% no total, 4 itens a 16,25% cada.
+- Soma das categorias: 100%.
+
+### O que o código do protótipo faz hoje
+
+A tabela atual de `MODULE_CHEST_ODDS` contém:
+- Lendário: 0,2%.
+- Quatro resultados azuis: 7,5% cada (30% total).
+- Um resultado chamado “Módulo avançado”: 30%.
+- Materiais de módulo: 39,8%.
+
+A soma também fecha 100%, mas **não é a mesma distribuição da interface de referência**: o protótipo não representa os 12 resultados roxos a 0,4% nem os quatro resultados verdes a 16,25%; em vez disso, reserva 30% a um resultado agregado e 39,8% a materiais. Essa diferença é aceitável apenas se a tabela for intencionalmente balanceamento original do Guerra Infinita e a UI a identificar como tal. Não a descrever como reprodução do baú verde de Dark War.
+
+### Decisão de engenharia
+
+Não alterar automaticamente a tabela de balanceamento original só para igualá-la à referência. Antes de implementar a tabela completa no nosso jogo, definir explicitamente qual é o objetivo:
+1. **Pesquisa fiel do baú observado:** armazenar os 32 resultados e suas probabilidades exibidas como dados de referência, sem ativá-los como drop de produção.
+2. **Baú original de Guerra Infinita:** criar um pool próprio, com nomes, raridades, probabilidades e recompensas próprias; garantir soma de 100% e rotulagem clara.
+3. **Teste de simulação:** executar testes contra o pool selecionado e verificar pesos, limites e persistência; isso valida o nosso código, não o RNG do jogo comercial.
+
+### Critérios para o registro de cada recompensa
+
+Cada item precisa de ID interno original, nome exibido/transcrito, raridade, classe/facção, quantidade, chance individual, chance total da raridade, arquivo de origem, legibilidade e confiança da associação. As chances devem ser armazenadas com precisão decimal suficiente e arredondadas apenas na interface. Não misturar pools diferentes só porque seus nomes ou ícones parecem semelhantes.
