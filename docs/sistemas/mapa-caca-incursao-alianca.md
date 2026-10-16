@@ -107,6 +107,16 @@ Esses valores são **decisões originais temporárias**, precisam de playtests e
 
 Nenhuma dessas regras deve ser inferida somente a partir do número de tropas, do poder recomendado ou da tela de preparação relatados nos vídeos.
 
+## Histórico de batalhas
+
+Endpoint autenticado: `GET /v1/world/battle-history?limit=20`.
+
+- Retorna até 50 operações do próprio jogador, ordenadas pela atividade mais recente.
+- Inclui caçadas próprias e incursões das quais o jogador participou.
+- Cada item pode incluir o estado, alvo, resultado resumido e recibo individual.
+- A resposta não expõe o recibo dos demais participantes nem a lista completa de poder individual da incursão.
+- A consulta não modifica recursos e pode ser repetida sem efeitos colaterais.
+
 ## Telemetria mínima para depuração
 
 Registrar eventos com identificadores estáveis:
