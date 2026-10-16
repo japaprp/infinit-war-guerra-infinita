@@ -47,6 +47,14 @@ export function createV1Routes(env, runtime = {}) {
     const router = Router();
     const authMiddleware = createAuthMiddleware(env.JWT_SECRET);
     const userLock = createUserLockMiddleware({ redisClient: runtime.redisClient, ttlSec: 8 });
+    const rallyLock = createUserLockMiddleware({
+        redisClient: runtime.redisClient,
+        ttlSec: 8,
+        keyResolver: (req) => {
+            const operationId = req.params?.operationId || req.body?.operationId;
+            return operationId ? `lock:rally:${operationId}` : `lock:rally:create:${req.user?.sub || "anonymous"}`;
+        }
+    });
     const idempotency = createIdempotencyMiddleware({ redisClient: runtime.redisClient, ttlSec: 300 });
 
     router.post("/auth/login", async (req, res) => {
@@ -242,7 +250,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(result);
     });
 
-    router.post("/world/alliance-rallies", userLock, async (req, res) => {
+    router.post("/world/alliance-rallies", userLock, rallyLock, async (req, res) => {
         const db = await readDb();
         const user = db.users[req.user.sub];
         if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
@@ -261,7 +269,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(result);
     });
 
-    router.post("/world/alliance-rallies/:operationId/join", userLock, async (req, res) => {
+    router.post("/world/alliance-rallies/:operationId/join", userLock, rallyLock, async (req, res) => {
         const db = await readDb();
         const user = db.users[req.user.sub];
         if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
@@ -271,7 +279,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(result);
     });
 
-    router.post("/world/alliance-rallies/:operationId/close", userLock, async (req, res) => {
+    router.post("/world/alliance-rallies/:operationId/close", userLock, rallyLock, async (req, res) => {
         const db = await readDb();
         const result = closeMapRally(db, req.user.sub, req.params.operationId);
         if (asError(res, result)) return;
@@ -279,7 +287,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(result);
     });
 
-    router.post("/world/alliance-rallies/:operationId/dispatch", userLock, async (req, res) => {
+    router.post("/world/alliance-rallies/:operationId/dispatch", userLock, rallyLock, async (req, res) => {
         const db = await readDb();
         const result = dispatchMapRally(db, req.user.sub, req.params.operationId);
         if (asError(res, result)) return;
