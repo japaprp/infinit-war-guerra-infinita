@@ -1743,6 +1743,9 @@ function renderTabContent() {
 
     if (state.activeHeroTab === "atributos") {
         const foodCost = 120 + hero.heroState.level * 25;
+        const explorerChestOddsRows = CHEST_REWARD_TABLE.map((entry) =>
+            `<tr><td>${entry.label}</td><td>${(entry.weight * 100).toLocaleString("pt-BR")}%</td></tr>`
+        ).join("");
         ui.heroTabContent.innerHTML = `
             <div class="stats-grid">
                 <div class="stat-item"><span>ATQ</span><strong>${hero.atk.toLocaleString("pt-BR")}</strong><em>Nv.${hero.heroState.level}</em></div>
@@ -1758,7 +1761,12 @@ function renderTabContent() {
                 }).join("")}
             </div>
             <section class="inventory-section"><h3>Baús (${state.inventory.chests.length})</h3>
-                ${state.inventory.chests.length ? state.inventory.chests.map((chest) => `<article class="inventory-item"><span><strong>${chest.name || "Baú de Explorador"}</strong><small>Recompensa aleatória · probabilidades publicadas</small></span><button class="inline-action" data-action="open-chest" data-chest-id="${chest.id}">Abrir</button></article>`).join("") : "<p>Baús podem ser encontrados ao derrotar monstros.</p>"}
+                ${state.inventory.chests.length ? state.inventory.chests.map((chest) => `<article class="inventory-item"><span><strong>${chest.name || "Baú de Explorador"}</strong><small>Recompensa aleatória · consulte a distribuição abaixo</small></span><button class="inline-action" data-action="open-chest" data-chest-id="${chest.id}">Abrir</button></article>`).join("") : "<p>Baús podem ser encontrados ao derrotar monstros.</p>"}
+            </section>
+            <section class="inventory-section"><h3>Probabilidades · Baú de Explorador</h3>
+                <p>Distribuição do conteúdo de cada baú de explorador. Não representa a chance de encontrar um baú ao derrotar um monstro.</p>
+                <table class="module-odds"><thead><tr><th>Recompensa</th><th>Chance</th></tr></thead><tbody>${explorerChestOddsRows}</tbody></table>
+                <p>Total: ${CHEST_REWARD_TABLE.reduce((sum, entry) => sum + entry.weight * 100, 0).toLocaleString("pt-BR")}%</p>
             </section>
             <section class="inventory-section"><h3>Inventário de equipamentos (${state.inventory.equipment.length})</h3>
                 ${state.inventory.equipment.length ? state.inventory.equipment.map((item) => {
