@@ -1,4 +1,4 @@
-import { createPublicKey, verify as verifySignature } from "node:crypto";
+import { X509Certificate, verify as verifySignature } from "node:crypto";
 
 const CERTS_URL = "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
 let cachedCertificates = null;
@@ -68,7 +68,7 @@ export async function verifyFirebaseIdToken(idToken, projectId, options = {}) {
     const certificate = certificates[header.kid];
     if (typeof certificate !== "string") throw new Error("Unknown Firebase ID token signing key");
 
-    const publicKey = createPublicKey(certificate);
+    const publicKey = new X509Certificate(certificate).publicKey;
     const valid = verifySignature(
         "RSA-SHA256",
         Buffer.from(`${parts[0]}.${parts[1]}`),
