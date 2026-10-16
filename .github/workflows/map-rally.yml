@@ -1,0 +1,19 @@
+name: Map Hunts and Alliance Rallies
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  map-rally-domain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Test map hunts and rally lifecycle
+        run: node --test tests/map-rally.test.mjs
