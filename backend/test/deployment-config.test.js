@@ -95,3 +95,22 @@ test("production configuration rejects origins containing paths", () => {
         /exact HTTPS origin/
     );
 });
+
+
+test("production configuration rejects an invalid MySQL port", () => {
+    assert.throws(
+        () => validateRuntimeConfig({
+            NODE_ENV: "production",
+            JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
+            RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
+            DATA_DRIVER: "mysql",
+            MYSQL_HOST: "mysql.example.test",
+            MYSQL_PORT: 70000,
+            MYSQL_DATABASE: "infinitwar",
+            MYSQL_USER: "infinitwar_app",
+            MYSQL_PASSWORD: "database-password",
+            CORS_ORIGINS: "https://game.example.test"
+        }),
+        /MYSQL_PORT must be an integer between 1 and 65535/
+    );
+});
