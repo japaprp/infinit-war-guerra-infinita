@@ -310,6 +310,8 @@ function createDefaultState() {
     return {
         resources: { gold: 0, silver: 0, wood: 0, food: 0, energy: 100, gems: 0 },
         inventory: { equipment: [], chests: [], chips: [], chipMaterials: 0 },
+        vehicleChipLoadouts: window.IWChipLoadouts.createDefaultLoadouts(),
+        activeVehicleChipPreset: "I",
         genericShards: { bronze: 0, silver: 0, gold: 0 },
         selectedHeroId: "lucas",
         activeHeroTab: "atributos",
@@ -369,6 +371,13 @@ function loadState() {
             chips: Array.isArray(parsed.inventory?.chips) ? parsed.inventory.chips.filter((item) => item && typeof item.id === "string" && CHIP_CATALOG.some((chip) => chip.id === item.typeId) && Number.isInteger(item.level) && item.level >= 1 && item.level <= CHIP_MAX_LEVEL).slice(0, 500) : [],
             chipMaterials: Number.isFinite(parsed.inventory?.chipMaterials) && parsed.inventory.chipMaterials >= 0 ? Math.floor(parsed.inventory.chipMaterials) : 0
         };
+        merged.vehicleChipLoadouts = window.IWChipLoadouts.normalizeLoadouts(
+            parsed.vehicleChipLoadouts,
+            new Set(merged.inventory.chips.map((chip) => chip.id))
+        );
+        merged.activeVehicleChipPreset = window.IWChipLoadouts.PRESETS.includes(parsed.activeVehicleChipPreset)
+            ? parsed.activeVehicleChipPreset
+            : "I";
         merged.events = { ...fallback.events, ...(parsed.events || {}) };
         merged.mission = { ...fallback.mission, ...(parsed.mission || {}) };
         merged.buildings = { ...fallback.buildings, ...(parsed.buildings || {}) };
@@ -1124,6 +1133,10 @@ function equipChip(chipId) {
         pushFeed("Módulo não encontrado no inventário.");
         return;
     }
+    if (window.IWChipLoadouts.PRESETS.some((preset) => window.IWChipLoadouts.isChipInPreset(state.vehicleChipLoadouts, preset, chipId))) {
+        pushFeed("Este módulo está salvo em uma configuração de viatura. Remova-o das configurações antes de equipá-lo no herói.");
+        return;
+    }
     const hero = state.heroes[state.selectedHeroId];
     if (!hero?.unlocked) return;
     // A physical module may only be equipped by one hero at a time.
@@ -1144,9 +1157,71 @@ function equipChip(chipId) {
 }
 
 function isChipEquipped(chipId) {
-    return Object.values(state.heroes || {}).some((hero) =>
+    const equippedByHero = Object.values(state.heroes || {}).some((hero) =>
         Object.values(hero.equippedChips || {}).includes(chipId)
     );
+    const savedInVehiclePreset = window.IWChipLoadouts.PRESETS.some((preset) =>
+        window.IWChipLoadouts.isChipInPreset(state.vehicleChipLoadouts, preset, chipId)
+    );
+    return equippedByHero || savedInVehiclePreset;
+}
+
+function selectVehicleChipPreset(preset) {
+    if (!window.IWChipLoadouts.PRESETS.includes(preset)) return;
+    state.activeVehicleChipPreset = preset;
+    renderTabContent();
+    saveState();
+}
+
+function assignVehicleChip(chipId) {
+    const chip = state.inventory.chips.find((item) => item.id === chipId);
+    if (!chip) {
+        pushFeed("Módulo não encontrado no inventário.");
+        return;
+    }
+    const preset = state.activeVehicleChipPreset;
+    const current = state.vehicleChipLoadouts[preset];
+    const slot = window.IWChipLoadouts.SLOTS.find((candidate) => !current[candidate.id]);
+    if (!slot) {
+        pushFeed("Esta configuração já tem quatro módulos. Remova um antes de substituir.");
+        return;
+    }
+    const result = window.IWChipLoadouts.assignChip(
+        state.vehicleChipLoadouts,
+        preset,
+        slot.id,
+        chipId,
+        new Set(state.inventory.chips.map((item) => item.id))
+    );
+    if (!result.ok) {
+        pushFeed(result.reason === "duplicate-in-preset"
+            ? "Este módulo já está em outro espaço desta configuração."
+            : "Não foi possível equipar o módulo.");
+        return;
+    }
+    Object.values(state.heroes).forEach((hero) => {
+        for (const stat of ["attackPct", "hpPct"]) {
+            if (hero.equippedChips?.[stat] === chipId) hero.equippedChips[stat] = null;
+        }
+    });
+    state.vehicleChipLoadouts = result.loadouts;
+    pushFeed(`${chip.name} instalado na configuração ${preset}, espaço ${slot.label}.`);
+    renderAll();
+    saveState();
+}
+
+function removeVehicleChip(slotId) {
+    const result = window.IWChipLoadouts.clearSlot(
+        state.vehicleChipLoadouts,
+        state.activeVehicleChipPreset,
+        slotId,
+        new Set(state.inventory.chips.map((item) => item.id))
+    );
+    if (!result.ok) return;
+    state.vehicleChipLoadouts = result.loadouts;
+    pushFeed("Módulo removido da configuração de viatura.");
+    renderAll();
+    saveState();
 }
 
 function upgradeChip(chipId) {
