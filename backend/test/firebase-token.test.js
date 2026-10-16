@@ -116,7 +116,7 @@ test("Firebase verifier rejects implausibly long token lifetimes", async () => {
 import { sign } from "node:crypto";
 import { firebaseTestCertificate, firebaseTestPrivateKey } from "./fixtures/firebase-test-keys.js";
 
-function createSignedFirebaseToken({ projectId = "infinit-war-test", uid = "verified-user", nowSeconds = Math.floor(Date.now() / 1000) } = {}) {
+function createSignedFirebaseToken({ projectId = "infinit-war-test", uid = "verified-user", nowSeconds = Math.floor(Date.now() / 1000), signInProvider = "google.com", emailVerified = true } = {}) {
     const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
     const header = encode({ alg: "RS256", kid: "test-key" });
     const payload = encode({
@@ -127,8 +127,9 @@ function createSignedFirebaseToken({ projectId = "infinit-war-test", uid = "veri
         iat: nowSeconds,
         auth_time: nowSeconds - 30,
         email: "verified@example.test",
+        email_verified: emailVerified,
         name: "Verified Test User",
-        firebase: { sign_in_provider: "google.com" }
+        firebase: { sign_in_provider: signInProvider }
     });
     const signingInput = `${header}.${payload}`;
     const signature = sign("RSA-SHA256", Buffer.from(signingInput), firebaseTestPrivateKey).toString("base64url");
@@ -169,5 +170,39 @@ test("Firebase verifier rejects an invalid signature even when claims match", as
         }),
         /signature is invalid/
     );
+    clearFirebaseCertificateCacheForTests();
+});
+
+test("Firebase verifier rejects an unverified email/password account", async () => {
+    clearFirebaseCertificateCacheForTests();
+    const now = Date.now();
+    const token = createSignedFirebaseToken({
+        nowSeconds: Math.floor(now / 1000),
+        signInProvider: "password",
+        emailVerified: false
+    });
+    await assert.rejects(
+        () => verifyFirebaseIdToken(token, "infinit-war-test", {
+            now,
+            fetchImpl: mockCertificateFetch()
+        }),
+        /email address must be verified/
+    );
+    clearFirebaseCertificateCacheForTests();
+});
+
+test("Firebase verifier accepts a verified email/password account", async () => {
+    clearFirebaseCertificateCacheForTests();
+    const now = Date.now();
+    const token = createSignedFirebaseToken({
+        nowSeconds: Math.floor(now / 1000),
+        signInProvider: "password",
+        emailVerified: true
+    });
+    const identity = await verifyFirebaseIdToken(token, "infinit-war-test", {
+        now,
+        fetchImpl: mockCertificateFetch()
+    });
+    assert.equal(identity.provider, "password");
     clearFirebaseCertificateCacheForTests();
 });
