@@ -207,3 +207,29 @@ A página [Troop Battles — How to Read a Combat Report](https://www.dark-war.c
 2. Procurar uma tela de detalhes de chip com requisitos para avançar a ressonância; distinguir estrelas individuais, cópias exigidas e bônus do conjunto.
 3. Se houver relatório de combate, transcrever os campos de bônus sem substituir números ilegíveis por estimativas.
 4. Só então definir um esquema final de ressonância para o protótipo. Até lá, manter o motor de combate independente da apresentação visual.
+
+
+## Correção de inventário: probabilidades individuais do baú verde — 2026-10-16
+
+O usuário já havia fornecido a transcrição da distribuição do baú verde de chips. A tabela abaixo preserva a probabilidade por item, e não apenas o total por raridade. As capturas de origem estão catalogadas em `IMG-20261015-WA0185.jpg`–`IMG-20261015-WA0193.jpg`. Não marcar esta transcrição como pendente de recebimento do usuário.
+
+| Raridade exibida | Quantidade de itens na categoria | Chance individual por item | Total da categoria |
+|---|---:|---:|---:|
+| Laranja / lendário | 12 | 0,0166%–0,0167% por item (arredondamento da divisão de 0,2% por 12) | 0,2% |
+| Roxo / épico | 12 | 0,4% por item | 4,8% |
+| Azul / raro | 4 | 7,5% por item | 30,0% |
+| Verde / comum | 4 | 16,25% por item | 65,0% |
+| **Total** | **32 resultados listados** | — | **100,0%** |
+
+### Regras de leitura e implementação
+
+- A chance de 0,2% é o total da categoria laranja; não é a chance de cada item laranja. Cada um dos 12 itens recebe aproximadamente 0,0166667% se a distribuição for uniforme.
+- A chance de 4,8% é o total da categoria roxa; cada um dos 12 itens corresponde a 0,4%.
+- Cada um dos quatro itens azuis tem 7,5%, e cada um dos quatro verdes tem 16,25%.
+- A soma dos totais por raridade fecha exatamente 100%. A soma dos itens laranja pode apresentar diferença de 0,0004 ponto percentual se forem somados valores arredondados como 0,0167%; usar a precisão interna da tabela e arredondar somente na apresentação.
+- Estes valores pertencem ao baú verde mostrado nas capturas. Não extrapolar para baús roxos, laranjas ou outros eventos.
+- O registro de pesquisa deve manter os nomes de cada chip associados à sua linha/ícone na captura original; não substituir nomes ilegíveis por nomes inferidos de guias comunitários.
+
+### Ajuste de status
+
+A tarefa “transcrever as probabilidades do baú verde” está **parcialmente documentada e com a distribuição numérica já registrada**. O que ainda pode exigir revisão da imagem é a associação visual inequívoca de cada nome/ícone à sua linha individual — não a necessidade de o usuário reenviar os dados já fornecidos.
