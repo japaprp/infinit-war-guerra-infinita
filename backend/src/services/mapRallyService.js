@@ -139,7 +139,7 @@ export function createMapRally(db, userId, user, payload = {}) {
     user.v1.troops -= troopCount;
     db.rallies[operationId] = rally;
     user.v1.stateVersion = (user.v1.stateVersion || 0) + 1;
-    return { ...rally, resources: { ...user.v1.resources } };
+    return { ...rally, resources: { ...user.v1.resources }, troops: user.v1.troops };
 }
 
 export function joinMapRally(db, userId, user, operationId, payload = {}) {
