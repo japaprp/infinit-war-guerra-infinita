@@ -127,3 +127,26 @@ test("fresh account unlocks heroes progressively and starts with a single-hero s
     assert.match(source, /if\s*\(!heroState\s*\|\|\s*!heroState\.unlocked\)\s*return;/,
         "locked heroes must not be assignable to the squad");
 });
+
+
+test("hero star promotion has five internal steps and rising fragment costs", async () => {
+    const source = await readFile(SOURCE_URL, "utf8");
+    const block = readArrayBlock(source, "HERO_STAR_FRAGMENT_COSTS");
+    const tiers = [...block.matchAll(/\[([^\[\]]+)\]/g)]
+        .map((match) => match[1].split(",").map((value) => Number(value.trim())));
+    assert.equal(tiers.length, 5, "the hero system must expose five star tiers");
+    assert.ok(tiers.every((steps) => steps.length === 5), "each star tier must contain five internal steps");
+    assert.deepEqual(tiers[0], [1, 1, 2, 3, 3]);
+    assert.deepEqual(tiers[1], [5, 5, 5, 5, 15]);
+    assert.deepEqual(tiers[2], [15, 15, 15, 15, 50]);
+    assert.deepEqual(tiers[3], [50, 50, 50, 50, 100]);
+    assert.deepEqual(tiers[4], [100, 100, 100, 100, 100]);
+    assert.match(source, /starStep:\s*0/, "fresh heroes must begin before their first internal promotion step");
+    assert.match(source, /function getHeroStarPromotionCost\(heroState\)/);
+    assert.match(source, /heroState\.starStep\s*>=\s*5/, "the final tier must have an explicit maximum state");
+    assert.match(source, /current\.starStep\)\s*\?\s*clamp\(current\.starStep,\s*0,\s*5\)\s*:\s*0/,
+        "legacy saves must receive a safe star-step default");
+    assert.match(source, /Progress[oó] da estrela:/, "the UI must show internal star progress");
+    assert.match(source, /pending direct in-game cost screenshots/i,
+        "secondary-source costs must be labelled as provisional until visually verified");
+});
