@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { ensureV1State } from "./userService.js";
+import { getActiveVehicleBonuses } from "./vehicleLoadoutService.js";
 
 const HUNT_TARGETS = Object.freeze({
     "grey-forest-stalker": { energyCost: 15, travelMs: 30_000, level: 1, kind: "roaming_enemy", enemyHp: 260_000, reward: { gold: 1200, food: 800, steel: 50 } },
@@ -94,7 +95,7 @@ export function startMapHunt(db, userId, user, payload = {}) {
     const huntId = `hunt_${crypto.randomUUID()}`;
     const hunt = {
         huntId, operationId, playerId: userId, targetId, kind: target.kind, level: target.level,
-        formation, troopCount,
+        formation, vehicleBonuses: getActiveVehicleBonuses(user), troopCount,
         energyCost: target.energyCost, startedAtMs: now, endsAtMs: now + target.travelMs,
         status: "marching", rewardReceipt: null, result: null
     };
@@ -132,7 +133,7 @@ export function createMapRally(db, userId, user, payload = {}) {
     const rally = {
         rallyId, operationId, allianceId, targetId, leaderId: userId, capacity: RALLY_CAPACITY,
         status: "recruiting", createdAtMs: now, closeAtMs: now + 5 * 60_000,
-        participants: [{ playerId: userId, heroIds: formation.map(hero => hero.heroId), formation, troopCount, energyCost: target.energyCost }],
+        participants: [{ playerId: userId, heroIds: formation.map(hero => hero.heroId), formation, vehicleBonuses: getActiveVehicleBonuses(user), troopCount, energyCost: target.energyCost }],
         result: null, rewardReceipts: {}
     };
     user.v1.resources.energy -= target.energyCost;
@@ -156,7 +157,7 @@ export function joinMapRally(db, userId, user, operationId, payload = {}) {
     if (payload.troopCount > user.v1.troops) return businessError(409, "Not enough available troops");
     const target = HUNT_TARGETS[rally.targetId];
     if (!target || user.v1.resources.energy < target.energyCost) return businessError(409, "Insufficient energy or invalid target");
-    const participant = { playerId: userId, heroIds: formation.map(hero => hero.heroId), formation, troopCount: payload.troopCount, energyCost: target.energyCost, joinedAtMs: Date.now() };
+    const participant = { playerId: userId, heroIds: formation.map(hero => hero.heroId), formation, vehicleBonuses: getActiveVehicleBonuses(user), troopCount: payload.troopCount, energyCost: target.energyCost, joinedAtMs: Date.now() };
     // Reserve resources and troops in the same persisted operation as participation.
     rally.participants.push(participant);
     user.v1.resources.energy -= target.energyCost;
@@ -197,7 +198,9 @@ export function resolveMapHunt(db, userId, user, operationId, nowMs = Date.now()
     if (nowMs < hunt.endsAtMs) return businessError(409, "The march has not arrived yet");
     const target = HUNT_TARGETS[hunt.targetId];
     if (!target) return businessError(409, "Hunt target is no longer available");
-    const power = formationPower(hunt.formation) + Math.max(0, Number(hunt.troopCount) || 0) * 40;
+    const basePower = formationPower(hunt.formation) + Math.max(0, Number(hunt.troopCount) || 0) * 40;
+    const attackPct = Math.max(0, Math.min(500, Number(hunt.vehicleBonuses?.attackPct) || 0));
+    const power = Math.floor(basePower * (1 + attackPct / 100));
     const damage = combatDamage(power, operationId);
     const won = damage >= target.enemyHp;
     const rewards = rewardsFor(target, won);
@@ -237,7 +240,7 @@ export function resolveMapRally(db, userId, user, operationId, nowMs = Date.now(
     if (missingUsers.length) return businessError(409, "A rally participant is no longer available");
     const participantPowers = participants.map(participant => ({
         playerId: participant.playerId,
-        power: formationPower(participant.formation) + Math.max(0, Number(participant.troopCount) || 0) * 40
+        power: Math.floor((formationPower(participant.formation) + Math.max(0, Number(participant.troopCount) || 0) * 40) * (1 + Math.max(0, Math.min(500, Number(participant.vehicleBonuses?.attackPct) || 0)) / 100))
     }));
     const totalPower = participantPowers.reduce((sum, participant) => sum + participant.power, 0);
     const damage = combatDamage(totalPower, operationId);
