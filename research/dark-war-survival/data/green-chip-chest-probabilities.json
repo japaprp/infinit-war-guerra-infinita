@@ -15,7 +15,7 @@
       "rarity": "orange",
       "group_probability_displayed_percent": 0.2,
       "item_count": 12,
-      "per_item_probability_percent_derived": 1.6666666666666667
+      "per_item_probability_percent_derived": 0.016666666666666666
     },
     {
       "rarity": "purple",
@@ -54,7 +54,7 @@
       "probability_displayed_percent": null,
       "group_probability_displayed_percent": 0.2,
       "group_item_count": 12,
-      "probability_derived_percent": 1.6666666666666667,
+      "probability_derived_percent": 0.016666666666666666,
       "evidence_screenshot": "IMG-20261015-WA0185.jpg",
       "evidence_status": "partial_visual_transcription",
       "note": "Nome individual não fixado neste dataset; a captura tem linhas parcialmente encobertas. A probabilidade teórica derivada do total é 0,0166667%; não atribuir como valor literal exibido."
@@ -67,7 +67,7 @@
       "probability_displayed_percent": null,
       "group_probability_displayed_percent": 0.2,
       "group_item_count": 12,
-      "probability_derived_percent": 1.6666666666666667,
+      "probability_derived_percent": 0.016666666666666666,
       "evidence_screenshot": "IMG-20261015-WA0185.jpg",
       "evidence_status": "partial_visual_transcription",
       "note": "Nome individual não fixado neste dataset; a captura tem linhas parcialmente encobertas. A probabilidade teórica derivada do total é 0,0166667%; não atribuir como valor literal exibido."
@@ -80,7 +80,7 @@
       "probability_displayed_percent": null,
       "group_probability_displayed_percent": 0.2,
       "group_item_count": 12,
-      "probability_derived_percent": 1.6666666666666667,
+      "probability_derived_percent": 0.016666666666666666,
       "evidence_screenshot": "IMG-20261015-WA0185.jpg",
       "evidence_status": "partial_visual_transcription",
       "note": "Nome individual não fixado neste dataset; a captura tem linhas parcialmente encobertas. A probabilidade teórica derivada do total é 0,0166667%; não atribuir como valor literal exibido."
@@ -93,7 +93,7 @@
       "probability_displayed_percent": null,
       "group_probability_displayed_percent": 0.2,
       "group_item_count": 12,
-      "probability_derived_percent": 1.6666666666666667,
+      "probability_derived_percent": 0.016666666666666666,
       "evidence_screenshot": "IMG-20261015-WA0185.jpg",
       "evidence_status": "partial_visual_transcription",
       "note": "Nome individual não fixado neste dataset; a captura tem linhas parcialmente encobertas. A probabilidade teórica derivada do total é 0,0166667%; não atribuir como valor literal exibido."
@@ -106,7 +106,7 @@
       "probability_displayed_percent": null,
       "group_probability_displayed_percent": 0.2,
       "group_item_count": 12,
-      "probability_derived_percent": 1.6666666666666667,
+      "probability_derived_percent": 0.016666666666666666,
       "evidence_screenshot": "IMG-20261015-WA0185.jpg",
       "evidence_status": "partial_visual_transcription",
       "note": "Nome individual não fixado neste dataset; a captura tem linhas parcialmente encobertas. A probabilidade teórica derivada do total é 0,0166667%; não atribuir como valor literal exibido."
@@ -119,7 +119,7 @@
       "probability_displayed_percent": null,
       "group_probability_displayed_percent": 0.2,
       "group_item_count": 12,
-      "probability_derived_percent": 1.6666666666666667,
+      "probability_derived_percent": 0.016666666666666666,
       "evidence_screenshot": "IMG-20261015-WA0185.jpg",
       "evidence_status": "partial_visual_transcription",
       "note": "Nome individual não fixado neste dataset; a captura tem linhas parcialmente encobertas. A probabilidade teórica derivada do total é 0,0166667%; não atribuir como valor literal exibido."
@@ -132,7 +132,7 @@
       "probability_displayed_percent": null,
       "group_probability_displayed_percent": 0.2,
       "group_item_count": 12,
-      "probability_derived_percent": 1.6666666666666667,
+      "probability_derived_percent": 0.016666666666666666,
       "evidence_screenshot": "IMG-20261015-WA0185.jpg",
       "evidence_status": "partial_visual_transcription",
       "note": "Nome individual não fixado neste dataset; a captura tem linhas parcialmente encobertas. A probabilidade teórica derivada do total é 0,0166667%; não atribuir como valor literal exibido."
@@ -145,7 +145,7 @@
       "probability_displayed_percent": null,
       "group_probability_displayed_percent": 0.2,
       "group_item_count": 12,
-      "probability_derived_percent": 1.6666666666666667,
+      "probability_derived_percent": 0.016666666666666666,
       "evidence_screenshot": "IMG-20261015-WA0185.jpg",
       "evidence_status": "partial_visual_transcription",
       "note": "Nome individual não fixado neste dataset; a captura tem linhas parcialmente encobertas. A probabilidade teórica derivada do total é 0,0166667%; não atribuir como valor literal exibido."
@@ -158,7 +158,7 @@
       "probability_displayed_percent": null,
       "group_probability_displayed_percent": 0.2,
       "group_item_count": 12,
-      "probability_derived_percent": 1.6666666666666667,
+      "probability_derived_percent": 0.016666666666666666,
       "evidence_screenshot": "IMG-20261015-WA0185.jpg",
       "evidence_status": "partial_visual_transcription",
       "note": "Nome individual não fixado neste dataset; a captura tem linhas parcialmente encobertas. A probabilidade teórica derivada do total é 0,0166667%; não atribuir como valor literal exibido."
@@ -171,7 +171,7 @@
       "probability_displayed_percent": null,
       "group_probability_displayed_percent": 0.2,
       "group_item_count": 12,
-      "probability_derived_percent": 1.6666666666666667,
+      "probability_derived_percent": 0.016666666666666666,
       "evidence_screenshot": "IMG-20261015-WA0185.jpg",
       "evidence_status": "partial_visual_transcription",
       "note": "Nome individual não fixado neste dataset; a captura tem linhas parcialmente encobertas. A probabilidade teórica derivada do total é 0,0166667%; não atribuir como valor literal exibido."
@@ -184,7 +184,7 @@
       "probability_displayed_percent": null,
       "group_probability_displayed_percent": 0.2,
       "group_item_count": 12,
-      "probability_derived_percent": 1.6666666666666667,
+      "probability_derived_percent": 0.016666666666666666,
       "evidence_screenshot": "IMG-20261015-WA0185.jpg",
       "evidence_status": "partial_visual_transcription",
       "note": "Nome individual não fixado neste dataset; a captura tem linhas parcialmente encobertas. A probabilidade teórica derivada do total é 0,0166667%; não atribuir como valor literal exibido."
@@ -197,7 +197,7 @@
       "probability_displayed_percent": null,
       "group_probability_displayed_percent": 0.2,
       "group_item_count": 12,
-      "probability_derived_percent": 1.6666666666666667,
+      "probability_derived_percent": 0.016666666666666666,
       "evidence_screenshot": "IMG-20261015-WA0185.jpg",
       "evidence_status": "partial_visual_transcription",
       "note": "Nome individual não fixado neste dataset; a captura tem linhas parcialmente encobertas. A probabilidade teórica derivada do total é 0,0166667%; não atribuir como valor literal exibido."
