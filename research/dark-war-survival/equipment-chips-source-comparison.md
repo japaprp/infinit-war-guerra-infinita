@@ -233,3 +233,36 @@ O usuário já havia fornecido a transcrição da distribuição do baú verde d
 ### Ajuste de status
 
 A tarefa “transcrever as probabilidades do baú verde” está **parcialmente documentada e com a distribuição numérica já registrada**. O que ainda pode exigir revisão da imagem é a associação visual inequívoca de cada nome/ícone à sua linha individual — não a necessidade de o usuário reenviar os dados já fornecidos.
+
+
+## Dataset estruturado do baú verde — 2026-10-16
+
+Arquivo de dados: [`data/green-chip-chest-probabilities.json`](./data/green-chip-chest-probabilities.json).
+
+O arquivo representa 32 entradas no pool observado: 12 laranjas (0,2% em grupo), 12 roxas (0,4% cada, 4,8% total), quatro azuis (7,5% cada, 30% total) e quatro verdes (65% total; 16,25% por item é apenas cálculo derivado). A soma dos grupos é 100%.
+
+Os nomes que não puderam ser associados com segurança à linha visual permanecem nulos. Para laranja, 0,0166667% é a divisão matemática de 0,2% por 12, enquanto a interface pode arredondar para 0,0166% ou 0,0167%. O dataset não declara conhecer o RNG interno e não generaliza para outros baús.
+
+## Revisão de fronteiras do modelo de chips
+
+A leitura de `engine/game.js` na branch `feat/chips-equipment-chests` indica que o catálogo atual `CHIP_CATALOG` mistura definição de módulo com papel de tropa, atributo, custo de cópias, raridade e cor; o código de protótipo ainda não demonstra uma separação explícita entre tipo de chip e instância possuída pelo jogador. Isso torna mais difícil validar inventário, duplicatas, evolução, presets e persistência de forma independente.
+
+### Modelo-alvo recomendado (proposta para Guerra Infinita)
+
+- **`ChipDefinition`**: identidade original do tipo, raridade, slots compatíveis, facção/papel compatível, atributos-base e origem da regra.
+- **`ChipInstance`**: ID único, definição referenciada, nível/estrelas, progresso de evolução e estado de posse.
+- **`VehicleLoadout`**: exatamente quatro posições; cada posição referencia uma instância única ou fica vazia.
+- **`LoadoutPreset`**: quatro presets independentes (I–IV) que guardam referências a instâncias, sem duplicar a propriedade do item.
+- **`ResonanceRule`**: regra original configurável e versionada, mantida separada dos chips equipados até os gatilhos serem definidos e testados.
+- **`ChestTable`**: pool identificado por tipo de baú e versão, com pesos/chances validados e metadados de evidência. Não reutilizar a tabela de pesquisa como configuração de produção.
+
+### Validações antes de alterar o código de jogo
+
+1. A mesma instância não pode ocupar dois slots simultaneamente no mesmo estado equipado.
+2. Presets alternativos podem referenciar a mesma instância como configuração salva, mas a regra de ativação deve dizer qual preset está ativo.
+3. Troca de preset não cria nem duplica chips; todas as referências precisam apontar para instâncias existentes e pertencentes ao jogador.
+4. Evolução exige materiais suficientes e atualiza a instância de modo atômico; uma falha não deve consumir materiais nem alterar estrelas.
+5. Os dados de pesquisa de Dark War permanecem em `research/`; valores de balanceamento do Guerra Infinita ficam numa tabela própria, versionada e testada.
+6. Ressonância não recebe fórmula final até decidirmos uma regra original de design. O rótulo visual observado `N/5` sozinho não define o gatilho.
+
+Esta etapa é uma especificação de arquitetura e pesquisa; **não altera o balanceamento nem o código executável**. A PR #17 continua aberta e sem merge enquanto a revisão técnica estiver pendente.
