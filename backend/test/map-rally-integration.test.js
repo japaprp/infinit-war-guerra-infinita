@@ -8,7 +8,7 @@ const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "iwar-map-rally-it-"));
 process.env.IWAR_DB_PATH = path.join(tmpDir, "db.json");
 
 const { createApp } = await import("../src/app.js");
-const { initializeRepository, readDb } = await import("../src/repositories/dbRepository.js");
+const { initializeRepository, readDb, writeDb } = await import("../src/repositories/dbRepository.js");
 const { initializeRedis } = await import("../src/services/redisService.js");
 
 const env = {
@@ -88,6 +88,44 @@ test("map hunt validates owned heroes, charges once, and persists an idempotent 
     }
 });
 
+test("map hunt resolves after arrival and grants rewards only once", async () => {
+    await fs.rm(process.env.IWAR_DB_PATH, { force: true });
+    const server = await startServer();
+    try {
+        const token = await login(server.baseUrl, "hunt_combat_player");
+        const started = await request(server.baseUrl, "POST", "/v1/world/hunts/start", {
+            token, body: { targetId: "grey-forest-stalker", heroIds: ["lucas"], troopCount: 100, operationId: "hunt-combat-1" }
+        });
+        assert.equal(started.status, 200);
+        assert.equal(started.body.troops, 900);
+
+        const early = await request(server.baseUrl, "POST", "/v1/world/hunts/hunt-combat-1/resolve", { token, body: {} });
+        assert.equal(early.status, 409, "combat cannot resolve before arrival");
+
+        const db = await readDb();
+        db.hunts["hunt-combat-1"].endsAtMs = Date.now() - 1;
+        await writeDb(db);
+        const resolved = await request(server.baseUrl, "POST", "/v1/world/hunts/hunt-combat-1/resolve", { token, body: {} });
+        assert.equal(resolved.status, 200);
+        assert.ok(["victory", "defeat"].includes(resolved.body.result.outcome));
+        assert.ok(resolved.body.rewardReceipt.receiptId);
+        const afterFirst = (await readDb()).users["guest:hunt_combat_player"].v1;
+        assert.equal(afterFirst.resources.gold, resolved.body.rewardReceipt.rewards.gold);
+        assert.equal(afterFirst.resources.food, resolved.body.rewardReceipt.rewards.food);
+        assert.equal(afterFirst.troops, resolved.body.troops);
+
+        const retry = await request(server.baseUrl, "POST", "/v1/world/hunts/hunt-combat-1/resolve", { token, body: {} });
+        assert.equal(retry.status, 200);
+        assert.equal(retry.body.replayed, true);
+        assert.equal(retry.body.rewardReceipt.receiptId, resolved.body.rewardReceipt.receiptId);
+        const afterRetry = (await readDb()).users["guest:hunt_combat_player"].v1;
+        assert.equal(afterRetry.resources.gold, afterFirst.resources.gold, "retry must not grant gold twice");
+        assert.equal(afterRetry.troops, afterFirst.troops, "retry must not return troops twice");
+    } finally {
+        await server.stop();
+    }
+});
+
 test("alliance rally enforces membership, unique entry, leader transitions and persistence", async () => {
     await fs.rm(process.env.IWAR_DB_PATH, { force: true });
     const server = await startServer();
@@ -149,11 +187,26 @@ test("alliance rally enforces membership, unique entry, leader transitions and p
         assert.equal(dispatched.status, 200);
         assert.equal(dispatched.body.rally.status, "marching");
 
+        const beforeResolve = await readDb();
+        beforeResolve.rallies["rally-op-1"].arrivesAtMs = Date.now() - 1;
+        await writeDb(beforeResolve);
+        const resolved = await request(server.baseUrl, "POST", "/v1/world/alliance-rallies/rally-op-1/resolve", { token: memberToken, body: {} });
+        assert.equal(resolved.status, 200);
+        assert.equal(resolved.body.rally.status, "completed");
+        assert.ok(resolved.body.rally.result.resultId);
+        assert.ok(resolved.body.rewardReceipt.receiptId);
+
+        const retry = await request(server.baseUrl, "POST", "/v1/world/alliance-rallies/rally-op-1/resolve", { token: memberToken, body: {} });
+        assert.equal(retry.status, 200);
+        assert.equal(retry.body.replayed, true);
+        assert.equal(retry.body.rewardReceipt.receiptId, resolved.body.rewardReceipt.receiptId);
+
         const visible = await request(server.baseUrl, "GET", "/v1/world/alliance-rallies/rally-op-1", { token: memberToken });
         assert.equal(visible.status, 200);
-        assert.equal(visible.body.rally.status, "marching");
+        assert.equal(visible.body.rally.status, "completed");
         const db = await readDb();
         assert.equal(db.rallies["rally-op-1"].participants.length, 2);
+        assert.equal(db.users["guest:rally_member"].v1.resources.gold, resolved.body.rewardReceipt.rewards.gold);
     } finally {
         await server.stop();
     }
