@@ -23,7 +23,9 @@ import {
     claimBattlePass,
     getPlayerMe,
     startExpedition,
-    claimExpedition
+    claimExpedition,
+    getServerChests,
+    openServerChest
 } from "../services/v1StubService.js";
 import { createAuthMiddleware } from "../middlewares/authMiddleware.js";
 import { getVehicleLoadout, setActiveVehiclePreset, equipVehicleChip, removeVehicleChip, upgradeVehicleChip } from "../services/vehicleLoadoutService.js";
@@ -322,6 +324,23 @@ export function createV1Routes(env, runtime = {}) {
     router.post("/world/alliance-rallies/:operationId/dispatch", userLock, rallyLock, async (req, res) => {
         const db = await readDb();
         const result = dispatchMapRally(db, req.user.sub, req.params.operationId);
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.get("/inventory/chests", async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        res.json(getServerChests(user));
+    });
+
+    router.post("/inventory/chests/:chestId/open", userLock, idempotency, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = openServerChest(user, req.params.chestId);
         if (asError(res, result)) return;
         await writeDb(db);
         res.json(result);
