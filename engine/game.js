@@ -525,10 +525,10 @@ async function syncServerVehicleLoadout({ render = true } = {}) {
         const applied = new Set(Array.isArray(state.inventory.appliedChestReceiptIds) ? state.inventory.appliedChestReceiptIds : []);
         for (const receipt of (Array.isArray(serverInventory.receipts) ? serverInventory.receipts : [])) {
             if (!receipt?.chestId || applied.has(receipt.chestId)) continue;
-            if (receipt.reward?.type === "resources") {
-                state.resources.gold += Number(receipt.reward.gold) || 0;
-                state.resources.silver += Number(receipt.reward.steel) || 0;
-                state.resources.food += Number(receipt.reward.food) || 0;
+            if (receipt.reward?.type === "resources" && receipt.resources && typeof receipt.resources === "object") {
+                for (const [serverKey, clientKey] of [["gold", "gold"], ["steel", "silver"], ["food", "food"], ["energy", "energy"]]) {
+                    if (Number.isFinite(receipt.resources[serverKey])) state.resources[clientKey] = receipt.resources[serverKey];
+                }
             }
             applied.add(receipt.chestId);
         }
@@ -1423,10 +1423,12 @@ async function openInventoryChest(chestId) {
             if (!Array.isArray(state.inventory.appliedChestReceiptIds)) state.inventory.appliedChestReceiptIds = [];
             const applied = new Set(state.inventory.appliedChestReceiptIds);
             if (!applied.has(result.chestId)) {
-                if (result.reward?.type === "resources") {
-                    state.resources.gold += Number(result.reward.gold) || 0;
-                    state.resources.silver += Number(result.reward.steel) || 0;
-                    state.resources.food += Number(result.reward.food) || 0;
+                // The server's balances are authoritative; never add a reward delta
+                // on top of a balance that may already include the same chest.
+                if (result.resources && typeof result.resources === "object") {
+                    for (const [serverKey, clientKey] of [["gold", "gold"], ["steel", "silver"], ["food", "food"], ["energy", "energy"]]) {
+                        if (Number.isFinite(result.resources[serverKey])) state.resources[clientKey] = result.resources[serverKey];
+                    }
                 }
                 state.inventory.appliedChestReceiptIds = [...applied, result.chestId].slice(-500);
             }
