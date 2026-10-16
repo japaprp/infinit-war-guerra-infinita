@@ -2450,6 +2450,8 @@ async function resolveMapHuntFromPanel() {
     try {
         const result = await api.resolveMapHuntV1(operationId);
         mapRallySyncResources(result);
+        if (typeof api.getServerChestsV1 === "function") await syncServerVehicleLoadout({ render: false });
+        if (result.chestReward?.chestId) pushFeed("Vitória! Um Baú de Explorador foi enviado ao inventário do servidor.");
         mapRallyShowCombat(result, "Combate da caçada resolvido.");
     } catch (error) {
         mapRallySetStatus(`Não foi possível resolver a caçada: ${error.message}`);
@@ -2528,6 +2530,8 @@ async function resolveMapRallyFromPanel() {
     try {
         const result = await api.resolveAllianceRallyV1(operationId);
         mapRallySyncResources(result);
+        if (typeof api.getServerChestsV1 === "function") await syncServerVehicleLoadout({ render: false });
+        if (result.rewardReceipt?.chestReward?.chestId) pushFeed("A incursão concedeu um Baú de Explorador, registrado no inventário do servidor.");
         mapRallyRenderDetails(result.rally);
         mapRallyShowCombat(result, "Resultado da incursão registrado.");
     } catch (error) {
