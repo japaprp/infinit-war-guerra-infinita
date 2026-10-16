@@ -9,7 +9,8 @@
     "dev:grpc": "node src/grpc/server.js",
     "migrate:mysql": "node src/scripts/migrate.js",
     "test:integration": "node --test test/integration.test.js",
-    "test:config": "node --test test/deployment-config.test.js"
+    "test:config": "node --test test/deployment-config.test.js",
+    "test:deploy": "node --test test/deployment-config.test.js test/deployment-artifacts.test.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.11.3",
