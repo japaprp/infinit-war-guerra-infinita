@@ -111,3 +111,14 @@ O guia comunitário [Dark War Survival Data — APC / Modified Garage](https://d
 - Conferir se o nível “2” mostrado nos acessórios é tier/raridade ou nível geral, pois as peças também têm níveis individuais 23–26.
 - Confirmar a origem da diferença entre o poder geral (27.178.500) e a soma dos presets (22.409.000).
 - Confirmar se “Colmeia-II”, “Verme da Areia” e “Cão do Inferno” são nomes exatos da tela ou transcrição aproximada.
+
+
+## Esclarecimento de progressão inicial — 2026-10-15
+
+O nível 267 descrito acima é o estado da conta avançada usada como referência pelo usuário, não o nível inicial do jogo. No Guerra Infinita, toda conta nova começa no **nível 1**. O nível 267 serve somente como evidência de sistemas/valores de estágio avançado; não deve ser usado como estado inicial, requisito de tutorial ou baseline de balanceamento.
+
+Implicações de implementação:
+- Criar um estado inicial limpo no nível 1, com inventário, recursos, veículo, acessórios e chips iniciais definidos separadamente dos dados da conta de referência.
+- Desbloquear sistemas gradualmente por marcos de progressão; não apresentar todos os sistemas de garagem, seis acessórios, evolução de veículo, quatro presets e baús avançados de uma só vez no tutorial.
+- Tratar os números de nível 267, 27.178.500 de poder e custos de acessórios como dados de referência avançada, nunca como valores de início.
+- Construir e testar uma trilha separada de nível 1 em diante. Os valores exatos de XP, custos e nível de desbloqueio ainda precisam ser definidos pelo balanceamento original de Guerra Infinita, não inferidos da conta avançada.
