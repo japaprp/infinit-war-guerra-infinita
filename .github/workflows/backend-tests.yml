@@ -18,6 +18,10 @@ on:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
       - "api/**"
+      - "index.html"
+      - "game.html"
+      - "render.yaml"
+      - "DEPLOYMENT_PREPARATION.md"
 
 jobs:
   backend-tests:
