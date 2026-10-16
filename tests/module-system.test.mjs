@@ -65,3 +65,36 @@ test("original prototype module catalog is structurally valid without claiming r
     assert.ok(source.includes("definition?.stat !== stat || seenEquippedChipIds.has(chipId)"),
         "save loading must reject missing, mismatched, or duplicate module references");
 });
+
+test("new accounts start with clean progression instead of copied endgame data", async () => {
+    const source = await readFile(SOURCE_URL, "utf8");
+    const heroFactoryStart = source.indexOf("function createHeroState(template) {");
+    const defaultStateStart = source.indexOf("function createDefaultState() {");
+    const loadStateStart = source.indexOf("function loadState() {");
+    assert.ok(heroFactoryStart >= 0 && defaultStateStart > heroFactoryStart && loadStateStart > defaultStateStart,
+        "fresh account factories must remain explicit and independently auditable");
+
+    const heroFactory = source.slice(heroFactoryStart, defaultStateStart);
+    const defaultState = source.slice(defaultStateStart, loadStateStart);
+    assert.match(heroFactory, /level:\s*1/, "new heroes must start at level one");
+    assert.match(heroFactory, /stars:\s*1/, "new heroes must start at the base star level");
+    assert.match(heroFactory, /specificShards:\s*0/, "new heroes must not inherit shards");
+    assert.match(heroFactory, /weapon:\s*0,\s*armor:\s*0,\s*boots:\s*0/,
+        "new heroes must not inherit upgraded equipment");
+    assert.match(heroFactory, /attackPct:\s*null,\s*hpPct:\s*null/,
+        "new heroes must not inherit equipped modules");
+    assert.match(defaultState, /equipment:\s*\[\],\s*chests:\s*\[\],\s*chips:\s*\[\],\s*chipMaterials:\s*0/,
+        "new accounts must have empty equipment, chest and module inventories");
+    assert.match(defaultState, /genericShards:\s*\{\s*bronze:\s*0,\s*silver:\s*0,\s*gold:\s*0\s*\}/,
+        "new accounts must start with zero generic shards");
+    assert.match(defaultState, /totalPuzzles:\s*0/,
+        "hero-unlock progress must start at zero");
+    assert.match(defaultState, /hq:\s*\{\s*level:\s*1\s*\}/,
+        "the headquarters must start at its base level");
+    assert.match(defaultState, /constructionStarted:\s*false/,
+        "tutorial progression must not be pre-completed");
+    assert.match(defaultState, /completedCount:\s*0/,
+        "new accounts must have no completed expeditions");
+    assert.match(defaultState, /energy:\s*100/,
+        "starting energy is an explicit prototype allowance, not inherited account progress");
+});
