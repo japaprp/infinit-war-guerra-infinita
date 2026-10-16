@@ -220,7 +220,7 @@ const ui = {
     expeditionRewardPreview: document.getElementById("expeditionRewardPreview"),
     mapRallyStatus: document.getElementById("mapRallyStatus"),
     mapRallyTarget: document.getElementById("mapRallyTarget"),
-    mapRallyHero: document.getElementById("mapRallyHero"),
+    mapRallyHeroList: document.getElementById("mapRallyHeroList"),
     mapRallyRefreshHeroesBtn: document.getElementById("mapRallyRefreshHeroesBtn"),
     mapHuntStartBtn: document.getElementById("mapHuntStartBtn"),
     mapRallyTroops: document.getElementById("mapRallyTroops"),
@@ -2147,36 +2147,47 @@ async function refreshMapRallyHeroes() {
     try {
         const response = await api.listHeroesV1();
         const heroes = Array.isArray(response?.heroes) ? response.heroes : [];
-        if (!ui.mapRallyHero) return;
-        const previous = ui.mapRallyHero.value;
-        ui.mapRallyHero.innerHTML = "";
+        const list = ui.mapRallyHeroList;
+        if (!list) return;
+        const previouslySelected = new Set([...list.querySelectorAll("input[type='checkbox']:checked")].map((input) => input.value));
+        list.replaceChildren();
         heroes.forEach((hero) => {
             if (!hero || typeof hero.heroId !== "string") return;
-            const option = document.createElement("option");
-            option.value = hero.heroId;
-            option.textContent = `${hero.name || hero.heroId} · Nv. ${Number(hero.level) || 1}`;
-            ui.mapRallyHero.appendChild(option);
+            const label = document.createElement("label");
+            label.className = "map-rally-hero-option";
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.value = hero.heroId;
+            checkbox.checked = previouslySelected.has(hero.heroId) || (previouslySelected.size === 0 && hero.heroId === heroes[0]?.heroId);
+            checkbox.addEventListener("change", () => {
+                const selected = [...list.querySelectorAll("input[type='checkbox']:checked")];
+                if (selected.length > 5) {
+                    checkbox.checked = false;
+                    mapRallySetStatus("A formação aceita no máximo 5 heróis.");
+                    return;
+                }
+                mapRallySetStatus(`Formação selecionada: ${selected.length}/5 herói(s).`);
+            });
+            const text = document.createElement("span");
+            text.textContent = `${hero.name || hero.heroId} · Nv. ${Number(hero.level) || 1}`;
+            label.append(checkbox, text);
+            list.appendChild(label);
         });
-        if (!ui.mapRallyHero.options.length) {
-            const option = document.createElement("option");
-            option.value = "";
-            option.textContent = "Nenhum herói disponível";
-            ui.mapRallyHero.appendChild(option);
-        } else if ([...ui.mapRallyHero.options].some((option) => option.value === previous)) {
-            ui.mapRallyHero.value = previous;
+        if (!list.children.length) {
+            list.textContent = "Nenhum herói disponível.";
         }
-        mapRallyHeroesLoaded = ui.mapRallyHero.options.length > 0 && Boolean(ui.mapRallyHero.value);
+        mapRallyHeroesLoaded = list.querySelectorAll("input[type='checkbox']").length > 0;
         mapRallySetStatus(mapRallyHeroesLoaded
-            ? `Lista atualizada: ${heroes.length} herói(s) retornado(s) pelo servidor.`
+            ? `Lista atualizada: ${heroes.length} herói(s). Marque de 1 a 5 para formar a marcha.`
             : "O servidor não retornou heróis utilizáveis.");
     } catch (error) {
         mapRallySetStatus(`Falha ao carregar heróis: ${error.message}`);
     }
 }
-
 function mapRallySelectedHeroIds() {
-    const heroId = ui.mapRallyHero?.value;
-    return heroId ? [heroId] : [];
+    const list = ui.mapRallyHeroList;
+    if (!list) return [];
+    return [...list.querySelectorAll("input[type='checkbox']:checked")].map((input) => input.value).slice(0, 5);
 }
 
 function mapRallyApplyEnergy(response) {
