@@ -319,6 +319,33 @@ test("vehicle chip loadouts are server-owned and upgrades consume only unequippe
         const storedHunt = (await readDb()).hunts["vehicle-bonus-hunt"];
         assert.equal(storedHunt.vehicleBonuses.attackPct, 42.2, "combat uses the server-owned active preset, not client bonuses");
         assert.equal(storedHunt.combatBonuses, undefined);
+
+        // HP bonuses are snapshotted by the server and reduce troop losses.
+        const afterUpgradeDb = await readDb();
+        afterUpgradeDb.users["guest:vehicle_loadout_player"].v1.vehicle.chips.push({
+            id: "gravity-protection", typeId: "gravity-barrier", level: 1, source: "trusted-test-reward"
+        });
+        await writeDb(afterUpgradeDb);
+        const equippedProtection = await request(server.baseUrl, "POST", "/v1/vehicle/chips/equip", {
+            token, body: { chipId: "gravity-protection", slotId: "gravity", presetId: "I" }
+        });
+        assert.equal(equippedProtection.status, 200);
+        assert.equal(equippedProtection.body.inventory.find(chip => chip.id === "gravity-protection").bonusPct, 6.8);
+
+        const protectedHunt = await request(server.baseUrl, "POST", "/v1/world/hunts/start", {
+            token,
+            body: { targetId: "grey-forest-stalker", heroIds: ["lucas"], troopCount: 100, operationId: "vehicle-hp-hunt" }
+        });
+        assert.equal(protectedHunt.status, 200);
+        const beforeResolve = await readDb();
+        assert.equal(beforeResolve.hunts["vehicle-hp-hunt"].vehicleBonuses.hpPct, 6.8);
+        beforeResolve.hunts["vehicle-hp-hunt"].endsAtMs = 0;
+        await writeDb(beforeResolve);
+        const protectedResult = await request(server.baseUrl, "POST", "/v1/world/hunts/vehicle-hp-hunt/resolve", {
+            token, body: {}
+        });
+        assert.equal(protectedResult.status, 200);
+        assert.equal(protectedResult.body.rewardReceipt.troopsLost, 1, "6.8% HP bonus reduces the base two troop losses to one");
     } finally {
         await server.stop();
     }
