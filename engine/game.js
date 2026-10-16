@@ -223,6 +223,8 @@ const ui = {
     mapRallyHeroList: document.getElementById("mapRallyHeroList"),
     mapRallyRefreshHeroesBtn: document.getElementById("mapRallyRefreshHeroesBtn"),
     mapHuntStartBtn: document.getElementById("mapHuntStartBtn"),
+    mapRallyHuntOperationId: document.getElementById("mapRallyHuntOperationId"),
+    mapHuntResolveBtn: document.getElementById("mapHuntResolveBtn"),
     mapRallyTroops: document.getElementById("mapRallyTroops"),
     mapRallyCreateBtn: document.getElementById("mapRallyCreateBtn"),
     mapRallyOperationId: document.getElementById("mapRallyOperationId"),
@@ -230,6 +232,7 @@ const ui = {
     mapRallyRefreshBtn: document.getElementById("mapRallyRefreshBtn"),
     mapRallyCloseBtn: document.getElementById("mapRallyCloseBtn"),
     mapRallyDispatchBtn: document.getElementById("mapRallyDispatchBtn"),
+    mapRallyResolveBtn: document.getElementById("mapRallyResolveBtn"),
     mapRallyDetails: document.getElementById("mapRallyDetails")
 };
 
@@ -2190,13 +2193,34 @@ function mapRallySelectedHeroIds() {
     return [...list.querySelectorAll("input[type='checkbox']:checked")].map((input) => input.value).slice(0, 5);
 }
 
-function mapRallyApplyEnergy(response) {
-    if (Number.isFinite(response?.resources?.energy)) {
-        state.resources.energy = response.resources.energy;
-        renderResources();
-        updateStaminaHud();
-        saveState();
+function mapRallySyncResources(response) {
+    const resources = response?.resources;
+    if (!resources) return;
+    if (Number.isFinite(resources.energy)) state.resources.energy = resources.energy;
+    if (Number.isFinite(resources.gold)) state.resources.gold = resources.gold;
+    if (Number.isFinite(resources.food)) state.resources.food = resources.food;
+    if (Number.isFinite(resources.steel)) state.resources.silver = resources.steel;
+    renderResources();
+    updateStaminaHud();
+    saveState();
+}
+
+function mapRallyShowCombat(result, label) {
+    const battle = result?.result || result?.hunt?.result || result?.rally?.result;
+    const receipt = result?.rewardReceipt || result?.hunt?.rewardReceipt;
+    if (!battle) {
+        mapRallySetStatus(label);
+        return;
     }
+    const outcome = battle.outcome === "victory" ? "VITÓRIA" : "DERROTA";
+    const rewards = receipt?.rewards;
+    const rewardText = rewards
+        ? `Prêmios: +${rewards.gold} ouro, +${rewards.food} alimento, +${rewards.steel} aço.`
+        : "Resultado já registrado; este jogador não tem recibo individual nesta resposta.";
+    if (ui.mapRallyDetails) {
+        ui.mapRallyDetails.textContent = `${outcome} · Dano: ${Number(battle.damage).toLocaleString("pt-BR")} / ${Number(battle.enemyHp).toLocaleString("pt-BR")} HP · ${rewardText} ID: ${battle.resultId}`;
+    }
+    mapRallySetStatus(`${label} ${result.replayed ? "(resultado recuperado, sem nova concessão)" : ""}`);
 }
 
 function mapRallyRenderDetails(rally) {
@@ -2215,16 +2239,35 @@ async function startMapHuntFromPanel() {
     const heroIds = mapRallySelectedHeroIds();
     if (!heroIds.length) return mapRallySetStatus("Selecione um herói retornado pelo servidor.");
     try {
+        const operationId = mapRallyNewOperationId("hunt");
         const result = await api.startMapHuntV1({
             targetId: ui.mapRallyTarget.value,
             heroIds,
-            operationId: mapRallyNewOperationId("hunt")
+            troopCount: Number(ui.mapRallyTroops?.value) || 0,
+            operationId
         });
-        mapRallyApplyEnergy(result);
+        if (ui.mapRallyHuntOperationId) ui.mapRallyHuntOperationId.value = operationId;
+        mapRallySyncResources(result);
         mapRallySetStatus(`Caçada iniciada: ${result.targetId} · estado ${result.status}. Energia restante: ${result.resources?.energy ?? "—"}.`);
         if (ui.mapRallyDetails) ui.mapRallyDetails.textContent = `ID da caçada: ${result.huntId} · chegada prevista: ${new Date(result.endsAtMs).toLocaleTimeString("pt-BR")}.`;
     } catch (error) {
         mapRallySetStatus(`Não foi possível iniciar a caçada: ${error.message}`);
+    }
+}
+
+async function resolveMapHuntFromPanel() {
+    const api = mapRallyRequireApi();
+    const operationId = (ui.mapRallyHuntOperationId?.value || "").trim();
+    if (!api || !operationId) {
+        if (!operationId) mapRallySetStatus("Informe o código da caçada ativa.");
+        return;
+    }
+    try {
+        const result = await api.resolveMapHuntV1(operationId);
+        mapRallySyncResources(result);
+        mapRallyShowCombat(result, "Combate da caçada resolvido.");
+    } catch (error) {
+        mapRallySetStatus(`Não foi possível resolver a caçada: ${error.message}`);
     }
 }
 
@@ -2244,7 +2287,7 @@ async function createMapRallyFromPanel() {
             targetId: ui.mapRallyTarget.value, heroIds, troopCount, operationId
         });
         if (ui.mapRallyOperationId) ui.mapRallyOperationId.value = operationId;
-        mapRallyApplyEnergy(result);
+        mapRallySyncResources(result);
         mapRallySetStatus(`Incursão criada. Compartilhe este código com os membros da aliança: ${operationId}`);
         mapRallyRenderDetails(result);
     } catch (error) {
@@ -2287,6 +2330,23 @@ async function refreshMapRallyFromPanel() {
         mapRallySetStatus(`Incursão ${operationId} consultada no servidor.`);
     } catch (error) {
         mapRallySetStatus(`Não foi possível consultar a incursão: ${error.message}`);
+    }
+}
+
+async function resolveMapRallyFromPanel() {
+    const api = mapRallyRequireApi();
+    const operationId = mapRallyGetOperationId();
+    if (!api || !operationId) {
+        if (!operationId) mapRallySetStatus("Informe o código da incursão.");
+        return;
+    }
+    try {
+        const result = await api.resolveAllianceRallyV1(operationId);
+        mapRallySyncResources(result);
+        mapRallyRenderDetails(result.rally);
+        mapRallyShowCombat(result, "Resultado da incursão registrado.");
+    } catch (error) {
+        mapRallySetStatus(`Não foi possível resolver a incursão: ${error.message}`);
     }
 }
 
@@ -2487,11 +2547,13 @@ function bindUiActions() {
 
     if (ui.mapRallyRefreshHeroesBtn) ui.mapRallyRefreshHeroesBtn.addEventListener("click", refreshMapRallyHeroes);
     if (ui.mapHuntStartBtn) ui.mapHuntStartBtn.addEventListener("click", startMapHuntFromPanel);
+    if (ui.mapHuntResolveBtn) ui.mapHuntResolveBtn.addEventListener("click", resolveMapHuntFromPanel);
     if (ui.mapRallyCreateBtn) ui.mapRallyCreateBtn.addEventListener("click", createMapRallyFromPanel);
     if (ui.mapRallyJoinBtn) ui.mapRallyJoinBtn.addEventListener("click", joinMapRallyFromPanel);
     if (ui.mapRallyRefreshBtn) ui.mapRallyRefreshBtn.addEventListener("click", refreshMapRallyFromPanel);
     if (ui.mapRallyCloseBtn) ui.mapRallyCloseBtn.addEventListener("click", () => transitionMapRallyFromPanel("close"));
     if (ui.mapRallyDispatchBtn) ui.mapRallyDispatchBtn.addEventListener("click", () => transitionMapRallyFromPanel("dispatch"));
+    if (ui.mapRallyResolveBtn) ui.mapRallyResolveBtn.addEventListener("click", resolveMapRallyFromPanel);
     if (ui.startExpeditionBtn) ui.startExpeditionBtn.addEventListener("click", startExpedition);
     if (ui.claimExpeditionBtn) ui.claimExpeditionBtn.addEventListener("click", claimExpeditionReward);
     if (ui.expeditionDestination) ui.expeditionDestination.addEventListener("change", () => {
