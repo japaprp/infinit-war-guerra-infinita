@@ -6,6 +6,10 @@ on:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
       - "api/**"
+      - "index.html"
+      - "game.html"
+      - "render.yaml"
+      - "DEPLOYMENT_PREPARATION.md"
   push:
     branches:
       - main
