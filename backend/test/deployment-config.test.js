@@ -72,6 +72,7 @@ test("production configuration accepts explicit secrets, MySQL, and exact origin
         RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
         DATA_DRIVER: "mysql",
         MYSQL_HOST: "mysql.example.test",
+        MYSQL_PORT: 3306,
         MYSQL_DATABASE: "infinitwar",
         MYSQL_USER: "infinitwar_app",
         MYSQL_PASSWORD: "database-password",
