@@ -109,7 +109,9 @@ function normalizeDbShape(parsed) {
     return {
         users: parsed?.users || {},
         receipts: parsed?.receipts || {},
-        alliances: parsed?.alliances || {}
+        alliances: parsed?.alliances || {},
+        rallies: parsed?.rallies || {},
+        hunts: parsed?.hunts || {}
     };
 }
 
