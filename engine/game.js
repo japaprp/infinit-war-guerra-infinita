@@ -333,7 +333,7 @@ function createHeroState(template) {
 function createDefaultState() {
     return {
         resources: { gold: 0, silver: 0, wood: 0, food: 0, energy: 100, gems: 0 },
-        inventory: { equipment: [], chests: [], chips: [], chipMaterials: 0 },
+        inventory: { equipment: [], chests: [], chips: [], chipMaterials: 0, appliedChestReceiptIds: [] },
         vehicleChipLoadouts: window.IWChipLoadouts.createDefaultLoadouts(),
         activeVehicleChipPreset: "I",
         vehicleAccessories: window.IWVehicleAccessories.createDefaultState(),
@@ -521,6 +521,17 @@ async function syncServerVehicleLoadout({ render = true } = {}) {
         if (serverInventory.shards && typeof serverInventory.shards === "object") {
             state.genericShards = { ...state.genericShards, ...serverInventory.shards };
         }
+        const applied = new Set(Array.isArray(state.inventory.appliedChestReceiptIds) ? state.inventory.appliedChestReceiptIds : []);
+        for (const receipt of (Array.isArray(serverInventory.receipts) ? serverInventory.receipts : [])) {
+            if (!receipt?.chestId || applied.has(receipt.chestId)) continue;
+            if (receipt.reward?.type === "resources") {
+                state.resources.gold += Number(receipt.reward.gold) || 0;
+                state.resources.silver += Number(receipt.reward.steel) || 0;
+                state.resources.food += Number(receipt.reward.food) || 0;
+            }
+            applied.add(receipt.chestId);
+        }
+        state.inventory.appliedChestReceiptIds = [...applied].slice(-500);
     }
     if (render) renderAll();
     return remote;
@@ -1393,7 +1404,7 @@ async function upgradeChip(chipId) {
     saveState();
 }
 
-function openInventoryChest(chestId) {
+async function openInventoryChest(chestId) {
     const chestIndex = state.inventory.chests.findIndex((chest) => chest.id === chestId);
     if (chestIndex < 0) {
         pushFeed("Baú não encontrado no inventário.");
@@ -1401,8 +1412,32 @@ function openInventoryChest(chestId) {
     }
     const chest = state.inventory.chests[chestIndex];
     const api = getApiClient();
-    if (chest.type === "module" && api?.hasToken?.()) {
-        pushFeed("Baús de módulos online aguardam a migração para resgate seguro no servidor. O baú foi preservado.");
+    if (api?.hasToken?.() && typeof api.openServerChestV1 === "function") {
+        try {
+            const result = await api.openServerChestV1({ chestId, idempotencyKey: `chest-open-${chestId}` });
+            if (!Array.isArray(state.inventory.appliedChestReceiptIds)) state.inventory.appliedChestReceiptIds = [];
+            const applied = new Set(state.inventory.appliedChestReceiptIds);
+            if (!applied.has(result.chestId)) {
+                if (result.reward?.type === "resources") {
+                    state.resources.gold += Number(result.reward.gold) || 0;
+                    state.resources.silver += Number(result.reward.steel) || 0;
+                    state.resources.food += Number(result.reward.food) || 0;
+                }
+                state.inventory.appliedChestReceiptIds = [...applied, result.chestId].slice(-500);
+            }
+            await syncServerVehicleLoadout({ render: false });
+            const reward = result.reward || {};
+            if (reward.type === "resources") pushFeed(`Baú aberto: +${reward.gold} ouro, +${reward.steel} prata e +${reward.food} alimento.`);
+            else if (reward.type === "shards") pushFeed(`Baú aberto: +${reward.amount} fragmento(s) ${reward.pool}.`);
+            else if (reward.type === "equipment") pushFeed("Baú aberto: novo equipamento recebido pelo servidor.");
+            else if (reward.type === "moduleChest") pushFeed("Baú aberto: você encontrou um Baú de Módulos.");
+            else if (reward.type === "chipMaterials") pushFeed(`Baú de Módulos: +${reward.amount} materiais de módulo.`);
+            else if (reward.type === "chip") pushFeed(`Baú de Módulos: ${reward.chip?.name || "Módulo"} Nv.${reward.chip?.level || 1} recebido.`);
+            renderAll();
+            saveState();
+        } catch (error) {
+            pushFeed(`O servidor não confirmou a abertura do baú: ${error.message}. O baú foi preservado.`);
+        }
         return;
     }
     state.inventory.chests.splice(chestIndex, 1);
