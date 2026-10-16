@@ -102,6 +102,15 @@ function serverChest(user, type) {
     return chest;
 }
 
+export function grantCombatChestDrop(user, won, operationId) {
+    if (!won || !operationId) return null;
+    ensureServerInventory(user);
+    // The original prototype's 10% chest drop chance is now rolled server-side.
+    if (crypto.randomInt(0, 100) >= 10) return null;
+    const chest = serverChest(user, "explorer");
+    return { chestId: chest.id, type: chest.type, name: chest.name, source: chest.source, operationId };
+}
+
 export function getServerChests(user) {
     const inventory = ensureServerInventory(user);
     return { chests: inventory.chests.map(chest => ({ ...chest })), receipts: Object.values(inventory.chestReceipts).map(receipt => ({ ...receipt })), chipMaterials: inventory.chipMaterials, shards: { ...inventory.shards }, equipment: inventory.equipment.map(item => ({ ...item })) };
