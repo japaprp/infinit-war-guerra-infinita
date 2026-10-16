@@ -152,6 +152,15 @@ test("alliance rally enforces membership, unique entry, leader transitions and p
         assert.equal(created.status, 200);
         assert.equal(created.body.status, "recruiting");
         assert.equal(created.body.resources.energy, 85);
+        assert.equal(created.body.troops, 900);
+
+        const createRetry = await request(server.baseUrl, "POST", "/v1/world/alliance-rallies", {
+            token: leaderToken, body: { targetId: "grey-forest-stalker", heroIds: ["lucas"], troopCount: 100, operationId: "rally-op-1" }
+        });
+        assert.equal(createRetry.status, 200);
+        assert.equal(createRetry.body.replayed, true);
+        assert.equal(createRetry.body.resources.energy, 85);
+        assert.equal(createRetry.body.troops, 900, "idempotent retry must not reserve troops twice");
 
         const outsider = await request(server.baseUrl, "POST", "/v1/world/alliance-rallies/rally-op-1/join", {
             token: strangerToken, body: { heroIds: ["lucas"], troopCount: 10 }
