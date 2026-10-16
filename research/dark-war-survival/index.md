@@ -1,7 +1,7 @@
 # Catálogo de evidências — Dark War: Survival
 
 **Projeto de destino:** Guerra Infinita (implementação original)  
-**Estado:** catálogo atualizado até `IMG-20261015-WA0288.jpg`. A contagem antiga de 94 arquivos é histórica e está pendente de auditoria da pasta real; não equivale ao total atual.  
+**Estado:** auditoria da pasta `screenshots/` concluída: 94 arquivos de imagem presentes e 94 nomes únicos no catálogo, sem divergências entre pasta e inventário. A referência histórica de 96 indica que 2 imagens previstas ainda não estão na pasta atual. `WA0288` é o maior identificador observado, não a contagem total. `IMG-20261015-WA0288.jpg` aparece duas vezes no texto do inventário; `IMG-20261015-WA0213(1).jpg` é um arquivo distinto e seu nome original deve ser preservado.  
 **Branch de evidências:** `research/dark-war-survival-captures`  
 **Regra:** este catálogo descreve apenas elementos visíveis nas capturas; não afirma acesso ao código-fonte interno do jogo.
 
