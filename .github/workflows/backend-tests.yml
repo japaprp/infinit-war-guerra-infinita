@@ -14,15 +14,16 @@ on:
   push:
     branches:
       - main
-      - "fix/**"
     paths:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
       - "api/**"
+      - "auth/**"
       - "index.html"
       - "game.html"
       - "render.yaml"
       - "DEPLOYMENT_PREPARATION.md"
+  workflow_dispatch:
 
 jobs:
   backend-tests:
