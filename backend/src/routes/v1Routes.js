@@ -34,7 +34,9 @@ import {
     joinMapRally,
     closeMapRally,
     dispatchMapRally,
-    getMapRally
+    getMapRally,
+    resolveMapHunt,
+    resolveMapRally
 } from "../services/mapRallyService.js";
 
 function asError(res, result) {
@@ -240,6 +242,16 @@ export function createV1Routes(env, runtime = {}) {
         res.json(createRally(req.user.sub, { joinWindowSec }));
     });
 
+    router.post("/world/hunts/:operationId/resolve", userLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = resolveMapHunt(db, req.user.sub, user, req.params.operationId);
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
     router.post("/world/hunts/start", userLock, async (req, res) => {
         const db = await readDb();
         const user = db.users[req.user.sub];
@@ -282,6 +294,16 @@ export function createV1Routes(env, runtime = {}) {
     router.post("/world/alliance-rallies/:operationId/close", userLock, rallyLock, async (req, res) => {
         const db = await readDb();
         const result = closeMapRally(db, req.user.sub, req.params.operationId);
+        if (asError(res, result)) return;
+        await writeDb(db);
+        res.json(result);
+    });
+
+    router.post("/world/alliance-rallies/:operationId/resolve", userLock, rallyLock, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = resolveMapRally(db, req.user.sub, user, req.params.operationId);
         if (asError(res, result)) return;
         await writeDb(db);
         res.json(result);
