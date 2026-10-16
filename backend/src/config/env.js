@@ -14,6 +14,7 @@ export const env = {
     MYSQL_DATABASE: process.env.MYSQL_DATABASE || "infinitwar",
     MYSQL_USER: process.env.MYSQL_USER || "root",
     MYSQL_PASSWORD: process.env.MYSQL_PASSWORD || "",
+    MYSQL_SSL: String(process.env.MYSQL_SSL || "false").toLowerCase() === "true",
     CORS_ORIGINS: process.env.CORS_ORIGINS || "",
     REDIS_ENABLED: String(process.env.REDIS_ENABLED || "false").toLowerCase() === "true",
     REDIS_URL: process.env.REDIS_URL || "redis://127.0.0.1:6379"
