@@ -131,3 +131,38 @@ Não colapsar as duas regras numa só. Antes de codificar, é necessário defini
 2. Procurar capturas em que o mesmo equipamento é movido entre heróis e comparar o poder da marcha antes/depois.
 3. Separar tela de atributos de herói, tela de formação e resultado de batalha; um único número de poder não basta para deduzir o cálculo de dano.
 4. Manter todas as afirmações comunitárias etiquetadas como secundárias até haver captura legível, teste controlado ou documentação oficial.
+
+
+## Confirmação cruzada adicional: dois motores de combate — 2026-10-16
+
+### Fontes consultadas nesta rodada
+
+- [Dark-war.com — Troop Battles: como ler um relatório de combate](https://www.dark-war.com/troop-battles): descreve a seção “Troop Buffs” e uma linha única “Hero Equipment” que agrega os bônus dos equipamentos da formação. O artigo mostra exemplos de relatórios e números por categoria, mas é um guia comunitário, não documentação do desenvolvedor.
+- [Dark-war.com — Hero Battles / Adventure](https://www.dark-war.com/hero-battles): afirma que no modo de batalha de heróis a alocação individual do equipamento importa para o dano de ataques normais; contrasta esse modo com batalhas de tropas, em que os bônus de equipamento são agregados.
+- [Dark-war.com — Battle System / Damage](https://www.dark-war.com/dps): organiza o jogo em dois motores de combate, um para batalhas de tropas e outro para Hero Battles/Adventure. Como é uma fonte da mesma família de guias, essas páginas não contam como três confirmações independentes.
+- [Packsify — Hero Equipment Guide, 30 jul. 2026](https://www.packsify.com/blogs/dark-war-survival-hero-equipment-guide): também afirma que os atributos de equipamento dos cinco heróis são somados nas batalhas de tropas.
+- [LDShop — Hero Formation Guide, 9 out. 2026](https://www.ldshop.gg/blog/dark-war-survival/dark-war-formation-guide.html): separa batalha de tropas e batalha de heróis, enfatizando facção/atributos de formação no primeiro caso e posição/atributos individuais no segundo.
+- [YouTube — Hero Equipment Guide & Best Tips, Meta Instincts, 17 fev. 2025](https://www.youtube.com/watch?v=fSASmXvrdp4): material mais antigo que explica equipamento, qualidade e aprimoramento; usar apenas como contexto histórico, pois antecede atualizações posteriores.
+
+### Síntese e grau de confiança
+
+A regra de que **batalhas de tropas agregam bônus de equipamento da formação**, enquanto **Hero Battles/Adventure consideram a distribuição individual**, recebe agora corroboração de várias páginas comunitárias e de exemplos de relatórios publicados por uma mesma família de guias. Isso aumenta a confiança como hipótese de engenharia reversa, mas não equivale a uma verificação independente dentro do cliente do jogo. Evitar chamar a regra de “oficial” até comparar uma captura/relatório real da conta.
+
+O relatório de batalha, quando disponível, é evidência mais útil que o poder total isolado: registrar separadamente ATK, DEF, HP e DMG, além das linhas de heróis, equipamento, veículo, pesquisa e bônus de facção. Não deduzir o cálculo completo de dano apenas a partir do CP geral.
+
+### Plano de teste visual/controlado
+
+1. Registrar a tela da formação e o relatório de uma batalha de tropas com os equipamentos atuais.
+2. Se for possível sem gastar recursos, trocar uma peça entre dois heróis da mesma formação, mantendo a peça e o nível idênticos.
+3. Comparar o total de bônus “Hero Equipment” e os atributos de formação antes/depois. Se o total não mudar, isso é consistente com agregação, mas não prova todas as regras.
+4. Para Hero Battles/Adventure, comparar a mesma peça no herói atacante e em outro personagem, mantendo os demais fatores tão constantes quanto possível; observar dano de ataque normal e sobrevivência.
+5. Anotar modo, versão, data, formação, níveis e buffs ativos. Se não houver teste controlado, manter a regra como corroboração comunitária.
+6. Implementação do Guerra Infinita: declarar explicitamente o modo de cálculo por tipo de batalha; criar testes separados para agregação de formação e atributos individuais. Não copiar nomes de personagens, imagens, valores de dano ou tabelas de balanceamento do original.
+
+### Consequência para o design
+
+Essa separação pode justificar duas regras próprias no motor de combate de Guerra Infinita:
+- **Batalha de exércitos:** atributos de equipamento elegíveis são agregados em um conjunto de bônus da formação.
+- **Duelo de heróis:** os atributos do equipamento pertencem ao herói equipado e afetam seus ataques/defesas individuais.
+
+São propostas arquiteturais para o nosso jogo, não uma promessa de reproduzir perfeitamente a implementação interna de Dark War: Survival. A progressão e os valores continuam originais e começam no nível 1.
