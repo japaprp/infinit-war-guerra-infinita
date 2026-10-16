@@ -10,7 +10,7 @@ process.env.IWAR_DB_PATH = dbPath;
 
 const { createApp } = await import("../src/app.js");
 const { initializeRepository, getRepositoryMode, readDb, writeDb } = await import("../src/repositories/dbRepository.js");
-const { initializeRedis } = await import("../src/services/redisService.js");
+const { closeRedisClient, getRedisClient, initializeRedis } = await import("../src/services/redisService.js");
 const { clearIdempotencyMemoryForTests } = await import("../src/middlewares/idempotencyMiddleware.js");
 
 const baseEnv = {
@@ -50,14 +50,12 @@ async function bootServer({ redisEnabled = false } = {}) {
     const baseUrl = `http://127.0.0.1:${port}`;
 
     const stop = async () => {
-        await new Promise((resolve, reject) => {
-            server.close((err) => (err ? reject(err) : resolve()));
-        });
-
-        if (redisClient) {
-            await redisClient.quit().catch(() => {
-                redisClient.disconnect();
+        try {
+            await new Promise((resolve, reject) => {
+                server.close((err) => (err ? reject(err) : resolve()));
             });
+        } finally {
+            await closeRedisClient(redisClient);
         }
     };
 
@@ -261,6 +259,35 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
     }
 });
 
+test("unverified Firebase identities cannot create legacy or v1 sessions", async () => {
+    await fs.rm(dbPath, { force: true });
+    const server = await bootServer({ redisEnabled: false });
+    try {
+        const legacy = await api(server.baseUrl, "POST", "/auth/session", {
+            body: {
+                provider: "google.com",
+                providerUid: "victim-account",
+                email: "attacker@example.test",
+                displayName: "spoofed"
+            }
+        });
+        assert.equal(legacy.status, 401);
+
+        const v1 = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: {
+                provider: "google.com",
+                idToken: "victim-account"
+            }
+        });
+        assert.equal(v1.status, 401);
+
+        const db = await readDb();
+        assert.equal(db.users["google.com:victim-account"], undefined);
+    } finally {
+        await server.stop();
+    }
+});
+
 test("legacy shop receipt can be consumed only once", async () => {
     await fs.rm(dbPath, { force: true });
 
@@ -316,6 +343,7 @@ test("idempotency with Redis persists across server restart", async (t) => {
     let server = await bootServer({ redisEnabled: true });
     if (!server.redisClient) {
         await server.stop();
+        assert.equal(getRedisClient(), null, "failed Redis initialization must release the client");
         t.skip("Redis nao disponivel para teste de idempotencia.");
         return;
     }

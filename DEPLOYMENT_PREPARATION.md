@@ -14,10 +14,15 @@ This repository is prepared for a hosted API, but it is **not deploy-ready until
 Required for a hosted instance:
 - `NODE_ENV=production`
 - `PORT` (provided by the host)
+- `FIREBASE_PROJECT_ID`: exact Firebase project ID; required in production for server-side ID-token verification
 - `CORS_ORIGINS`: comma-separated, exact frontend origins, including scheme and port where applicable
 - `DATA_DRIVER=mysql`
 - `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`
 - Strong, unique `JWT_SECRET` and `RECEIPT_SECRET` values, configured in the hosting dashboard rather than committed to Git
+
+## Authentication security
+
+The legacy and v1 login routes now verify non-guest Firebase ID tokens against Google Secure Token signing certificates, including signature, issuer, audience/project, subject, and time claims. User ID, provider, email, and display name are derived from verified claims rather than trusted client fields. Production requires `FIREBASE_PROJECT_ID`. Production guest identities are generated server-side; client-supplied guest IDs are retained only for development/test compatibility. Firebase configuration and the real project ID must be confirmed before login can be validated. Do not deploy until the security tests and full CI pass.
 
 The API currently supports MySQL via `mysql2`. The JSON-file driver is suitable for local development only on hosts with ephemeral filesystems; it must not be used for persistent hosted gameplay. In production, startup now fails if MySQL cannot initialize, and reads/writes refuse to fall back to a local JSON file. Configure `MYSQL_SSL=true` when the database provider requires TLS.
 

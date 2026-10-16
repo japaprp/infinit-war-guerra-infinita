@@ -63,6 +63,7 @@ test("production configuration rejects unsafe defaults and ephemeral JSON storag
     assert.throws(
         () => validateRuntimeConfig({
             NODE_ENV: "production",
+            FIREBASE_PROJECT_ID: "infinit-war-test",
             JWT_SECRET: "unsafe_dev_secret",
             RECEIPT_SECRET: "unsafe_receipt_secret",
             DATA_DRIVER: "json",
@@ -75,6 +76,7 @@ test("production configuration rejects unsafe defaults and ephemeral JSON storag
 test("production configuration accepts explicit secrets, MySQL, and exact origins", () => {
     assert.doesNotThrow(() => validateRuntimeConfig({
         NODE_ENV: "production",
+            FIREBASE_PROJECT_ID: "infinit-war-test",
         JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
         RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
         DATA_DRIVER: "mysql",
@@ -91,6 +93,7 @@ test("production configuration rejects origins containing paths", () => {
     assert.throws(
         () => validateRuntimeConfig({
             NODE_ENV: "production",
+            FIREBASE_PROJECT_ID: "infinit-war-test",
             JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
             RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
             DATA_DRIVER: "mysql",
@@ -109,6 +112,7 @@ test("production configuration rejects an invalid MySQL port", () => {
     assert.throws(
         () => validateRuntimeConfig({
             NODE_ENV: "production",
+            FIREBASE_PROJECT_ID: "infinit-war-test",
             JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
             RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
             DATA_DRIVER: "mysql",

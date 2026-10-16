@@ -1,6 +1,8 @@
 ﻿import { Router } from "express";
+import { randomUUID } from "node:crypto";
 import { readDb, writeDb } from "../repositories/dbRepository.js";
 import { createSessionToken } from "../services/tokenService.js";
+import { verifyFirebaseIdToken } from "../services/firebaseTokenService.js";
 import { createMockReceipt, consumeMockReceipt } from "../services/shopService.js";
 import { ensureUser, getUserId, validateLegacyStateShape } from "../services/userService.js";
 import { createAuthMiddleware } from "../middlewares/authMiddleware.js";
@@ -24,18 +26,44 @@ export function createLegacyRoutes(env, runtime = {}) {
     });
 
     router.post("/auth/session", async (req, res) => {
-        const { provider, providerUid, email = "", displayName = "" } = req.body || {};
+        const { provider, providerUid, idToken } = req.body || {};
+        if (!provider) return res.status(400).json({ error: "provider is required" });
 
-        if (!provider || !providerUid) {
-            return res.status(400).json({ error: "provider and providerUid are required" });
+        let identity;
+        if (provider === "guest") {
+            // Deterministic guest IDs are allowed only in development/test for legacy compatibility.
+            const isProduction = String(env.NODE_ENV || "development").toLowerCase() === "production";
+            identity = {
+                provider: "guest",
+                providerUid: isProduction ? randomUUID() : (providerUid || randomUUID()),
+                email: "",
+                displayName: ""
+            };
+        } else {
+            try {
+                const verified = await verifyFirebaseIdToken(idToken, env.FIREBASE_PROJECT_ID);
+                identity = {
+                    provider: verified.provider,
+                    providerUid: verified.uid,
+                    email: verified.email,
+                    displayName: verified.displayName
+                };
+            } catch {
+                return res.status(401).json({ error: "A valid Firebase ID token is required" });
+            }
         }
 
         const db = await readDb();
-        const userId = getUserId(provider, providerUid);
-        ensureUser(db, userId, { provider, providerUid, email, displayName });
+        const userId = getUserId(identity.provider, identity.providerUid);
+        ensureUser(db, userId, identity);
         await writeDb(db);
 
-        const token = createSessionToken({ sub: userId, provider, providerUid, email }, env.JWT_SECRET);
+        const token = createSessionToken({
+            sub: userId,
+            provider: identity.provider,
+            providerUid: identity.providerUid,
+            email: identity.email
+        }, env.JWT_SECRET);
         return res.json({ token, userId, expiresIn: 7 * 24 * 3600 });
     });
 

@@ -32,8 +32,9 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: \${{ github.workflow }}-\${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  # Keep active checks running; only superseded pending runs are coalesced.
+  cancel-in-progress: false
 
 jobs:
   browser-persistence:
@@ -59,4 +60,4 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run real-browser persistence and backend recovery tests
-        run: node --test tests/client-persistence.test.mjs tests/client-backend-recovery.test.mjs
+        run: node --test --test-concurrency=1 tests/client-persistence.test.mjs tests/client-backend-recovery.test.mjs

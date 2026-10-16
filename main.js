@@ -47,7 +47,12 @@
         }
 
         if (!authSession || !authSession.uid) {
-            alert("Vincule sua conta Google ou Facebook antes de entrar.");
+            alert("Entre com sua conta Google, Facebook ou e-mail antes de entrar.");
+            return;
+        }
+
+        if (authSession.provider === "password" && authSession.emailVerified !== true) {
+            alert("Confirme seu endereço de e-mail antes de entrar na arena.");
             return;
         }
 

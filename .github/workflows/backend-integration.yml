@@ -15,13 +15,13 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/backend-integration.yml"
-      - ".github/workflows/backend-tests.yml"
       - "api/**"
   workflow_dispatch:
 
 concurrency:
-  group: \${{ github.workflow }}-\${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  # Keep running tests alive; GitHub replaces only older pending runs in this group.
+  cancel-in-progress: false
 
 jobs:
   integration-tests:

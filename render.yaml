@@ -14,12 +14,12 @@ services:
         value: mysql
       - key: MYSQL_SSL
         value: "true"
-      - key: FIREBASE_PROJECT_ID
-        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: RECEIPT_SECRET
         generateValue: true
+      - key: FIREBASE_PROJECT_ID
+        sync: false
       - key: CORS_ORIGINS
         sync: false
       - key: MYSQL_HOST

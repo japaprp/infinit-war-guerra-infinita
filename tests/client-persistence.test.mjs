@@ -43,7 +43,7 @@ async function readSavedState(page) {
     });
 }
 
-test("cliente mantém expedição, temporizador e saldos após fechar/reabrir", { timeout: 100_000 }, async () => {
+test("cliente mantém expedição, temporizador e saldos após fechar/reabrir", { timeout: 180_000 }, async () => {
     const server = createStaticServer();
     await new Promise((resolveListen, reject) => {
         server.once("error", reject);

@@ -26,8 +26,9 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: \${{ github.workflow }}-\${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  # Keep active checks running; only superseded pending runs are coalesced.
+  cancel-in-progress: false
 
 jobs:
   probability-calibration:
