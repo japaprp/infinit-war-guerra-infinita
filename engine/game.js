@@ -1724,6 +1724,10 @@ function collectResourceNode(node) {
 }
 
 function fightMonster(monster) {
+    if (getApiClient()?.hasToken?.()) {
+        pushFeed("O combate direto do mapa ainda está sendo migrado para resolução autoritativa. Para ganhar recursos e recompensas online, use a seção Caçadas do Servidor; o combate local não concederá itens.");
+        return;
+    }
     if (isActionOnCooldown("fight")) return;
     const hero = getHeroRuntime(state.selectedHeroId);
     const squadPower = getSquadPower();
