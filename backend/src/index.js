@@ -1,9 +1,10 @@
-﻿import { env } from "./config/env.js";
+import { env, validateRuntimeConfig } from "./config/env.js";
 import { createApp } from "./app.js";
 import { getRepositoryMode, initializeRepository } from "./repositories/dbRepository.js";
 import { initializeRedis } from "./services/redisService.js";
 
 async function bootstrap() {
+    validateRuntimeConfig(env);
     await initializeRepository(env);
     const redisClient = await initializeRedis(env);
 
