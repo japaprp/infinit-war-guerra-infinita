@@ -802,8 +802,8 @@ export async function initializeRepository(env) {
     } catch (error) {
         mode = "json";
         dbPool = null;
-        if (strictPersistentMode) throw new Error(`Production MySQL initialization failed; refusing JSON fallback: ${error.message}`);
-        console.warn(`[repo] Falha ao conectar MySQL (${error.message}). Fallback para JSON local.`);
+        if (strictPersistentMode) throw new Error(`Production database initialization failed; refusing JSON fallback: ${error.message}`);
+        console.warn(`[repo] Falha ao conectar banco SQL (${error.message}). Fallback para JSON local.`);
     }
 }
 
@@ -831,8 +831,8 @@ export async function readDb() {
 
         return await readDbFromMySqlAppState();
     } catch (error) {
-        if (strictPersistentMode) throw new Error(`Production MySQL read failed; refusing JSON fallback: ${error.message}`);
-        console.warn(`[repo] Erro ao ler MySQL (${error.message}). Usando JSON local.`);
+        if (strictPersistentMode) throw new Error(`Production database read failed; refusing JSON fallback: ${error.message}`);
+        console.warn(`[repo] Erro ao ler banco SQL (${error.message}). Usando JSON local.`);
         mode = "json";
         return readDbFromFile();
     }
@@ -850,8 +850,8 @@ export async function writeDb(db) {
         await syncNormalizedTables(normalized);
         await writeDbToMySqlAppState(normalized);
     } catch (error) {
-        if (strictPersistentMode) throw new Error(`Production MySQL write failed; refusing JSON fallback: ${error.message}`);
-        console.warn(`[repo] Erro ao gravar MySQL (${error.message}). Gravando em JSON local.`);
+        if (strictPersistentMode) throw new Error(`Production database write failed; refusing JSON fallback: ${error.message}`);
+        console.warn(`[repo] Erro ao gravar banco SQL (${error.message}). Gravando em JSON local.`);
         mode = "json";
         writeDbToFile(normalized);
     }
