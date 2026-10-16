@@ -4,8 +4,8 @@ const CHIP_CATALOG = Object.freeze({
     "recon-array": { stat: "attackPct", basePct: 12, upgradeCopies: 4, maxLevel: 10 },
     "supply-core": { stat: "hpPct", basePct: 10, upgradeCopies: 4, maxLevel: 10 }
 });
-const SLOT_IDS = Object.freeze(["slot-1", "slot-2", "slot-3", "slot-4"]);
-const PRESET_IDS = Object.freeze(["preset-1", "preset-2", "preset-3"]);
+const SLOT_IDS = Object.freeze(["assault", "vanguard", "suppression", "gravity"]);
+const PRESET_IDS = Object.freeze(["I", "II", "III", "IV"]);
 
 function fail(status, message) {
     return { error: { status, message } };
@@ -15,12 +15,12 @@ export function ensureVehicleLoadout(user) {
     user.v1 ||= {};
     user.v1.vehicle ||= {
         chips: [],
-        activePreset: "preset-1",
+        activePreset: "I",
         presets: Object.fromEntries(PRESET_IDS.map(id => [id, Object.fromEntries(SLOT_IDS.map(slot => [slot, null]))]))
     };
     const vehicle = user.v1.vehicle;
     if (!Array.isArray(vehicle.chips)) vehicle.chips = [];
-    if (!PRESET_IDS.includes(vehicle.activePreset)) vehicle.activePreset = "preset-1";
+    if (!PRESET_IDS.includes(vehicle.activePreset)) vehicle.activePreset = "I";
     vehicle.presets ||= {};
     for (const presetId of PRESET_IDS) {
         const slots = vehicle.presets[presetId] ||= {};
