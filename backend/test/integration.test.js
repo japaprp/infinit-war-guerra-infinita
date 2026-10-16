@@ -10,7 +10,7 @@ process.env.IWAR_DB_PATH = dbPath;
 
 const { createApp } = await import("../src/app.js");
 const { initializeRepository, getRepositoryMode, readDb, writeDb } = await import("../src/repositories/dbRepository.js");
-const { initializeRedis } = await import("../src/services/redisService.js");
+const { closeRedisClient, getRedisClient, initializeRedis } = await import("../src/services/redisService.js");
 const { clearIdempotencyMemoryForTests } = await import("../src/middlewares/idempotencyMiddleware.js");
 
 const baseEnv = {
@@ -50,14 +50,12 @@ async function bootServer({ redisEnabled = false } = {}) {
     const baseUrl = `http://127.0.0.1:${port}`;
 
     const stop = async () => {
-        await new Promise((resolve, reject) => {
-            server.close((err) => (err ? reject(err) : resolve()));
-        });
-
-        if (redisClient) {
-            await redisClient.quit().catch(() => {
-                redisClient.disconnect();
+        try {
+            await new Promise((resolve, reject) => {
+                server.close((err) => (err ? reject(err) : resolve()));
             });
+        } finally {
+            await closeRedisClient(redisClient);
         }
     };
 
@@ -345,6 +343,7 @@ test("idempotency with Redis persists across server restart", async (t) => {
     let server = await bootServer({ redisEnabled: true });
     if (!server.redisClient) {
         await server.stop();
+        assert.equal(getRedisClient(), null, "failed Redis initialization must release the client");
         t.skip("Redis nao disponivel para teste de idempotencia.");
         return;
     }
