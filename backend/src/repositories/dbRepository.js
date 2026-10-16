@@ -51,6 +51,7 @@ function buildDefaultV1(gems = 0) {
         level: 1,
         power: 0,
         vipLevel: 0,
+        troops: 1000,
         resources: {
             gold: 0,
             wood: 0,
@@ -284,6 +285,7 @@ function buildUserFromRow(row) {
             level: safeNumber(row.level, defaults.level),
             power: safeNumber(row.power, defaults.power),
             vipLevel: safeNumber(row.vip_level, defaults.vipLevel),
+            troops: safeNumber(v1Meta?.troops, defaults.troops),
             resources: {
                 gold: safeNumber(resourcesInput.gold, defaults.resources.gold),
                 wood: safeNumber(resourcesInput.wood, defaults.resources.wood),
@@ -660,6 +662,7 @@ async function syncNormalizedTables(db) {
                 economy: { gems: safeNumber(economy.gems, resources.gems || 4210) },
                 v1Meta: {
                     stateVersion: safeNumber(user?.v1?.stateVersion, 1),
+                    troops: safeNumber(user?.v1?.troops, defaults.troops),
                     resources: {
                         gold: safeNumber(resources.gold, defaults.resources.gold),
                         wood: safeNumber(resources.wood, defaults.resources.wood),
@@ -826,6 +829,9 @@ export async function readDb() {
             if (Object.keys(fromNormalized.alliances || {}).length === 0) {
                 fromNormalized.alliances = fromAppState.alliances || {};
             }
+            // World operations live in app_state until they have dedicated normalized tables.
+            fromNormalized.rallies = fromAppState.rallies || {};
+            fromNormalized.hunts = fromAppState.hunts || {};
             return normalizeDbShape(fromNormalized);
         }
 
