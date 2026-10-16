@@ -102,13 +102,32 @@ function serverChest(user, type) {
     return chest;
 }
 
-export function grantCombatChestDrop(user, won, operationId) {
-    if (!won || !operationId) return null;
-    ensureServerInventory(user);
-    // The original prototype's 10% chest drop chance is now rolled server-side.
-    if (crypto.randomInt(0, 100) >= 10) return null;
-    const chest = serverChest(user, "explorer");
-    return { chestId: chest.id, type: chest.type, name: chest.name, source: chest.source, operationId };
+export function grantCombatChestDrop(user, won, operationId, randomInt = crypto.randomInt) {
+    if (!operationId || typeof operationId !== "string") return null;
+    const inventory = ensureServerInventory(user);
+    inventory.combatChestReceipts ||= {};
+    // The operation receipt prevents retries from rerolling or duplicating a drop.
+    if (Object.hasOwn(inventory.combatChestReceipts, operationId)) {
+        return inventory.combatChestReceipts[operationId].chestReward
+            ? { ...inventory.combatChestReceipts[operationId].chestReward }
+            : null;
+    }
+
+    let chestReward = null;
+    if (won) {
+        // The original prototype's 10% chest drop chance is rolled server-side.
+        if (randomInt(0, 100) < 10) {
+            const chest = serverChest(user, "explorer");
+            chestReward = { chestId: chest.id, type: chest.type, name: chest.name, source: chest.source, operationId };
+        }
+    }
+
+    inventory.combatChestReceipts[operationId] = { operationId, chestReward, resolvedAtMs: nowMs() };
+    const receiptIds = Object.keys(inventory.combatChestReceipts);
+    for (const oldId of receiptIds.slice(0, Math.max(0, receiptIds.length - 500))) {
+        delete inventory.combatChestReceipts[oldId];
+    }
+    return chestReward ? { ...chestReward } : null;
 }
 
 export function getServerChests(user) {
