@@ -93,7 +93,7 @@ Campos mínimos:
 
 Esses valores são **decisões originais temporárias**, precisam de playtests e balanceamento. O protótipo não inclui ainda habilidades de herói, atributos de viatura/chips/acessórios, bônus de pesquisa, tropas feridas, saque aleatório ou combate contínuo em rounds.
 
-## Regras que precisam ser decididas antes de codificar o combate
+## Regras que ainda precisam ser decididas antes do combate de produção
 
 - Como poder de heróis, tropas, viatura, acessórios, chips, pesquisa e efeitos temporários são combinados.
 - Se a energia é cobrada ao entrar, ao despachar ou ao resolver; e se há reembolso no cancelamento.
