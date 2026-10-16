@@ -281,6 +281,9 @@ test("vehicle chip loadouts are server-owned and upgrades consume only unequippe
         });
         assert.equal(equipped.status, 200);
         assert.equal(equipped.body.inventory.find(chip => chip.id === "assault-main").level, 1);
+        assert.equal(equipped.body.inventory.find(chip => chip.id === "assault-main").name, "Módulo de Assalto");
+        assert.equal(equipped.body.inventory.find(chip => chip.id === "assault-main").rarity, "Épico");
+        assert.equal(equipped.body.inventory.find(chip => chip.id === "assault-main").upgradeCopies, 5);
         assert.equal(equipped.body.presets["I"]["assault"], "assault-main");
 
         const upgrade = await request(server.baseUrl, "POST", "/v1/vehicle/chips/assault-main/upgrade", { token, body: {} });
