@@ -1698,6 +1698,10 @@ function getNearestMonster(maxDistance) {
 }
 
 function collectResourceNode(node) {
+    if (getApiClient()?.hasToken?.()) {
+        pushFeed("A coleta direta do mapa ainda não foi migrada para validação do servidor. Para obter recursos online, use as expedições e caçadas validadas.");
+        return;
+    }
     if (isActionOnCooldown("collect")) return;
     const config = resourceKinds[node.kind];
     let gain = config.value;
