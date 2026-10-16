@@ -38,6 +38,15 @@ const CHIP_CATALOG = [
     { id: "supply-core", name: "Núcleo de Suprimentos", role: "Suporte", stat: "hpPct", statLabel: "Vida e proteção", basePct: 10, upgradeCopies: 4, rarity: "Raro", color: "#4f9bff" }
 ];
 const CHIP_MAX_LEVEL = 10;
+// Hero promotion reference baseline: five internal steps per star tier.
+// Values are based on secondary community guides and remain configurable pending direct in-game cost screenshots.
+const HERO_STAR_FRAGMENT_COSTS = [
+    [1, 1, 2, 3, 3],
+    [5, 5, 5, 5, 15],
+    [15, 15, 15, 15, 50],
+    [50, 50, 50, 50, 100],
+    [100, 100, 100, 100, 100]
+];
 // Prototype chest odds are original design values, not a claim about the reference game's full pool.
 // The observed 0.2% orange tier and 30% blue subtotal are retained as research anchors.
 const MODULE_CHEST_ODDS = [
@@ -289,6 +298,7 @@ function createHeroState(template) {
         unlocked: template.unlockOrder <= INITIAL_UNLOCKED,
         level: 1,
         stars: 1,
+        starStep: 0,
         specificShards: 0,
         equipment: { weapon: 0, armor: 0, boots: 0 },
         equippedChips: { attackPct: null, hpPct: null },
@@ -382,6 +392,7 @@ function loadState() {
                 equipment: { weapon: 0, armor: 0, boots: 0, ...(current.equipment || {}) },
                 equippedItems: Object.fromEntries(Object.keys(EQUIPMENT_SLOTS).map((slot) => [slot, current.equippedItems?.[slot] || null])),
                 equippedChips: { attackPct: current.equippedChips?.attackPct || null, hpPct: current.equippedChips?.hpPct || null },
+                starStep: Number.isInteger(current.starStep) ? clamp(current.starStep, 0, 5) : 0,
                 skillLevels: Array.isArray(current.skillLevels) ? current.skillLevels.slice(0, 3) : [1, 1, 1]
             };
         });
@@ -527,7 +538,7 @@ function getHeroRuntime(heroId) {
         const definition = CHIP_CATALOG.find((chip) => chip.id === item.typeId);
         return sum + (definition?.stat === stat ? definition.basePct + (item.level - 1) * 9.6 : 0);
     }, 0) / 100;
-    const starMultiplier = 1 + (heroState.stars - 1) * 0.08;
+    const starMultiplier = 1 + (heroState.stars - 1) * 0.08 + (heroState.starStep || 0) * 0.01;
 
     const atk = Math.floor((template.baseStats.atk + equipBonusAtk + skillAtkBonus) * starMultiplier * (1 + chipPct("attackPct")));
     const def = Math.floor((template.baseStats.def + equipBonusDef + skillDefBonus) * starMultiplier);
@@ -1276,14 +1287,21 @@ function levelUpHero() {
     saveState();
 }
 
+function getHeroStarPromotionCost(heroState) {
+    if (heroState.stars >= 5 && heroState.starStep >= 5) return null;
+    const tierIndex = clamp(heroState.stars - 1, 0, HERO_STAR_FRAGMENT_COSTS.length - 1);
+    const stepIndex = clamp(heroState.starStep || 0, 0, 4);
+    return HERO_STAR_FRAGMENT_COSTS[tierIndex][stepIndex];
+}
+
 function ascendHero() {
     const hero = getHeroRuntime(state.selectedHeroId);
     const heroState = hero.heroState;
-    if (heroState.stars >= 5) {
-        pushFeed("Heroi no maximo de estrelas.");
+    const needed = getHeroStarPromotionCost(heroState);
+    if (needed === null) {
+        pushFeed("Herói no máximo de estrelas.");
         return;
     }
-    const needed = 10 + heroState.stars * 5;
     let available = heroState.specificShards;
     const pools = getAllowedGenericPools(hero.template.tier);
     pools.forEach((pool) => {
@@ -1304,8 +1322,18 @@ function ascendHero() {
         state.genericShards[pool] -= used;
         remaining -= used;
     }
-    heroState.stars += 1;
-    pushFeed(`${hero.template.name} ascendeu para ${heroState.stars} estrelas.`);
+
+    if (heroState.stars === 5 && heroState.starStep === 4) {
+        heroState.starStep = 5;
+    } else {
+        heroState.starStep = (heroState.starStep || 0) + 1;
+        if (heroState.starStep >= 5) {
+            heroState.stars += 1;
+            heroState.starStep = 0;
+        }
+    }
+    const progress = heroState.starStep === 5 ? "5/5 · máximo" : `${heroState.starStep}/5 etapas da estrela atual`;
+    pushFeed(`${hero.template.name}: ${heroState.stars}★ · ${progress}.`);
     renderAll();
     saveState();
 }
@@ -1694,9 +1722,11 @@ function renderTabContent() {
         return;
     }
 
-    const ascensionNeed = 10 + hero.heroState.stars * 5;
+    const ascensionNeed = getHeroStarPromotionCost(hero.heroState);
+    const isMaxStars = ascensionNeed === null;
     const pools = getAllowedGenericPools(hero.template.tier).map((pool) => `${tierLabel(pool)}: ${state.genericShards[pool]}`).join(" | ");
-    ui.heroTabContent.innerHTML = `<div class="ascension-box"><p class="star-line">${"★".repeat(hero.heroState.stars)}${"☆".repeat(5 - hero.heroState.stars)}</p><p>QB especifico (${hero.template.weapon}): <strong>${hero.heroState.specificShards}</strong></p><p>Pools permitidos: <strong>${pools}</strong></p><p>Necessario para ascender: <strong>${ascensionNeed}</strong></p><button class="ascend-btn" data-action="ascend-hero">Ascender heroi</button></div>`;
+    const starStepLabel = hero.heroState.starStep === 5 ? "5/5 etapas · máximo" : `${hero.heroState.starStep || 0}/5 etapas desta estrela`;
+    ui.heroTabContent.innerHTML = `<div class="ascension-box"><p class="star-line">${"★".repeat(hero.heroState.stars)}${"☆".repeat(5 - hero.heroState.stars)}</p><p>Progresso da estrela: <strong>${starStepLabel}</strong></p><p>Fragmentos específicos (${hero.template.weapon}): <strong>${hero.heroState.specificShards}</strong></p><p>Fragmentos universais permitidos: <strong>${pools}</strong></p><p>Necessário para próxima etapa: <strong>${isMaxStars ? "Máximo alcançado" : ascensionNeed + " fragmentos"}</strong></p><button class="ascend-btn" data-action="ascend-hero" ${isMaxStars ? "disabled" : ""}>${isMaxStars ? "Herói no máximo" : "Evoluir estrela"}</button></div>`;
 }
 
 function updateHeroDetail() {
