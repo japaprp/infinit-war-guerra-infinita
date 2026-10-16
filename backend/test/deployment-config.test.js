@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
+import { validateRuntimeConfig } from "../src/config/env.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
@@ -48,5 +49,49 @@ test("API client reports missing hosted configuration before attempting fetch", 
     await assert.rejects(
         window.IWARApi.exchangeAuthSession({ uid: "test-user", provider: "google" }),
         /Backend API URL is not configured for this hosted environment/
+    );
+});
+
+test("production configuration rejects unsafe defaults and ephemeral JSON storage", () => {
+    assert.throws(
+        () => validateRuntimeConfig({
+            NODE_ENV: "production",
+            JWT_SECRET: "unsafe_dev_secret",
+            RECEIPT_SECRET: "unsafe_receipt_secret",
+            DATA_DRIVER: "json",
+            CORS_ORIGINS: ""
+        }),
+        /Invalid production configuration/
+    );
+});
+
+test("production configuration accepts explicit secrets, MySQL, and exact origins", () => {
+    assert.doesNotThrow(() => validateRuntimeConfig({
+        NODE_ENV: "production",
+        JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
+        RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
+        DATA_DRIVER: "mysql",
+        MYSQL_HOST: "mysql.example.test",
+        MYSQL_DATABASE: "infinitwar",
+        MYSQL_USER: "infinitwar_app",
+        MYSQL_PASSWORD: "database-password",
+        CORS_ORIGINS: "https://game.example.test"
+    }));
+});
+
+test("production configuration rejects origins containing paths", () => {
+    assert.throws(
+        () => validateRuntimeConfig({
+            NODE_ENV: "production",
+            JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
+            RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
+            DATA_DRIVER: "mysql",
+            MYSQL_HOST: "mysql.example.test",
+            MYSQL_DATABASE: "infinitwar",
+            MYSQL_USER: "infinitwar_app",
+            MYSQL_PASSWORD: "database-password",
+            CORS_ORIGINS: "https://game.example.test/path"
+        }),
+        /exact HTTP\(S\) origin/
     );
 });
