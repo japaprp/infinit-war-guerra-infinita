@@ -1,15 +1,32 @@
 name: Backend Integration
 
 on:
-  pull_request:
   push:
     branches:
       - main
+      - "fix/**"
+      - "feat/**"
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-integration.yml"
+      - ".github/workflows/backend-tests.yml"
+      - "api/**"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-integration.yml"
+      - ".github/workflows/backend-tests.yml"
+      - "api/**"
   workflow_dispatch:
+
+concurrency:
+  group: \${{ github.workflow }}-\${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       redis:

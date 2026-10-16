@@ -1,16 +1,44 @@
 name: Client Persistence
 
 on:
-  pull_request:
   push:
     branches:
       - main
+      - "fix/**"
+      - "feat/**"
+    paths:
+      - "tests/client-persistence.test.mjs"
+      - "tests/client-backend-recovery.test.mjs"
+      - "backend/**"
+      - "api/**"
+      - "auth/**"
+      - "index.html"
+      - "main.js"
+      - "game.html"
+      - "package.json"
+      - ".github/workflows/client-persistence.yml"
+  pull_request:
+    paths:
+      - "tests/client-persistence.test.mjs"
+      - "tests/client-backend-recovery.test.mjs"
+      - "backend/**"
+      - "api/**"
+      - "auth/**"
+      - "index.html"
+      - "main.js"
+      - "game.html"
+      - "package.json"
+      - ".github/workflows/client-persistence.yml"
   workflow_dispatch:
+
+concurrency:
+  group: \${{ github.workflow }}-\${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   browser-persistence:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
