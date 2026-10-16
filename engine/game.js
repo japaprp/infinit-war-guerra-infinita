@@ -1780,7 +1780,8 @@ function renderTabContent() {
         const oddsRows = MODULE_CHEST_ODDS.map((item) => `<tr><td>${item.label}</td><td>${item.chance.toLocaleString("pt-BR")}%</td></tr>`).join("");
         const chipRows = chips.length ? chips.map((chip) => {
             const definition = CHIP_CATALOG.find((item) => item.id === chip.typeId);
-            const equipped = hero.heroState.equippedChips?.[definition?.stat] === chip.id;
+            const equippedByHero = hero.heroState.equippedChips?.[definition?.stat] === chip.id;
+            const equipped = equippedByHero || window.IWChipLoadouts.PRESETS.some((preset) => window.IWChipLoadouts.isChipInPreset(state.vehicleChipLoadouts, preset, chip.id));
             const pct = definition ? definition.basePct + (chip.level - 1) * 9.6 : 0;
             const copies = chips.filter((item) => item.typeId === chip.typeId && item.id !== chip.id && !isChipEquipped(item.id)).length;
             return `<article class="inventory-item"><span><strong>${chip.name} · Nv.${chip.level}</strong><small>${chip.role} · ${chip.rarityLabel} · +${pct.toLocaleString("pt-BR")}% ${definition?.statLabel || ""} · cópias extras: ${copies}</small></span><div><button class="inline-action" data-action="equip-chip" data-chip-id="${chip.id}" ${equipped ? "disabled" : ""}>${equipped ? "Equipado/salvo" : "Equipar no herói"}</button><button class="inline-action" data-action="assign-vehicle-chip" data-chip-id="${chip.id}" ${window.IWChipLoadouts.isChipInPreset(state.vehicleChipLoadouts, activePreset, chip.id) || filledVehicleSlots >= 4 ? "disabled" : ""}>Instalar na viatura</button><button class="inline-action" data-action="upgrade-chip" data-chip-id="${chip.id}" ${chip.level >= CHIP_MAX_LEVEL || copies < (definition?.upgradeCopies || 999) ? "disabled" : ""}>Evoluir (${definition?.upgradeCopies || "—"} cópias)</button></div></article>`;
