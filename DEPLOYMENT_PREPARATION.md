@@ -37,3 +37,14 @@ The backend exposes `GET /health`. After the service is deployed, validate:
 ## Explicit blockers
 
 No hosting service, database, DNS record, production secret, or deployment was created or changed by this preparation. A GitHub Actions workflow was added to run configuration and backend integration tests on relevant pushes and pull requests. The public frontend origin and API URL are still unknown, and PR #14's expedition routes must be reviewed and integrated before the production branch can serve those routes.
+
+
+## Free database provider decision
+
+Do not create a database until the existing Aiven account inventory is confirmed. Aiven's current free MySQL tier allows only one free service of each service type per organization, with 1 CPU, 1 GB RAM, 1 GB disk, up to 76 connections, and possible power-off after prolonged inactivity. The account inventory tool could not be queried during this preparation, so availability is unknown. Never reuse the EventosRP database for this game.
+
+If the existing Aiven free MySQL service is already allocated, TiDB Cloud Starter is a candidate to evaluate because it supports the MySQL protocol and its free quota currently includes 5 GiB row storage and 50 million request units per month for eligible instances. Reaching the free quota can block new connections until quota reset. Before choosing TiDB, run the backend integration and schema-migration tests against a real TiDB instance; MySQL protocol compatibility alone does not prove every SQL feature used by this repository will behave identically.
+
+Provider references:
+- Aiven free MySQL tier: https://aiven.io/docs/products/mysql/concepts/mysql-free-tier
+- TiDB Cloud Starter tier and quotas: https://docs.pingcap.com/tidbcloud/select-cluster-tier/
