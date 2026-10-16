@@ -2603,7 +2603,8 @@ async function pullStateFromBackend() {
             equipment: Array.isArray(remote.state.inventory?.equipment) ? remote.state.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : state.inventory.equipment,
             chests: Array.isArray(remote.state.inventory?.chests) ? remote.state.inventory.chests.slice(0, 100) : state.inventory.chests,
             chips: Array.isArray(state.inventory.chips) ? state.inventory.chips : [],
-            chipMaterials: Number.isFinite(state.inventory.chipMaterials) ? state.inventory.chipMaterials : 0
+            chipMaterials: Number.isFinite(state.inventory.chipMaterials) ? state.inventory.chipMaterials : 0,
+            appliedChestReceiptIds: Array.isArray(state.inventory.appliedChestReceiptIds) ? state.inventory.appliedChestReceiptIds.filter((id) => typeof id === "string").slice(-500) : []
         };
         if (remote.state.vehicleAccessories && !state.vehicleAccessories?.inventory?.length) {
             state.vehicleAccessories = window.IWVehicleAccessories.normalizeState(remote.state.vehicleAccessories);
