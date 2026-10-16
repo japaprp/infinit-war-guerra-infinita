@@ -104,7 +104,7 @@ function serverChest(user, type) {
 
 export function getServerChests(user) {
     const inventory = ensureServerInventory(user);
-    return { chests: inventory.chests.map(chest => ({ ...chest })) };
+    return { chests: inventory.chests.map(chest => ({ ...chest })), chipMaterials: inventory.chipMaterials, shards: { ...inventory.shards }, equipment: inventory.equipment.map(item => ({ ...item })) };
 }
 
 function rollWeighted(entries) {
@@ -182,7 +182,7 @@ export function openServerChest(user, chestId) {
         return { error: { status: 409, message: "Unsupported chest type" } };
     }
     inventory.chests.splice(index, 1);
-    const receipt = { chestId: id, chestType: chest.type, reward, remainingChests: inventory.chests.map(item => ({ ...item })) };
+    const receipt = { chestId: id, chestType: chest.type, reward, remainingChests: inventory.chests.map(item => ({ ...item })), resources: { ...user.v1.resources }, chipMaterials: inventory.chipMaterials, shards: { ...inventory.shards }, equipment: inventory.equipment.map(item => ({ ...item })) };
     inventory.chestReceipts[id] = receipt;
     const receiptIds = Object.keys(inventory.chestReceipts);
     for (const oldId of receiptIds.slice(0, Math.max(0, receiptIds.length - 500))) delete inventory.chestReceipts[oldId];
