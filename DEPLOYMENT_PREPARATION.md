@@ -21,6 +21,10 @@ Required for a hosted instance:
 
 The API currently supports MySQL via `mysql2`. The JSON-file driver is suitable for local development only on hosts with ephemeral filesystems; it must not be used for persistent hosted gameplay. In production, startup now fails if MySQL cannot initialize, and reads/writes refuse to fall back to a local JSON file. Configure `MYSQL_SSL=true` when the database provider requires TLS.
 
+## Frontend hosting boundary
+
+The current browser client files (`index.html`, `game.html`, JavaScript, CSS, and assets) are stored at the repository root alongside backend code and internal project files. Do **not** publish the repository root as a static site (`staticPublishPath: .`): that risks exposing backend source and development artifacts as public web files. Before adding a static-site service, move or copy only the required browser assets into a dedicated public directory, update and test relative paths, and verify the published file manifest contains no backend code, tests, environment examples, or internal docs. This isolation is intentionally not done in the deployment-preparation branch because it is a separate, potentially breaking packaging change.
+
 ## Render API blueprint
 
 `render.yaml` is a free-plan API service template. It does not create a service by itself. If used later, Render will ask for the database connection values and the exact frontend origin; the API cannot pass production startup validation until these are supplied. The template enables MySQL TLS. Render's free web service may sleep when idle, so the first request can be delayed.
