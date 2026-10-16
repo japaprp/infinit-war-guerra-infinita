@@ -1,5 +1,5 @@
-﻿(() => {
-    const BASE_URL = window.IWAR_API_BASE_URL || window.GDE_API_BASE_URL || "http://localhost:4000";
+(() => {
+    const BASE_URL = window.IWAR_API_BASE_URL || window.GDE_API_BASE_URL || "";
     const TOKEN_KEY = "iwar_api_token";
     const LEGACY_TOKEN_KEY = "gde_api_token";
 
@@ -23,6 +23,10 @@
     };
 
     const request = async (method, path, body, tokenOverride, extraHeaders = {}) => {
+        if (!BASE_URL) {
+            throw new Error("Backend API URL is not configured for this hosted environment.");
+        }
+
         const token = tokenOverride || getToken();
         const headers = {
             "Content-Type": "application/json",
