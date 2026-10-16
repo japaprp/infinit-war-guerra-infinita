@@ -273,6 +273,17 @@ export function resolveMapRally(db, userId, user, operationId, nowMs = Date.now(
 export function listMapBattleHistory(db, userId, user, limit = 20) {
     ensureV1State(user);
     const safeLimit = Number.isSafeInteger(limit) ? Math.max(1, Math.min(50, limit)) : 20;
+    const safeResult = result => result ? ({
+        resultId: result.resultId,
+        rulesVersion: result.rulesVersion,
+        outcome: result.outcome,
+        playerPower: result.playerPower,
+        totalPower: result.totalPower,
+        enemyHp: result.enemyHp,
+        damage: result.damage,
+        remainingEnemyHp: result.remainingEnemyHp,
+        resolvedAtMs: result.resolvedAtMs
+    }) : null;
     const hunts = Object.values(db.hunts || {})
         .filter(hunt => hunt.playerId === userId)
         .map(hunt => ({
@@ -282,12 +293,11 @@ export function listMapBattleHistory(db, userId, user, limit = 20) {
             status: hunt.status,
             startedAtMs: hunt.startedAtMs,
             completedAtMs: hunt.completedAtMs || null,
-            result: hunt.result || null,
+            result: safeResult(hunt.result),
             rewardReceipt: hunt.rewardReceipt || null
         }));
     const rallies = Object.values(db.rallies || {})
-        .filter(rally => isAllianceMember(user, rally.allianceId) &&
-            (rally.participants || []).some(participant => participant.playerId === userId))
+        .filter(rally => (rally.participants || []).some(participant => participant.playerId === userId))
         .map(rally => ({
             type: "alliance-rally",
             operationId: rally.operationId,
@@ -295,7 +305,7 @@ export function listMapBattleHistory(db, userId, user, limit = 20) {
             status: rally.status,
             startedAtMs: rally.dispatchedAtMs || rally.createdAtMs,
             completedAtMs: rally.completedAtMs || null,
-            result: rally.result || null,
+            result: safeResult(rally.result),
             rewardReceipt: rally.rewardReceipts?.[userId] || null
         }));
     return {
