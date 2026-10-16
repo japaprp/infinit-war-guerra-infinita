@@ -81,7 +81,6 @@ export function startMapHunt(db, userId, user, payload = {}) {
     if (!formation) return businessError(400, "Formation must contain 1–5 unique owned heroes");
     const troopCount = payload.troopCount === undefined ? 0 : payload.troopCount;
     if (!Number.isSafeInteger(troopCount) || troopCount < 0 || troopCount > 1_000_000) return businessError(400, "Invalid troop count");
-    if (troopCount > user.v1.troops) return businessError(409, "Not enough available troops");
     const operationId = validId(payload.operationId) ? payload.operationId : "";
     if (!operationId) return businessError(400, "operationId is required");
     const prior = db.hunts[operationId];
@@ -89,6 +88,7 @@ export function startMapHunt(db, userId, user, payload = {}) {
         if (prior.playerId !== userId) return businessError(409, "operationId already used");
         return { ...prior, resources: { ...user.v1.resources }, troops: user.v1.troops, replayed: true };
     }
+    if (troopCount > user.v1.troops) return businessError(409, "Not enough available troops");
     if (user.v1.resources.energy < target.energyCost) return businessError(409, "Insufficient energy");
     const now = Date.now();
     const huntId = `hunt_${crypto.randomUUID()}`;
@@ -118,15 +118,15 @@ export function createMapRally(db, userId, user, payload = {}) {
     if (!formation) return businessError(400, "Formation must contain 1–5 unique owned heroes");
     const troopCount = payload.troopCount;
     if (!validTroops(troopCount)) return businessError(400, "Invalid troop count");
-    if (troopCount > user.v1.troops) return businessError(409, "Not enough available troops");
-    if (user.v1.resources.energy < target.energyCost) return businessError(409, "Insufficient energy");
     const operationId = validId(payload.operationId) ? payload.operationId : "";
     if (!operationId) return businessError(400, "operationId is required");
     const prior = db.rallies[operationId];
     if (prior) {
         if (prior.leaderId !== userId) return businessError(409, "operationId already used");
-        return { ...prior, resources: { ...user.v1.resources }, replayed: true };
+        return { ...prior, resources: { ...user.v1.resources }, troops: user.v1.troops, replayed: true };
     }
+    if (troopCount > user.v1.troops) return businessError(409, "Not enough available troops");
+    if (user.v1.resources.energy < target.energyCost) return businessError(409, "Insufficient energy");
     const now = Date.now();
     const rallyId = `rally_${crypto.randomUUID()}`;
     const rally = {
