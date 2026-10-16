@@ -1,6 +1,6 @@
 ﻿import crypto from "crypto";
 import { ensureV1State, toPlayerProfile } from "./userService.js";
-import { ensureVehicleLoadout, getVehicleLoadout, VEHICLE_CHIP_CATALOG } from "./vehicleLoadoutService.js";
+import { ensureVehicleLoadout, getVehicleLoadout } from "./vehicleLoadoutService.js";
 
 function findHero(user, heroId) {
     ensureV1State(user);
