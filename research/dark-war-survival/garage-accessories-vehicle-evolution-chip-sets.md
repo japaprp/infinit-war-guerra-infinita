@@ -178,3 +178,33 @@ Fontes secundárias consultadas:
 - A transcrição de vídeo corrobora as probabilidades do baú verde já registradas, mas não confirma todos os baús nem todas as versões.
 - As regras de ressonância, facções por formação e custos de fabricação permanecem classificadas como informações de fontes secundárias até haver captura legível, teste controlado ou documentação oficial.
 - Nenhum valor de fonte externa altera automaticamente o balanceamento de Guerra Infinita. O jogo continua com progressão própria a partir do nível 1.
+
+
+## Cruzamento com histórico de versões — 2026-10-16
+
+### Registro de atualização sobre veículo modificado
+
+O histórico público de versões reproduzido por [AppSupports — Dark War:Survival](https://appsupports.co/6670441558/dark-war-survival) registra, para a versão **1.250.618, de 17 de outubro de 2025**, a função “Tactical Modification” (modificação tática do veículo). Segundo esse registro, o recurso é desbloqueado ao cumprir **uma** destas condições:
+- nível de transformação do veículo chega a 500;
+- todas as peças do veículo chegam ao nível 66;
+- qualquer chip laranja do veículo chega a 10 estrelas.
+
+A mesma nota menciona quatro presets de formação recomendados (CP First, Fighter First, Shooter First, Rider First) e presets de defesa na tela do portão da cidade. Isso oferece um marco de versão para comparar com a captura avançada do usuário, mas não prova que toda conta/servidor esteja na mesma versão ou que o texto espelhe integralmente a nota oficial.
+
+### Mudanças relacionadas a chips
+
+O mesmo histórico lista, na versão **1.250.628, de 25 de dezembro de 2025**, uma melhoria visual nos ícones de chips com indicadores de facção no canto superior esquerdo. É um indício de que a identificação visual por facção mudou/foi refinada depois da introdução do sistema; ao comparar capturas, registrar a versão e não assumir que ícones de vídeos antigos são idênticos aos atuais.
+
+A página também registra a versão **1.250.666, de 28 de setembro de 2026**, como atualização de otimização geral, sem detalhar mudanças específicas no sistema de chips nessa nota. Isso **não** prova ausência de mudanças de chips em outras atualizações intermediárias, regiões ou notas que não foram capturadas por essa fonte.
+
+### Grau de confiança e uso correto
+
+- **Fonte secundária de histórico de versão:** útil para datar o que a nota publicada atribui à versão 1.250.618; não equivale a confirmação por captura direta no cliente do jogo.
+- **Compatibilidade com a transcrição do usuário:** a tela avançada tem peças individuais nos níveis 23–26 e garagem no nível 267; isso não satisfaz, por si só, o requisito “todas as peças Lv.66” nem o de transformação Lv.500. Pode haver outro gatilho, como chip laranja 10 estrelas, ou a tela transcrita ser de um estado anterior à função de modificação tática. Não inferir que a conta a tinha desbloqueada.
+- **Regra para Guerra Infinita:** não copiar os limites 500/66/10 estrelas como balanceamento próprio. Eles são apenas dados de comparação do jogo de referência. No nosso jogo, cada sistema terá desbloqueios progressivos definidos e testados separadamente, começando no nível 1.
+
+### Próxima validação de garagem
+
+1. Procurar captura que mostre o botão ou painel de “modificação tática” e seus requisitos na conta de referência.
+2. Identificar se “nível da garagem 267” e os níveis 23–26 dos acessórios pertencem à mesma tela/versão e se são grandezas diferentes.
+3. Procurar notas de atualização oficiais acessíveis ou capturas de versão que confirmem os gatilhos, antes de elevar a confiança acima de “registro secundário de patch”.
