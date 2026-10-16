@@ -511,6 +511,17 @@ async function syncServerVehicleLoadout({ render = true } = {}) {
         new Set(state.inventory.chips.map((chip) => chip.id))
     );
     state.activeVehicleChipPreset = remote.activePreset || "I";
+    if (typeof api.getServerChestsV1 === "function") {
+        const serverInventory = await api.getServerChestsV1();
+        state.inventory.chests = Array.isArray(serverInventory.chests) ? serverInventory.chests.slice(0, 100) : [];
+        state.inventory.chipMaterials = Math.max(0, Number(serverInventory.chipMaterials) || 0);
+        state.inventory.equipment = Array.isArray(serverInventory.equipment)
+            ? serverInventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500)
+            : [];
+        if (serverInventory.shards && typeof serverInventory.shards === "object") {
+            state.genericShards = { ...state.genericShards, ...serverInventory.shards };
+        }
+    }
     if (render) renderAll();
     return remote;
 }
