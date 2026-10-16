@@ -261,6 +261,35 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
     }
 });
 
+test("unverified Firebase identities cannot create legacy or v1 sessions", async () => {
+    await fs.rm(dbPath, { force: true });
+    const server = await bootServer({ redisEnabled: false });
+    try {
+        const legacy = await api(server.baseUrl, "POST", "/auth/session", {
+            body: {
+                provider: "google.com",
+                providerUid: "victim-account",
+                email: "attacker@example.test",
+                displayName: "spoofed"
+            }
+        });
+        assert.equal(legacy.status, 401);
+
+        const v1 = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: {
+                provider: "google.com",
+                idToken: "victim-account"
+            }
+        });
+        assert.equal(v1.status, 401);
+
+        const db = await readDb();
+        assert.equal(db.users["google.com:victim-account"], undefined);
+    } finally {
+        await server.stop();
+    }
+});
+
 test("legacy shop receipt can be consumed only once", async () => {
     await fs.rm(dbPath, { force: true });
 
