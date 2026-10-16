@@ -78,6 +78,118 @@ export function startExpedition(user, payload = {}) {
     return { expeditionId, destinationId, objectiveId, startedAtMs: now, endsAtMs: now + 60000, resources: user.v1.resources, stateVersion: user.v1.stateVersion };
 }
 
+function ensureServerInventory(user) {
+    ensureV1State(user);
+    user.v1.inventory ||= {};
+    user.v1.inventory.chests = Array.isArray(user.v1.inventory.chests) ? user.v1.inventory.chests : [];
+    user.v1.inventory.chestReceipts ||= {};
+    user.v1.inventory.chipMaterials = Math.max(0, Number(user.v1.inventory.chipMaterials) || 0);
+    user.v1.inventory.shards ||= { bronze: 0, silver: 0, gold: 0 };
+    user.v1.inventory.equipment = Array.isArray(user.v1.inventory.equipment) ? user.v1.inventory.equipment : [];
+    return user.v1.inventory;
+}
+
+function serverChest(user, type) {
+    const inventory = ensureServerInventory(user);
+    const chest = {
+        id: `chest_${crypto.randomUUID()}`,
+        type,
+        name: type === "module" ? "Baú de Módulos" : "Baú de Explorador",
+        source: "server",
+        createdAtMs: nowMs()
+    };
+    inventory.chests.push(chest);
+    return chest;
+}
+
+export function getServerChests(user) {
+    const inventory = ensureServerInventory(user);
+    return { chests: inventory.chests.map(chest => ({ ...chest })) };
+}
+
+function rollWeighted(entries) {
+    const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
+    let cursor = crypto.randomInt(0, total);
+    for (const entry of entries) {
+        cursor -= entry.weight;
+        if (cursor < 0) return entry;
+    }
+    return entries[entries.length - 1];
+}
+
+export function openServerChest(user, chestId) {
+    const inventory = ensureServerInventory(user);
+    const id = String(chestId || "");
+    if (!id) return { error: { status: 400, message: "chestId is required" } };
+    if (inventory.chestReceipts[id]) return { ...inventory.chestReceipts[id], alreadyOpened: true };
+    const index = inventory.chests.findIndex(chest => chest.id === id);
+    if (index < 0) return { error: { status: 404, message: "Chest is not owned by this player" } };
+    const chest = inventory.chests[index];
+    let reward;
+    if (chest.type === "explorer") {
+        const roll = rollWeighted([
+            { id: "resources", weight: 45 },
+            { id: "shards", weight: 25 },
+            { id: "equipment", weight: 15 },
+            { id: "moduleChest", weight: 15 }
+        ]);
+        if (roll.id === "resources") {
+            reward = { type: "resources", gold: 250 + crypto.randomInt(0, 751), steel: 200 + crypto.randomInt(0, 601), food: 40 + crypto.randomInt(0, 81) };
+            for (const key of ["gold", "steel", "food"]) user.v1.resources[key] = Math.max(0, Number(user.v1.resources[key]) || 0) + reward[key];
+        } else if (roll.id === "shards") {
+            const pool = ["bronze", "silver", "gold"][crypto.randomInt(0, 3)];
+            const amount = pool === "bronze" ? 3 : pool === "silver" ? 2 : 1;
+            inventory.shards[pool] = (Number(inventory.shards[pool]) || 0) + amount;
+            reward = { type: "shards", pool, amount };
+        } else if (roll.id === "equipment") {
+            const equipment = { id: `equipment_${crypto.randomUUID()}`, slot: ["weapon", "armor", "boots"][crypto.randomInt(0, 3)], bonus: 8 + crypto.randomInt(0, 13), source: "explorer-chest" };
+            inventory.equipment.push(equipment);
+            reward = { type: "equipment", item: equipment };
+        } else {
+            const moduleChest = serverChest(user, "module");
+            reward = { type: "moduleChest", chest: moduleChest };
+        }
+    } else if (chest.type === "module") {
+        const roll = rollWeighted([
+            { id: "legendary", weight: 2 },
+            { id: "blue-a", weight: 75 },
+            { id: "blue-b", weight: 75 },
+            { id: "blue-c", weight: 75 },
+            { id: "blue-d", weight: 75 },
+            { id: "purple", weight: 300 },
+            { id: "materials", weight: 398 }
+        ]);
+        if (roll.id === "materials") {
+            const amount = 20 + crypto.randomInt(0, 41);
+            inventory.chipMaterials += amount;
+            reward = { type: "chipMaterials", amount };
+        } else {
+            const map = {
+                legendary: { typeId: "assault-module", level: 5, rarity: "Lendário" },
+                "blue-a": { typeId: "assault-module", level: 1, rarity: "Raro" },
+                "blue-b": { typeId: "gravity-barrier", level: 1, rarity: "Raro" },
+                "blue-c": { typeId: "recon-array", level: 1, rarity: "Raro" },
+                "blue-d": { typeId: "supply-core", level: 1, rarity: "Raro" },
+                purple: { typeId: ["assault-module", "gravity-barrier"][crypto.randomInt(0, 2)], level: 2, rarity: "Épico" }
+            };
+            const definition = map[roll.id];
+            const vehicle = ensureVehicleLoadout(user);
+            const chip = { id: `chip_${crypto.randomUUID()}`, ...definition, source: "module-chest" };
+            vehicle.chips.push({ id: chip.id, typeId: chip.typeId, level: chip.level, source: chip.source });
+            reward = { type: "chip", chip: getVehicleLoadout(user).inventory.find(item => item.id === chip.id) };
+        }
+    } else {
+        return { error: { status: 409, message: "Unsupported chest type" } };
+    }
+    inventory.chests.splice(index, 1);
+    const receipt = { chestId: id, chestType: chest.type, reward, remainingChests: inventory.chests.map(item => ({ ...item })) };
+    inventory.chestReceipts[id] = receipt;
+    const receiptIds = Object.keys(inventory.chestReceipts);
+    for (const oldId of receiptIds.slice(0, Math.max(0, receiptIds.length - 500))) delete inventory.chestReceipts[oldId];
+    bumpStateVersion(user);
+    return receipt;
+}
+
 function grantFirstExpeditionVehicleChip(user, expedition) {
     const vehicle = ensureVehicleLoadout(user);
     if (vehicle.firstExpeditionRewardClaimed) return null;
