@@ -1,0 +1,19 @@
+name: Vehicle Accessories
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  vehicle-accessories:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Test accessory entities and transactional evolution
+        run: node --test tests/vehicle-accessories.test.mjs tests/vehicle-accessories-integration.test.mjs
