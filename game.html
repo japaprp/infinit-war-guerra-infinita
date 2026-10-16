@@ -54,6 +54,7 @@
     <button class="rail-btn" id="focusMissionBtn">MIS</button>
     <button class="rail-btn" id="openHeroesRailBtn">BAG</button>
     <button class="rail-btn" id="focusPvpBtn">PVP</button>
+    <button class="rail-btn" id="openVehicleAccessoriesBtn" aria-label="Acessórios da viatura">ACC</button>
 </aside>
 
 <aside class="right-rail">
@@ -134,6 +135,17 @@
     <div class="slice-actions"><button id="startExpeditionBtn">Iniciar expedição (15 energia)</button><button id="claimExpeditionBtn" disabled>Resgatar recompensa</button></div>
 </section>
 
+<section class="vehicle-accessories-panel" id="vehicleAccessoriesPanel" aria-hidden="true">
+    <header><strong>Acessórios da Viatura</strong><button class="close-btn" id="closeVehicleAccessoriesBtn">Fechar</button></header>
+    <p id="vehicleAccessoryStatus">Recursos e custos de fabricação.</p>
+    <label class="expedition-field" for="vehicleAccessoryType">Tipo de acessório
+        <select id="vehicleAccessoryType"></select>
+    </label>
+    <button class="accessory-craft-btn" data-action="craft-accessory">Fabricar acessório (300 ouro · 200 prata · 100 madeira)</button>
+    <div id="vehicleAccessoryInventory" class="accessory-inventory"></div>
+    <small class="accessory-footnote">Custos e bônus são valores originais de protótipo. Sincronia de Núcleo permanece desativada.</small>
+</section>
+
 <nav class="bottom-nav">
     <button class="nav-btn" id="toggleHeroes">Heroi</button>
     <button class="nav-btn center">Construir</button>
@@ -190,6 +202,7 @@
 <script src="api/client.js"></script>
 <script src="engine/chip-loadouts.js"></script>
 <script src="engine/vehicle-chip-combat.js"></script>
+<script src="engine/vehicle-accessories.js"></script>
 <script src="engine/game.js"></script>
 </body>
 </html>
