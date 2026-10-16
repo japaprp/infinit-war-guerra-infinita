@@ -145,10 +145,10 @@
             <option value="old-ruins-brute">Bruto das Ruínas · Nv. 2 · 15 energia</option>
         </select>
     </div>
-    <div class="expedition-field">
-        <label for="mapRallyHero">Herói da formação</label>
-        <select id="mapRallyHero"><option value="">Atualize os heróis primeiro</option></select>
-    </div>
+    <fieldset class="expedition-field" id="mapRallyHeroField">
+        <legend>Formação (escolha até 5 heróis)</legend>
+        <div id="mapRallyHeroList" class="slice-steps">Atualize os heróis primeiro.</div>
+    </fieldset>
     <div class="slice-actions">
         <button id="mapRallyRefreshHeroesBtn" type="button">Atualizar heróis</button>
         <button id="mapHuntStartBtn" type="button">Iniciar caçada</button>
