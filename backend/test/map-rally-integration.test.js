@@ -94,10 +94,14 @@ test("map hunt resolves after arrival and grants rewards only once", async () =>
     try {
         const token = await login(server.baseUrl, "hunt_combat_player");
         const started = await request(server.baseUrl, "POST", "/v1/world/hunts/start", {
-            token, body: { targetId: "grey-forest-stalker", heroIds: ["lucas"], troopCount: 100, operationId: "hunt-combat-1" }
+            token, body: { targetId: "grey-forest-stalker", heroIds: ["lucas"], troopCount: 100, operationId: "hunt-combat-1", combatPower: 999999999, combatBonuses: { attackPct: 999999 } }
         });
         assert.equal(started.status, 200);
         assert.equal(started.body.troops, 900);
+        const storedHunt = (await readDb()).hunts["hunt-combat-1"];
+        assert.equal(storedHunt.troopCount, 100);
+        assert.equal(storedHunt.combatPower, undefined, "client-supplied combat power must never be persisted");
+        assert.equal(storedHunt.combatBonuses, undefined, "client-supplied combat bonuses must never be trusted");
 
         const early = await request(server.baseUrl, "POST", "/v1/world/hunts/hunt-combat-1/resolve", { token, body: {} });
         assert.equal(early.status, 409, "combat cannot resolve before arrival");
