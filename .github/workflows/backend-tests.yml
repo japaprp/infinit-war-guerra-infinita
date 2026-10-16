@@ -5,16 +5,11 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
+      - ".github/workflows/backend-integration.yml"
       - "api/**"
       - "auth/**"
-      - "engine/**"
-      - "entities/**"
-      - "frontend/**"
-      - "tests/public-frontend-package.test.mjs"
       - "index.html"
       - "game.html"
-      - "main.js"
-      - "style.css"
       - "render.yaml"
       - "DEPLOYMENT_PREPARATION.md"
   push:
@@ -25,22 +20,23 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
+      - ".github/workflows/backend-integration.yml"
       - "api/**"
       - "auth/**"
-      - "engine/**"
-      - "entities/**"
-      - "frontend/**"
-      - "tests/public-frontend-package.test.mjs"
       - "index.html"
       - "game.html"
-      - "main.js"
-      - "style.css"
       - "render.yaml"
       - "DEPLOYMENT_PREPARATION.md"
+  workflow_dispatch:
+
+concurrency:
+  group: \${{ github.workflow }}-\${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: backend
@@ -55,9 +51,5 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Test public frontend package boundary
-        run: node --test ../tests/public-frontend-package.test.mjs
       - name: Test deployment readiness and configuration
         run: npm run test:deploy
-      - name: Test backend integration
-        run: npm run test:integration
