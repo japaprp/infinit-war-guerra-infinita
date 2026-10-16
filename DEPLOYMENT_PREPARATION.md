@@ -5,7 +5,7 @@ This repository is prepared for a hosted API, but it is **not deploy-ready until
 ## Frontend API URL
 
 - Local development on `localhost` or `127.0.0.1` defaults to `http://localhost:4000`.
-- Hosted environments intentionally have no implicit API URL. Configure `window.IWAR_API_BASE_URL` before `api/config.js` loads, or replace the empty hosted default with the confirmed HTTPS API origin in the deployment-specific configuration.
+- Hosted environments intentionally have no implicit API URL. The `index.html` and `game.html` pages now expose `<meta name="iwar-api-base-url" content="">`; once the backend URL is known, set that value to the confirmed HTTPS API origin on both pages. `api/config.js` reads this metadata while preserving the local-only localhost default.
 - Do not commit secrets or invent a production URL.
 - `index.html` has a Content Security Policy. Once the actual API hostname is confirmed, add that exact HTTPS origin to `connect-src`; do not use a broad wildcard.
 
