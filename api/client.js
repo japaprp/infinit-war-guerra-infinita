@@ -122,6 +122,9 @@
         request("POST", `/v1/world/alliance-rallies/${encodeURIComponent(operationId)}/resolve`, {});
     const purchaseSkuV1 = async ({ sku, quantity = 1, idempotencyKey }) =>
         request("POST", "/v1/shop/purchase", { sku, quantity, idempotencyKey });
+    const getServerChestsV1 = async () => request("GET", "/v1/inventory/chests");
+    const openServerChestV1 = async ({ chestId, idempotencyKey }) =>
+        request("POST", `/v1/inventory/chests/${encodeURIComponent(chestId)}/open`, { idempotencyKey }, undefined, { "X-Idempotency-Key": idempotencyKey });
     const getVehicleLoadoutV1 = async () => request("GET", "/v1/vehicle/loadout");
     const setActiveVehiclePresetV1 = async (presetId) =>
         request("POST", "/v1/vehicle/presets/active", { presetId });
@@ -161,7 +164,7 @@
         dispatchAllianceRallyV1,
         resolveAllianceRallyV1,
         purchaseSkuV1,
-        getVehicleLoadoutV1,
+        getServerChestsV1,\n        openServerChestV1,\n        getVehicleLoadoutV1,
         setActiveVehiclePresetV1,
         equipVehicleChipV1,
         removeVehicleChipV1,
