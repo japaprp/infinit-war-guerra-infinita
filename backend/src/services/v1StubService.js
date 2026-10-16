@@ -250,8 +250,9 @@ export function claimExpedition(user, payload = {}) {
     user.v1.expedition.active = null;
     for (const [key, amount] of Object.entries(rewards)) user.v1.resources[key] = Math.max(0, Number(user.v1.resources[key]) || 0) + amount;
     const vehicleChipReward = grantFirstExpeditionVehicleChip(user, expedition);
+    const chestReward = grantExpeditionChest(user);
     bumpStateVersion(user);
-    const receipt = { expeditionId, rewards, vehicleChipReward, resources: { ...user.v1.resources }, stateVersion: user.v1.stateVersion };
+    const receipt = { expeditionId, rewards, vehicleChipReward, chestReward, resources: { ...user.v1.resources }, stateVersion: user.v1.stateVersion };
     user.v1.expedition.receipts[expeditionId] = receipt;
     const retainedIds = new Set(user.v1.expedition.claimedIds);
     user.v1.expedition.receipts = Object.fromEntries(Object.entries(user.v1.expedition.receipts).filter(([id]) => retainedIds.has(id)));
