@@ -20,4 +20,4 @@ jobs:
           node --test tests/art-asset-manifest.test.mjs
           node scripts/validate-art-assets.mjs
       - name: Run deterministic Monte Carlo and module calibration tests
-        run: node --test tests/drop-probability-simulation.test.mjs tests/module-system.test.mjs
+        run: node --test tests/drop-probability-simulation.test.mjs tests/module-system.test.mjs tests/vehicle-chip-loadouts.test.mjs
