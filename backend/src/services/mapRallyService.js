@@ -79,23 +79,27 @@ export function startMapHunt(db, userId, user, payload = {}) {
     if (!target) return businessError(400, "Unknown hunt target");
     const formation = getHeroSnapshot(user, payload.heroIds);
     if (!formation) return businessError(400, "Formation must contain 1–5 unique owned heroes");
+    const troopCount = payload.troopCount === undefined ? 0 : payload.troopCount;
+    if (!Number.isSafeInteger(troopCount) || troopCount < 0 || troopCount > 1_000_000) return businessError(400, "Invalid troop count");
+    if (troopCount > user.v1.troops) return businessError(409, "Not enough available troops");
     const operationId = validId(payload.operationId) ? payload.operationId : "";
     if (!operationId) return businessError(400, "operationId is required");
     const prior = db.hunts[operationId];
     if (prior) {
         if (prior.playerId !== userId) return businessError(409, "operationId already used");
-        return { ...prior, resources: { ...user.v1.resources }, replayed: true };
+        return { ...prior, resources: { ...user.v1.resources }, troops: user.v1.troops, replayed: true };
     }
     if (user.v1.resources.energy < target.energyCost) return businessError(409, "Insufficient energy");
     const now = Date.now();
     const huntId = `hunt_${crypto.randomUUID()}`;
     const hunt = {
         huntId, operationId, playerId: userId, targetId, kind: target.kind, level: target.level,
-        formation, troopCount: validTroops(payload.troopCount) ? payload.troopCount : 0,
+        formation, troopCount,
         energyCost: target.energyCost, startedAtMs: now, endsAtMs: now + target.travelMs,
         status: "marching", rewardReceipt: null, result: null
     };
     user.v1.resources.energy -= target.energyCost;
+    user.v1.troops -= troopCount;
     user.v1.marches.push({ marchId: huntId, targetId, departAtMs: now, arriveAtMs: hunt.endsAtMs, status: "marching" });
     db.hunts[operationId] = hunt;
     user.v1.stateVersion = (user.v1.stateVersion || 0) + 1;
@@ -114,6 +118,7 @@ export function createMapRally(db, userId, user, payload = {}) {
     if (!formation) return businessError(400, "Formation must contain 1–5 unique owned heroes");
     const troopCount = payload.troopCount;
     if (!validTroops(troopCount)) return businessError(400, "Invalid troop count");
+    if (troopCount > user.v1.troops) return businessError(409, "Not enough available troops");
     if (user.v1.resources.energy < target.energyCost) return businessError(409, "Insufficient energy");
     const operationId = validId(payload.operationId) ? payload.operationId : "";
     if (!operationId) return businessError(400, "operationId is required");
@@ -131,6 +136,7 @@ export function createMapRally(db, userId, user, payload = {}) {
         result: null, rewardReceipts: {}
     };
     user.v1.resources.energy -= target.energyCost;
+    user.v1.troops -= troopCount;
     db.rallies[operationId] = rally;
     user.v1.stateVersion = (user.v1.stateVersion || 0) + 1;
     return { ...rally, resources: { ...user.v1.resources } };
@@ -147,6 +153,7 @@ export function joinMapRally(db, userId, user, operationId, payload = {}) {
     const formation = getHeroSnapshot(user, payload.heroIds);
     if (!formation) return businessError(400, "Formation must contain 1–5 unique owned heroes");
     if (!validTroops(payload.troopCount)) return businessError(400, "Invalid troop count");
+    if (payload.troopCount > user.v1.troops) return businessError(409, "Not enough available troops");
     const target = HUNT_TARGETS[rally.targetId];
     if (!target || user.v1.resources.energy < target.energyCost) return businessError(409, "Insufficient energy or invalid target");
     const participant = { playerId: userId, heroIds: formation.map(hero => hero.heroId), formation, troopCount: payload.troopCount, energyCost: target.energyCost, joinedAtMs: Date.now() };
@@ -183,7 +190,7 @@ export function resolveMapHunt(db, userId, user, operationId, nowMs = Date.now()
     const hunt = db.hunts?.[operationId];
     if (!hunt) return businessError(404, "Hunt not found");
     if (hunt.playerId !== userId) return businessError(403, "Only the hunt owner can resolve it");
-    if (hunt.result && hunt.rewardReceipt) return { ...hunt, resources: { ...user.v1.resources }, replayed: true };
+    if (hunt.result && hunt.rewardReceipt) return { ...hunt, resources: { ...user.v1.resources }, troops: user.v1.troops, replayed: true };
     if (hunt.status !== "marching") return businessError(409, "Hunt is not marching");
     if (nowMs < hunt.endsAtMs) return businessError(409, "The march has not arrived yet");
     const target = HUNT_TARGETS[hunt.targetId];
@@ -199,13 +206,16 @@ export function resolveMapHunt(db, userId, user, operationId, nowMs = Date.now()
         resolvedAtMs: nowMs
     };
     grantResources(user, rewards);
-    const receipt = { receiptId: `reward_${result.resultId}_${userId}`, playerId: userId, resultId: result.resultId, rewards, grantedAtMs: nowMs };
+    const troopsLost = Math.floor((Number(hunt.troopCount) || 0) * (won ? 0.02 : 0.25));
+    const troopsReturned = Math.max(0, (Number(hunt.troopCount) || 0) - troopsLost);
+    user.v1.troops += troopsReturned;
+    const receipt = { receiptId: `reward_${result.resultId}_${userId}`, playerId: userId, resultId: result.resultId, rewards, troopsCommitted: Number(hunt.troopCount) || 0, troopsLost, troopsReturned, grantedAtMs: nowMs };
     hunt.status = "completed";
     hunt.result = result;
     hunt.rewardReceipt = receipt;
     hunt.completedAtMs = nowMs;
     user.v1.marches = (user.v1.marches || []).map(march => march.marchId === hunt.huntId ? { ...march, status: "completed" } : march);
-    return { ...hunt, rewardReceipt: receipt, resources: { ...user.v1.resources }, replayed: false };
+    return { ...hunt, rewardReceipt: receipt, resources: { ...user.v1.resources }, troops: user.v1.troops, replayed: false };
 }
 
 export function resolveMapRally(db, userId, user, operationId, nowMs = Date.now()) {
@@ -241,16 +251,21 @@ export function resolveMapRally(db, userId, user, operationId, nowMs = Date.now(
         const participantUser = db.users[participant.playerId];
         const rewards = rewardsFor(target, won);
         grantResources(participantUser, rewards);
+        const troopsCommitted = Number(participant.troopCount) || 0;
+        const troopsLost = Math.floor(troopsCommitted * (won ? 0.02 : 0.25));
+        const troopsReturned = Math.max(0, troopsCommitted - troopsLost);
+        participantUser.v1.troops += troopsReturned;
         rewardReceipts[participant.playerId] = {
             receiptId: `reward_${result.resultId}_${participant.playerId}`,
-            playerId: participant.playerId, resultId: result.resultId, rewards, grantedAtMs: nowMs
+            playerId: participant.playerId, resultId: result.resultId, rewards,
+            troopsCommitted, troopsLost, troopsReturned, grantedAtMs: nowMs
         };
     }
     rally.status = "completed";
     rally.result = result;
     rally.rewardReceipts = rewardReceipts;
     rally.completedAtMs = nowMs;
-    return { rally, rewardReceipt: rewardReceipts[userId] || null, resources: { ...user.v1.resources }, replayed: false };
+    return { rally, rewardReceipt: rewardReceipts[userId] || null, resources: { ...user.v1.resources }, troops: user.v1.troops, replayed: false };
 }
 
 export function getMapRally(db, userId, user, operationId) {
