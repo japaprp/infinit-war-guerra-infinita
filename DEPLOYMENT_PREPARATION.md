@@ -1,13 +1,19 @@
 # Deployment preparation
 
-This repository is prepared for a hosted API, but it is **not deploy-ready until the actual frontend and API origins are confirmed**.
+This repository has a staged browser-only package and a hosted API blueprint, but it is **not deploy-ready until tests pass and the actual frontend/API origins are confirmed**.
 
 ## Frontend API URL
 
 - Local development on `localhost` or `127.0.0.1` defaults to `http://localhost:4000`.
-- Hosted environments intentionally have no implicit API URL. The `index.html` and `game.html` pages now expose `<meta name="iwar-api-base-url" content="">`; once the backend URL is known, set that value to the confirmed HTTPS API origin on both pages. `api/config.js` reads this metadata while preserving the local-only localhost default.
+- Hosted environments intentionally have no implicit API URL. The pages under `frontend/public/` expose `<meta name="iwar-api-base-url" content="">`; once the backend URL is known, set that value to the confirmed HTTPS API origin in both pages. `api/config.js` reads this metadata while preserving the local-only localhost default.
 - Do not commit secrets or invent a production URL.
-- `index.html` has a Content Security Policy. Once the actual API hostname is confirmed, add that exact HTTPS origin to `connect-src`; do not use a broad wildcard.
+- The current Content Security Policies still mention localhost. Once the actual API hostname is confirmed, add that exact HTTPS origin to `connect-src`; do not use a broad wildcard.
+
+## Public frontend package
+
+The static-site publish root must be `frontend/public/` only, never the repository root. This folder contains a deliberately narrow allowlist of browser HTML, CSS, and JavaScript files. `tests/public-frontend-package.test.mjs` enforces the exact allowlist, checks staged files match the source files, and validates local HTML dependencies.
+
+The package is **staged, not yet approved for publication**. Keep the static site undeployed until the new test passes and all workflows finish successfully. Do not add backend source, tests, environment examples, scripts, Electron files, or internal documentation to `frontend/public/`.
 
 ## Backend environment
 
@@ -20,10 +26,6 @@ Required for a hosted instance:
 - Strong, unique `JWT_SECRET` and `RECEIPT_SECRET` values, configured in the hosting dashboard rather than committed to Git
 
 The API currently supports MySQL via `mysql2`. The JSON-file driver is suitable for local development only on hosts with ephemeral filesystems; it must not be used for persistent hosted gameplay. In production, startup now fails if MySQL cannot initialize, and reads/writes refuse to fall back to a local JSON file. Configure `MYSQL_SSL=true` when the database provider requires TLS.
-
-## Frontend hosting boundary
-
-The current browser client files (`index.html`, `game.html`, JavaScript, CSS, and assets) are stored at the repository root alongside backend code and internal project files. Do **not** publish the repository root as a static site (`staticPublishPath: .`): that risks exposing backend source and development artifacts as public web files. Before adding a static-site service, move or copy only the required browser assets into a dedicated public directory, update and test relative paths, and verify the published file manifest contains no backend code, tests, environment examples, or internal docs. This isolation is intentionally not done in the deployment-preparation branch because it is a separate, potentially breaking packaging change.
 
 ## Render API blueprint
 
@@ -40,8 +42,7 @@ The backend exposes `GET /health`. After the service is deployed, validate:
 
 ## Explicit blockers
 
-No hosting service, database, DNS record, production secret, or deployment was created or changed by this preparation. A GitHub Actions workflow was added to run configuration and backend integration tests on relevant pushes and pull requests. The public frontend origin and API URL are still unknown, and PR #14's expedition routes must be reviewed and integrated before the production branch can serve those routes.
-
+No hosting service, database, DNS record, production secret, or deployment was created or changed. The public frontend origin and API URL are still unknown, and PR #14's expedition routes must be reviewed and integrated before the production branch can serve those routes. PRs for packaging and deployment remain drafts until checks and review complete.
 
 ## Free database provider decision
 
