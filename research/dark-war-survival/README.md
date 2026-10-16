@@ -24,9 +24,9 @@ O repositório é **público**. As capturas podem conter nome de jogador, ID, al
 
 A primeira leitura visual foi registrada em `index.md`. Valores exatos de custos, probabilidades e bônus ainda precisam de transcrição estruturada e, quando possível, de testes controlados. Nenhuma hipótese é tratada como fato sem evidência.
 
-
 ## Relatórios comparativos adicionados
 
 - [industrial-source-comparison.md](./industrial-source-comparison.md): comparação da calculadora comunitária dws505 com outras fontes de custos industriais, incluindo divergências por construção/tier.
+- [industrial-costs-and-mechanics.md](./industrial-costs-and-mechanics.md): tabela de custos por estágio I1–I8 e comparação adicional de totais da Torre de Vigia I9–I10, com grau de confiança e divergências entre fontes comunitárias.
 - [equipment-chips-source-comparison.md](./equipment-chips-source-comparison.md): comparação das capturas de chips/equipamentos com o protótipo atual, limitações do modelo de slots e probabilidades.
 - [Issue #16 — quatro slots, presets e ressonância](https://github.com/japaprp/infinit-war-guerra-infinita/issues/16): trabalho rastreável para confirmar as regras visuais e modelá-las com testes.
