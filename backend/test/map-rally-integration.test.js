@@ -116,6 +116,10 @@ test("map hunt resolves after arrival and grants rewards only once", async () =>
         assert.equal(resolved.body.rewardReceipt.troopsCommitted, 100);
         assert.equal(resolved.body.rewardReceipt.troopsReturned + resolved.body.rewardReceipt.troopsLost, 100);
         const afterFirst = (await readDb()).users["guest:hunt_combat_player"].v1;
+        if (resolved.body.chestReward) {
+            assert.equal(resolved.body.result.outcome, "victory", "combat chests can only drop on victory");
+            assert.ok(afterFirst.inventory.chests.some(chest => chest.id === resolved.body.chestReward.chestId), "combat chest must be in the server-owned inventory");
+        }
         assert.equal(afterFirst.resources.gold, resolved.body.rewardReceipt.rewards.gold);
         assert.equal(afterFirst.resources.food, resolved.body.rewardReceipt.rewards.food);
         assert.equal(afterFirst.troops, resolved.body.troops);
@@ -124,7 +128,9 @@ test("map hunt resolves after arrival and grants rewards only once", async () =>
         assert.equal(retry.status, 200);
         assert.equal(retry.body.replayed, true);
         assert.equal(retry.body.rewardReceipt.receiptId, resolved.body.rewardReceipt.receiptId);
+        assert.deepEqual(retry.body.chestReward || null, resolved.body.chestReward || null, "retry must return the original chest result");
         const afterRetry = (await readDb()).users["guest:hunt_combat_player"].v1;
+        assert.equal(afterRetry.inventory.chests.length, afterFirst.inventory.chests.length, "retry must not generate another chest");
         assert.equal(afterRetry.resources.gold, afterFirst.resources.gold, "retry must not grant gold twice");
         assert.equal(afterRetry.troops, afterFirst.troops, "retry must not return troops twice");
     } finally {
