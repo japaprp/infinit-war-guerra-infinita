@@ -2147,7 +2147,9 @@ async function pullStateFromBackend() {
             chips: Array.isArray(state.inventory.chips) ? state.inventory.chips : [],
             chipMaterials: Number.isFinite(state.inventory.chipMaterials) ? state.inventory.chipMaterials : 0
         };
-        if (remote.state.vehicleAccessories) state.vehicleAccessories = window.IWVehicleAccessories.normalizeState(remote.state.vehicleAccessories);
+        if (remote.state.vehicleAccessories && !state.vehicleAccessories?.inventory?.length) {
+            state.vehicleAccessories = window.IWVehicleAccessories.normalizeState(remote.state.vehicleAccessories);
+        }
         state.selectedHeroId = remote.state.selectedHeroId || state.selectedHeroId;
         state.activeHeroTab = remote.state.activeHeroTab || state.activeHeroTab;
         state.activeSquadSlot = Number.isFinite(remote.state.activeSquadSlot) ? remote.state.activeSquadSlot : state.activeSquadSlot;
