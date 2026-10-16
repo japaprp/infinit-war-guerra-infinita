@@ -112,10 +112,18 @@
         try {
             await user.reload();
             const refreshedUser = auth.currentUser || user;
-            const tokenResult = await refreshedUser.getIdTokenResult();
-            const signInProvider = tokenResult.claims && tokenResult.claims.firebase
+            let tokenResult = await refreshedUser.getIdTokenResult();
+            let signInProvider = tokenResult.claims && tokenResult.claims.firebase
                 ? tokenResult.claims.firebase.sign_in_provider
                 : "";
+            // Verification changes the Firebase user profile; refresh the ID token so its email_verified claim is current.
+            if (signInProvider === "password" && refreshedUser.emailVerified && tokenResult.claims.email_verified !== true) {
+                await refreshedUser.getIdToken(true);
+                tokenResult = await refreshedUser.getIdTokenResult();
+                signInProvider = tokenResult.claims && tokenResult.claims.firebase
+                    ? tokenResult.claims.firebase.sign_in_provider
+                    : signInProvider;
+            }
             const requiresEmailVerification = signInProvider === "password" && !refreshedUser.emailVerified;
 
             if (requiresEmailVerification) {
