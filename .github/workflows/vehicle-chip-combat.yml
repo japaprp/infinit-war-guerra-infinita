@@ -16,4 +16,4 @@ jobs:
         with:
           node-version: 24
       - name: Test vehicle loadouts and active combat bonuses
-        run: node --test tests/vehicle-chip-loadouts.test.mjs tests/vehicle-chip-combat.test.mjs
+        run: node --test tests/vehicle-chip-loadouts.test.mjs tests/vehicle-chip-combat.test.mjs tests/vehicle-chip-preset-integration.test.mjs
