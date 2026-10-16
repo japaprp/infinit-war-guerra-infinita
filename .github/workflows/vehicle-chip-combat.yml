@@ -1,0 +1,19 @@
+name: Vehicle Chip Combat
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  vehicle-chip-combat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Test vehicle loadouts and active combat bonuses
+        run: node --test tests/vehicle-chip-loadouts.test.mjs tests/vehicle-chip-combat.test.mjs
