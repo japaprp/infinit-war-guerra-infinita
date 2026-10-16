@@ -207,6 +207,7 @@ const ui = {
     expeditionPanel: document.getElementById("expeditionPanel"),
     openVehicleAccessoriesBtn: document.getElementById("openVehicleAccessoriesBtn"),
     vehicleAccessoriesPanel: document.getElementById("vehicleAccessoriesPanel"),
+    closeVehicleAccessoriesBtn: document.getElementById("closeVehicleAccessoriesBtn"),
     vehicleAccessoryType: document.getElementById("vehicleAccessoryType"),
     vehicleAccessoryStatus: document.getElementById("vehicleAccessoryStatus"),
     vehicleAccessoryInventory: document.getElementById("vehicleAccessoryInventory"),
@@ -2267,6 +2268,7 @@ function bindUiActions() {
         if (ui.vehicleAccessoriesPanel.classList.contains("open")) closeVehicleAccessoriesPanel();
         else openVehicleAccessoriesPanel();
     });
+    ui.closeVehicleAccessoriesBtn?.addEventListener("click", closeVehicleAccessoriesPanel);
 
     ui.closeShopBtn.addEventListener("click", () => {
         closeShopPanel();
