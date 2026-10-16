@@ -57,10 +57,10 @@ export async function verifyFirebaseIdToken(idToken, projectId, options = {}) {
     if (!Number.isFinite(claims.exp) || claims.exp <= nowSeconds) {
         throw new Error("Firebase ID token is expired");
     }
-    if (!Number.isFinite(claims.iat) || claims.iat > nowSeconds + 60 || claims.iat >= claims.exp) {
+    if (!Number.isFinite(claims.iat) || claims.iat > nowSeconds + 60 || claims.iat >= claims.exp || claims.exp - claims.iat > 3660) {
         throw new Error("Firebase ID token issue time is invalid");
     }
-    if (typeof claims.auth_time !== "number" || claims.auth_time > nowSeconds + 60) {
+    if (!Number.isFinite(claims.auth_time) || claims.auth_time > nowSeconds + 60 || claims.auth_time > claims.iat) {
         throw new Error("Firebase ID token authentication time is invalid");
     }
 
