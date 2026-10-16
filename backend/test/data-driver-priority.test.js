@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
 
 const envModuleUrl = new URL("../src/config/env.js", import.meta.url).href;
 
