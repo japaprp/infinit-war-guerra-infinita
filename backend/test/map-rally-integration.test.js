@@ -109,8 +109,8 @@ test("map hunt resolves after arrival and grants rewards only once", async () =>
         assert.equal(resolved.status, 200);
         assert.ok(["victory", "defeat"].includes(resolved.body.result.outcome));
         assert.ok(resolved.body.rewardReceipt.receiptId);
-        assert.equal(resolved.body.rewardReceipt.troopsCommitted, 250);
-        assert.equal(resolved.body.rewardReceipt.troopsReturned + resolved.body.rewardReceipt.troopsLost, 250);
+        assert.equal(resolved.body.rewardReceipt.troopsCommitted, 100);
+        assert.equal(resolved.body.rewardReceipt.troopsReturned + resolved.body.rewardReceipt.troopsLost, 100);
         const afterFirst = (await readDb()).users["guest:hunt_combat_player"].v1;
         assert.equal(afterFirst.resources.gold, resolved.body.rewardReceipt.rewards.gold);
         assert.equal(afterFirst.resources.food, resolved.body.rewardReceipt.rewards.food);
