@@ -10,6 +10,8 @@ process.env.IWAR_DB_PATH = path.join(tmpDir, "db.json");
 const { createApp } = await import("../src/app.js");
 const { initializeRepository, readDb, writeDb } = await import("../src/repositories/dbRepository.js");
 const { initializeRedis } = await import("../src/services/redisService.js");
+const { grantCombatChestDrop, getServerChests } = await import("../src/services/v1StubService.js");
+const { ensureV1State } = await import("../src/services/userService.js");
 
 const env = {
     PORT: 0, GRPC_PORT: 50051, JWT_SECRET: "map_rally_test_secret",
@@ -356,4 +358,38 @@ test("vehicle chip loadouts are server-owned and upgrades consume only unequippe
     } finally {
         await server.stop();
     }
+});
+
+
+test("combat chest drop receipts are idempotent for both wins and losses", () => {
+    const user = {};
+    ensureV1State(user);
+    let randomCalls = 0;
+    const guaranteedDrop = (min, max) => {
+        randomCalls += 1;
+        assert.equal(min, 0);
+        assert.equal(max, 100);
+        return 0;
+    };
+
+    const first = grantCombatChestDrop(user, true, "unit-hunt-win", guaranteedDrop);
+    assert.ok(first?.chestId);
+    assert.equal(first.type, "explorer");
+    assert.equal(randomCalls, 1);
+    assert.equal(getServerChests(user).chests.length, 1);
+
+    const retry = grantCombatChestDrop(user, true, "unit-hunt-win", () => {
+        throw new Error("an idempotent retry must not reroll");
+    });
+    assert.deepEqual(retry, first);
+    assert.equal(getServerChests(user).chests.length, 1, "retry must not duplicate a chest");
+
+    const loss = grantCombatChestDrop(user, false, "unit-hunt-loss", guaranteedDrop);
+    assert.equal(loss, null);
+    const lossRetry = grantCombatChestDrop(user, true, "unit-hunt-loss", () => {
+        throw new Error("a recorded loss must not become a win drop on retry");
+    });
+    assert.equal(lossRetry, null);
+    assert.equal(randomCalls, 1, "losses must not roll for a chest");
+    assert.equal(getServerChests(user).chests.length, 1);
 });
