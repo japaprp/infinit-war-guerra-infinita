@@ -200,6 +200,11 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.equal(first.body.resources.food, first.body.rewards.food);
         assert.equal(first.body.resources.energy, 85);
         assert.ok(first.body.vehicleChipReward, "the first completed expedition grants a server-owned starter chip");
+        assert.equal(first.body.chestReward?.type, "explorer", "the first completed expedition grants a server-owned explorer chest");
+        const serverChests = await api(server.baseUrl, "GET", "/v1/inventory/chests", { token });
+        assert.equal(serverChests.status, 200);
+        assert.equal(serverChests.body.chests.length, 1);
+        assert.equal(serverChests.body.chests[0].id, first.body.chestReward.id);
         assert.ok(["recon-array", "supply-core"].includes(first.body.vehicleChipReward.typeId));
         assert.equal(first.body.vehicleChipReward.level, 1);
         assert.equal(first.body.vehicleChipReward.source, "first-expedition");
@@ -252,6 +257,56 @@ test("expedition reward is server-timed, persisted, and claimable only once", as
         assert.equal(persisted.users["guest:it_expedition_1"].v1.vehicle.chips.length, 1, "retry and restart must not duplicate the starter chip");
         assert.equal(persisted.users["guest:it_expedition_1"].v1.vehicle.firstExpeditionRewardClaimed, true);
         assert.equal(Object.keys(persisted.users["guest:it_expedition_1"].v1.expedition.receipts).length, 1);
+    } finally {
+        await server.stop();
+    }
+});
+
+test("server-owned module chests are consumed once and reject forged IDs", async () => {
+    await fs.rm(dbPath, { force: true });
+    const server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_server_chest_1" }
+        });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+        const db = await readDb();
+        const user = db.users["guest:it_server_chest_1"];
+        user.v1.inventory = {
+            chests: [{ id: "chest_test_module_1", type: "module", name: "Baú de Módulos", source: "server" }],
+            chestReceipts: {},
+            chipMaterials: 0,
+            shards: { bronze: 0, silver: 0, gold: 0 },
+            equipment: []
+        };
+        await writeDb(db);
+
+        const forged = await api(server.baseUrl, "POST", "/v1/inventory/chests/not-owned/open", {
+            token, headers: { "x-idempotency-key": "forged-chest-open" }, body: { idempotencyKey: "forged-chest-open" }
+        });
+        assert.equal(forged.status, 404);
+
+        const opened = await api(server.baseUrl, "POST", "/v1/inventory/chests/chest_test_module_1/open", {
+            token, headers: { "x-idempotency-key": "module-chest-open-1" }, body: { idempotencyKey: "module-chest-open-1" }
+        });
+        assert.equal(opened.status, 200);
+        assert.equal(opened.body.chestId, "chest_test_module_1");
+        assert.ok(["chip", "chipMaterials"].includes(opened.body.reward.type));
+
+        const replay = await api(server.baseUrl, "POST", "/v1/inventory/chests/chest_test_module_1/open", {
+            token, headers: { "x-idempotency-key": "module-chest-open-2" }, body: { idempotencyKey: "module-chest-open-2" }
+        });
+        assert.equal(replay.status, 200);
+        assert.equal(replay.body.alreadyOpened, true);
+        assert.deepEqual(replay.body.reward, opened.body.reward);
+
+        const persisted = await readDb();
+        const saved = persisted.users["guest:it_server_chest_1"].v1;
+        assert.equal(saved.inventory.chests.length, 0);
+        assert.ok(saved.inventory.chestReceipts.chest_test_module_1);
+        if (opened.body.reward.type === "chip") assert.equal(saved.vehicle.chips.length, 1);
+        if (opened.body.reward.type === "chipMaterials") assert.equal(saved.inventory.chipMaterials, opened.body.reward.amount);
     } finally {
         await server.stop();
     }
