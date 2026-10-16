@@ -262,32 +262,32 @@ test("vehicle chip loadouts are server-owned and upgrades consume only unequippe
                 { id: "assault-copy-4", typeId: "assault-module", level: 1 },
                 { id: "assault-copy-5", typeId: "assault-module", level: 1 }
             ],
-            activePreset: "preset-1",
+            activePreset: "I",
             presets: {
-                "preset-1": { "slot-1": null, "slot-2": null, "slot-3": null, "slot-4": null },
-                "preset-2": { "slot-1": null, "slot-2": null, "slot-3": null, "slot-4": null },
-                "preset-3": { "slot-1": null, "slot-2": null, "slot-3": null, "slot-4": null }
+                "I": { "assault": null, "vanguard": null, "suppression": null, "gravity": null },
+                "II": { "assault": null, "vanguard": null, "suppression": null, "gravity": null },
+                "III": { "assault": null, "vanguard": null, "suppression": null, "gravity": null }
             }
         };
         await writeDb(db);
 
         const forged = await request(server.baseUrl, "POST", "/v1/vehicle/chips/equip", {
-            token, body: { chipId: "not-owned", slotId: "slot-1", presetId: "preset-1", level: 10, bonusPct: 999999 }
+            token, body: { chipId: "not-owned", slotId: "assault", presetId: "I", level: 10, bonusPct: 999999 }
         });
         assert.equal(forged.status, 404, "client cannot equip a chip it does not own");
 
         const equipped = await request(server.baseUrl, "POST", "/v1/vehicle/chips/equip", {
-            token, body: { chipId: "assault-main", slotId: "slot-1", presetId: "preset-1", level: 10, bonusPct: 999999 }
+            token, body: { chipId: "assault-main", slotId: "assault", presetId: "I", level: 10, bonusPct: 999999 }
         });
         assert.equal(equipped.status, 200);
         assert.equal(equipped.body.inventory.find(chip => chip.id === "assault-main").level, 1);
-        assert.equal(equipped.body.presets["preset-1"]["slot-1"], "assault-main");
+        assert.equal(equipped.body.presets["I"]["assault"], "assault-main");
 
         const upgrade = await request(server.baseUrl, "POST", "/v1/vehicle/chips/assault-main/upgrade", { token, body: {} });
         assert.equal(upgrade.status, 200);
         assert.equal(upgrade.body.inventory.length, 1);
         assert.equal(upgrade.body.inventory[0].level, 2);
-        assert.equal(upgrade.body.presets["preset-1"]["slot-1"], "assault-main", "upgrading preserves the equipped main chip");
+        assert.equal(upgrade.body.presets["I"]["assault"], "assault-main", "upgrading preserves the equipped main chip");
         assert.equal(upgrade.body.inventory[0].bonusPct, 42.2);
 
         const hunt = await request(server.baseUrl, "POST", "/v1/world/hunts/start", {
