@@ -98,3 +98,32 @@ test("new accounts start with clean progression instead of copied endgame data",
     assert.match(defaultState, /energy:\s*100/,
         "starting energy is an explicit prototype allowance, not inherited account progress");
 });
+
+test("fresh account unlocks heroes progressively and starts with a single-hero squad", async () => {
+    const source = await readFile(SOURCE_URL, "utf8");
+    const templateStart = source.indexOf("const heroTemplates = [");
+    const templateEnd = source.indexOf("];", templateStart);
+    const templates = source.slice(templateStart, templateEnd + 2);
+    const unlockOrders = [...templates.matchAll(/id:\s*"([^"]+)"\s*,\s*unlockOrder:\s*(\d+)/g)]
+        .map((match) => ({ id: match[1], order: Number(match[2]) }));
+    assert.ok(unlockOrders.length >= 2, "hero templates must declare a progressive unlock order");
+    assert.equal(new Set(unlockOrders.map((hero) => hero.order)).size, unlockOrders.length,
+        "hero unlock order must not contain duplicates");
+    assert.equal(Math.min(...unlockOrders.map((hero) => hero.order)), 1);
+    assert.ok(unlockOrders.filter((hero) => hero.order > 1).length > 0,
+        "new players should have heroes left to unlock");
+
+    const factoryStart = source.indexOf("function createHeroState(template) {");
+    const defaultStart = source.indexOf("function createDefaultState() {");
+    const loadStart = source.indexOf("function loadState() {");
+    const heroFactory = source.slice(factoryStart, defaultStart);
+    const defaultState = source.slice(defaultStart, loadStart);
+    assert.match(heroFactory, /unlocked:\s*template\.unlockOrder\s*<=\s*INITIAL_UNLOCKED/,
+        "fresh hero unlock state must be derived from the initial unlock threshold");
+    assert.match(defaultState, /squad:\s*\[\s*"lucas",\s*null,\s*null,\s*null,\s*null\s*\]/,
+        "a fresh squad must not contain a full endgame formation");
+    assert.match(defaultState, /selectedHeroId:\s*"lucas"/,
+        "the initial selected hero must be available to a fresh account");
+    assert.match(source, /if\s*\(!heroState\s*\|\|\s*!heroState\.unlocked\)\s*return;/,
+        "locked heroes must not be assignable to the squad");
+});
