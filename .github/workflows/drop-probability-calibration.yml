@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+      - "fix/**"
+      - "feat/**"
     paths:
       - ".github/workflows/drop-probability-calibration.yml"
       - "tests/art-asset-manifest.test.mjs"
