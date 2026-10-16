@@ -155,3 +155,26 @@ Fontes secundárias consultadas:
 - Verificar se as fontes comunitárias se referem à mesma versão, temporada e região do jogo.
 - Obter acesso a mensagens específicas do Discord somente por páginas públicas, links de mensagens acessíveis ou exportações/capturas fornecidas; não presumir acesso a canais privados.
 - Para Guerra Infinita, decidir separadamente o custo de fabricação, a curva de ascensão e a fórmula de ressonância; usar as fontes apenas como referências comparativas.
+
+
+## Auditoria de YouTube e tentativa de TikTok — 2026-10-16
+
+### YouTube: fontes localizadas nesta varredura
+
+1. [Esta es la forma de utilizar los chips de vehículo — transcrição do vídeo](https://www.youtubetranslate.net/en/watch?v=F7xblHuCq4U). Confirma na transcrição a distribuição do baú verde 65% verde, 30% azul, 4,8% roxo e 0,2% laranja; baú roxo com 85% roxo/15% laranja; baú laranja com chip laranja garantido. É fonte secundária baseada em legendas/tradução, não um documento oficial.
+2. [How to Install Chip in Dark War Survival — transcrição do vídeo](https://www.youtubetranslate.net/it/watch?v=k2sj5lFyhOA). Relata seleção de facção por formação/veículo, fábrica de chips, recompensas de baús de Alliance Duel e Zombie Siege. O próprio vídeo aparenta ser da fase inicial de lançamento do sistema, então informações de eventos devem ser datadas e não presumidas atuais.
+3. [Dark War Survival Players MISSED This About CHIPS — transcrição do vídeo](https://www.youtubetranslate.net/zh/watch?v=8FRAaj6SHHM). Relato de jogador sobre ressonância, bônus de conjunto e comparação entre chips; usar como experiência demonstrativa, não como especificação completa.
+4. [Guia de chips RDRZ Team (2026)](https://rdrzteam.com/dark-war-survival-chip-system-guide-2026/) e [Treyex Gaming — guia de chips](https://www.treyexgaming.com/dark-war-survival-chip-system-guide-chip-factions-skills/). Guias secundários úteis para tipos de chip, quatro espaços, facções e raridades; podem conter simplificações ou informações de versões específicas.
+5. [Histórico de versões do jogo](https://www.ipa4fun.com/history/835232/2/). Registra a introdução do sistema de chips em setembro de 2025 e fontes de obtenção citadas nas notas de atualização. É fonte de histórico de versão de terceiros, não substitui notas oficiais atuais.
+
+### TikTok: resultado e limitação
+
+- Foram executadas buscas públicas direcionadas a páginas indexadas do TikTok por “Dark War Survival”, chips e garagem.
+- O domínio TikTok bloqueou o acesso automatizado nesta consulta. Um resultado de TikTok Shop com o termo “Dark War Survival” era anúncio/produto irrelevante para mecânicas do jogo e foi descartado.
+- Não foi possível confirmar vídeos específicos do TikTok nesta rodada. Não afirmar que o TikTok foi completamente varrido; a pesquisa poderá ser complementada com URLs diretas, nomes de criadores ou capturas dos vídeos.
+
+### Separação de evidência
+
+- A transcrição de vídeo corrobora as probabilidades do baú verde já registradas, mas não confirma todos os baús nem todas as versões.
+- As regras de ressonância, facções por formação e custos de fabricação permanecem classificadas como informações de fontes secundárias até haver captura legível, teste controlado ou documentação oficial.
+- Nenhum valor de fonte externa altera automaticamente o balanceamento de Guerra Infinita. O jogo continua com progressão própria a partir do nível 1.
