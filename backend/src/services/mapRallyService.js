@@ -2,8 +2,8 @@ import crypto from "crypto";
 import { ensureV1State } from "./userService.js";
 
 const HUNT_TARGETS = Object.freeze({
-    "grey-forest-stalker": { energyCost: 15, travelMs: 30_000, level: 1, kind: "roaming_enemy" },
-    "old-ruins-brute": { energyCost: 15, travelMs: 45_000, level: 2, kind: "roaming_enemy" }
+    "grey-forest-stalker": { energyCost: 15, travelMs: 30_000, level: 1, kind: "roaming_enemy", enemyHp: 260_000, reward: { gold: 1200, food: 800, steel: 50 } },
+    "old-ruins-brute": { energyCost: 15, travelMs: 45_000, level: 2, kind: "roaming_enemy", enemyHp: 520_000, reward: { gold: 2400, food: 1600, steel: 100 } }
 });
 const RALLY_CAPACITY = 12;
 const ACTIVE_RALLY_STATES = new Set(["recruiting", "assembling", "marching", "resolving"]);
@@ -38,6 +38,40 @@ function isAllianceMember(user, allianceId) {
     return Boolean(allianceId && user.v1.alliances?.allianceId === allianceId);
 }
 
+const COMBAT_RULES_VERSION = "combat-v1";
+function hashNumber(value) {
+    let hash = 2166136261;
+    for (const char of String(value)) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
+    return hash >>> 0;
+}
+function formationPower(formation = []) {
+    return formation.reduce((total, hero) => total
+        + Math.max(0, Number(hero.stats?.power) || 0)
+        + Math.max(0, Number(hero.stats?.atk) || 0) * 2
+        + Math.max(0, Number(hero.stats?.def) || 0)
+        + Math.max(0, Number(hero.level) || 1) * 500
+        + Math.max(0, Number(hero.stars) || 1) * 1000, 0);
+}
+function combatDamage(power, operationId) {
+    const multiplier = 0.9 + (hashNumber(operationId) % 21) / 100;
+    return Math.max(1, Math.floor(power * multiplier));
+}
+function grantResources(user, rewards) {
+    ensureV1State(user);
+    for (const key of ["gold", "food", "steel"]) {
+        user.v1.resources[key] = Math.max(0, Number(user.v1.resources[key]) || 0) + Math.max(0, Number(rewards[key]) || 0);
+    }
+    user.v1.stateVersion = (user.v1.stateVersion || 0) + 1;
+}
+function rewardsFor(target, won) {
+    const factor = won ? 1 : 0.2;
+    return {
+        gold: Math.floor(target.reward.gold * factor),
+        food: Math.floor(target.reward.food * factor),
+        steel: Math.floor(target.reward.steel * factor)
+    };
+}
+
 export function startMapHunt(db, userId, user, payload = {}) {
     ensureCollections(db, user);
     const targetId = String(payload.targetId || "");
@@ -57,8 +91,9 @@ export function startMapHunt(db, userId, user, payload = {}) {
     const huntId = `hunt_${crypto.randomUUID()}`;
     const hunt = {
         huntId, operationId, playerId: userId, targetId, kind: target.kind, level: target.level,
-        formation, energyCost: target.energyCost, startedAtMs: now, endsAtMs: now + target.travelMs,
-        status: "marching", rewardReceipt: null
+        formation, troopCount: validTroops(payload.troopCount) ? payload.troopCount : 0,
+        energyCost: target.energyCost, startedAtMs: now, endsAtMs: now + target.travelMs,
+        status: "marching", rewardReceipt: null, result: null
     };
     user.v1.resources.energy -= target.energyCost;
     user.v1.marches.push({ marchId: huntId, targetId, departAtMs: now, arriveAtMs: hunt.endsAtMs, status: "marching" });
@@ -141,6 +176,81 @@ export function dispatchMapRally(db, userId, operationId) {
     rally.dispatchedAtMs = Date.now();
     rally.arrivesAtMs = rally.dispatchedAtMs + HUNT_TARGETS[rally.targetId].travelMs;
     return { rally };
+}
+
+export function resolveMapHunt(db, userId, user, operationId, nowMs = Date.now()) {
+    ensureCollections(db, user);
+    const hunt = db.hunts?.[operationId];
+    if (!hunt) return businessError(404, "Hunt not found");
+    if (hunt.playerId !== userId) return businessError(403, "Only the hunt owner can resolve it");
+    if (hunt.result && hunt.rewardReceipt) return { ...hunt, resources: { ...user.v1.resources }, replayed: true };
+    if (hunt.status !== "marching") return businessError(409, "Hunt is not marching");
+    if (nowMs < hunt.endsAtMs) return businessError(409, "The march has not arrived yet");
+    const target = HUNT_TARGETS[hunt.targetId];
+    if (!target) return businessError(409, "Hunt target is no longer available");
+    const power = formationPower(hunt.formation) + Math.max(0, Number(hunt.troopCount) || 0) * 40;
+    const damage = combatDamage(power, operationId);
+    const won = damage >= target.enemyHp;
+    const rewards = rewardsFor(target, won);
+    const result = {
+        resultId: `result_${crypto.createHash("sha256").update(operationId).digest("hex").slice(0, 24)}`,
+        rulesVersion: COMBAT_RULES_VERSION, outcome: won ? "victory" : "defeat",
+        playerPower: power, enemyHp: target.enemyHp, damage, remainingEnemyHp: Math.max(0, target.enemyHp - damage),
+        resolvedAtMs: nowMs
+    };
+    grantResources(user, rewards);
+    const receipt = { receiptId: `reward_${result.resultId}_${userId}`, playerId: userId, resultId: result.resultId, rewards, grantedAtMs: nowMs };
+    hunt.status = "completed";
+    hunt.result = result;
+    hunt.rewardReceipt = receipt;
+    hunt.completedAtMs = nowMs;
+    user.v1.marches = (user.v1.marches || []).map(march => march.marchId === hunt.huntId ? { ...march, status: "completed" } : march);
+    return { ...hunt, rewardReceipt: receipt, resources: { ...user.v1.resources }, replayed: false };
+}
+
+export function resolveMapRally(db, userId, user, operationId, nowMs = Date.now()) {
+    ensureCollections(db, user);
+    const rally = db.rallies?.[operationId];
+    if (!rally) return businessError(404, "Rally not found");
+    if (!isAllianceMember(user, rally.allianceId)) return businessError(403, "Only alliance members can resolve this rally");
+    if (rally.result && rally.status === "completed") {
+        return { rally, rewardReceipt: rally.rewardReceipts?.[userId] || null, replayed: true };
+    }
+    if (rally.status !== "marching") return businessError(409, "Rally must be marching before resolution");
+    if (nowMs < rally.arrivesAtMs) return businessError(409, "The rally has not arrived yet");
+    const target = HUNT_TARGETS[rally.targetId];
+    if (!target) return businessError(409, "Rally target is no longer available");
+    const participants = rally.participants || [];
+    const missingUsers = participants.filter(participant => !db.users?.[participant.playerId]);
+    if (missingUsers.length) return businessError(409, "A rally participant is no longer available");
+    const participantPowers = participants.map(participant => ({
+        playerId: participant.playerId,
+        power: formationPower(participant.formation) + Math.max(0, Number(participant.troopCount) || 0) * 40
+    }));
+    const totalPower = participantPowers.reduce((sum, participant) => sum + participant.power, 0);
+    const damage = combatDamage(totalPower, operationId);
+    const won = damage >= target.enemyHp;
+    const result = {
+        resultId: `result_${crypto.createHash("sha256").update(operationId).digest("hex").slice(0, 24)}`,
+        rulesVersion: COMBAT_RULES_VERSION, outcome: won ? "victory" : "defeat",
+        totalPower, enemyHp: target.enemyHp, damage, remainingEnemyHp: Math.max(0, target.enemyHp - damage),
+        participants: participantPowers, resolvedAtMs: nowMs
+    };
+    const rewardReceipts = {};
+    for (const participant of participants) {
+        const participantUser = db.users[participant.playerId];
+        const rewards = rewardsFor(target, won);
+        grantResources(participantUser, rewards);
+        rewardReceipts[participant.playerId] = {
+            receiptId: `reward_${result.resultId}_${participant.playerId}`,
+            playerId: participant.playerId, resultId: result.resultId, rewards, grantedAtMs: nowMs
+        };
+    }
+    rally.status = "completed";
+    rally.result = result;
+    rally.rewardReceipts = rewardReceipts;
+    rally.completedAtMs = nowMs;
+    return { rally, rewardReceipt: rewardReceipts[userId] || null, replayed: false };
 }
 
 export function getMapRally(db, userId, user, operationId) {
