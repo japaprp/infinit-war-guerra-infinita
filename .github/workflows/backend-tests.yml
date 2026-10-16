@@ -6,6 +6,7 @@ on:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
       - "api/**"
+      - "auth/**"
       - "index.html"
       - "game.html"
       - "render.yaml"
