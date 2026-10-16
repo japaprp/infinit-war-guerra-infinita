@@ -239,3 +239,57 @@ test("alliance rally enforces membership, unique entry, leader transitions and p
         await server.stop();
     }
 });
+
+
+test("vehicle chip loadouts are server-owned and upgrades consume only unequipped copies", async () => {
+    await fs.rm(process.env.IWAR_DB_PATH, { force: true });
+    const server = await startServer();
+    try {
+        const token = await login(server.baseUrl, "vehicle_loadout_player");
+        const empty = await request(server.baseUrl, "GET", "/v1/vehicle/loadout", { token });
+        assert.equal(empty.status, 200);
+        assert.equal(empty.body.inventory.length, 0);
+
+        // Seed inventory as if granted by a trusted server-side reward; never from a client sync payload.
+        const db = await readDb();
+        const user = db.users["guest:vehicle_loadout_player"];
+        user.v1.vehicle = {
+            chips: [
+                { id: "assault-main", typeId: "assault-module", level: 1 },
+                { id: "assault-copy-1", typeId: "assault-module", level: 1 },
+                { id: "assault-copy-2", typeId: "assault-module", level: 1 },
+                { id: "assault-copy-3", typeId: "assault-module", level: 1 },
+                { id: "assault-copy-4", typeId: "assault-module", level: 1 },
+                { id: "assault-copy-5", typeId: "assault-module", level: 1 }
+            ],
+            activePreset: "preset-1",
+            presets: {
+                "preset-1": { "slot-1": null, "slot-2": null, "slot-3": null, "slot-4": null },
+                "preset-2": { "slot-1": null, "slot-2": null, "slot-3": null, "slot-4": null },
+                "preset-3": { "slot-1": null, "slot-2": null, "slot-3": null, "slot-4": null }
+            }
+        };
+        await writeDb(db);
+
+        const forged = await request(server.baseUrl, "POST", "/v1/vehicle/chips/equip", {
+            token, body: { chipId: "not-owned", slotId: "slot-1", presetId: "preset-1", level: 10, bonusPct: 999999 }
+        });
+        assert.equal(forged.status, 404, "client cannot equip a chip it does not own");
+
+        const equipped = await request(server.baseUrl, "POST", "/v1/vehicle/chips/equip", {
+            token, body: { chipId: "assault-main", slotId: "slot-1", presetId: "preset-1", level: 10, bonusPct: 999999 }
+        });
+        assert.equal(equipped.status, 200);
+        assert.equal(equipped.body.inventory.find(chip => chip.id === "assault-main").level, 1);
+        assert.equal(equipped.body.presets["preset-1"]["slot-1"], "assault-main");
+
+        const upgrade = await request(server.baseUrl, "POST", "/v1/vehicle/chips/assault-main/upgrade", { token, body: {} });
+        assert.equal(upgrade.status, 200);
+        assert.equal(upgrade.body.inventory.length, 1);
+        assert.equal(upgrade.body.inventory[0].level, 2);
+        assert.equal(upgrade.body.presets["preset-1"]["slot-1"], "assault-main", "upgrading preserves the equipped main chip");
+        assert.equal(upgrade.body.inventory[0].bonusPct, 42.2);
+    } finally {
+        await server.stop();
+    }
+});
