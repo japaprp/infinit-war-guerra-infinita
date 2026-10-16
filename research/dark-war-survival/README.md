@@ -8,6 +8,7 @@ Esta pasta reúne evidências visuais usadas para análise comportamental e téc
 - `index.md`: catálogo inicial das observações por arquivo, sistema, evidência e perguntas em aberto.
 - Auditoria da pasta `screenshots/` na branch: **94 arquivos de imagem** (`.jpg`), mais `.gitkeep`. A referência histórica era de 96 imagens; portanto, **2 imagens previstas não aparecem na pasta atual** e ainda precisam ser localizadas. O maior identificador é `WA0288`, não o total de imagens.
 - Cruzamento com `index.md`: **94 nomes únicos catalogados**, sem arquivos da pasta fora do catálogo e sem nomes catalogados ausentes da pasta. O inventário menciona `WA0288` duas vezes; isso é repetição no texto, não um arquivo adicional. Existe também `IMG-20261015-WA0213(1).jpg`, que deve ser preservado como nome original.
+- Busca adicional nas árvores de todas as branches acessíveis do repositório: não localizei as duas imagens faltantes. Foram encontrados arquivos com identificadores de WhatsApp em outras branches (`IMG-20261015-WA0039.jpg` e `IMG-20261015-WA9463.jpg`), mas não há evidência de que sejam as duas imagens previstas; não os contei como parte deste conjunto.
 
 ## Regras de análise
 
