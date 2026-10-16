@@ -9,9 +9,10 @@ import { validateRuntimeConfig } from "../src/config/env.js";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
 
-function loadConfig(hostname, configuredApiUrl = "") {
+function loadConfig(hostname, configuredApiUrl = "", metaApiUrl = "") {
     const window = { location: { hostname }, IWAR_API_BASE_URL: configuredApiUrl };
-    vm.runInNewContext(read("api/config.js"), { window });
+    const document = { querySelector: (selector) => selector === 'meta[name="iwar-api-base-url"]' ? { content: metaApiUrl } : null };
+    vm.runInNewContext(read("api/config.js"), { window, document });
     return window;
 }
 
@@ -24,6 +25,12 @@ test("hosted configuration never silently defaults to localhost", () => {
     const hosted = loadConfig("infinit-war.example");
     assert.equal(hosted.IWAR_API_BASE_URL, "");
     assert.equal(hosted.GDE_API_BASE_URL, "");
+});
+
+test("the HTML meta configuration can provide the hosted API URL", () => {
+    const hosted = loadConfig("infinit-war.example", "", "https://api.example.test/");
+    assert.equal(hosted.IWAR_API_BASE_URL, "https://api.example.test");
+    assert.equal(hosted.GDE_API_BASE_URL, "https://api.example.test");
 });
 
 test("an explicitly configured API URL is preserved and normalized", () => {
