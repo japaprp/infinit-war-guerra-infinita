@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
+import chipLoadouts from "../engine/chip-loadouts.js";
+
+const {
     PRESETS,
     SLOTS,
     createDefaultLoadouts,
@@ -9,7 +11,7 @@ import {
     clearSlot,
     isChipInPreset,
     filledSlotCount
-} from "../engine/chip-loadouts.js";
+} = chipLoadouts;
 
 const chipIds = new Set(["chip-a", "chip-b", "chip-c", "chip-d"]);
 
