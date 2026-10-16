@@ -2312,7 +2312,7 @@ async function joinMapRallyFromPanel() {
     }
     try {
         const result = await api.joinAllianceRallyV1({ operationId, heroIds, troopCount });
-        mapRallyApplyEnergy(result);
+        mapRallySyncResources(result);
         mapRallySetStatus(`Você entrou na incursão ${operationId}.`);
         mapRallyRenderDetails(result.rally);
     } catch (error) {
