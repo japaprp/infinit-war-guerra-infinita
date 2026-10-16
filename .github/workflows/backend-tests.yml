@@ -32,7 +32,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Test deployment configuration
-        run: npm run test:config
+      - name: Test deployment readiness and configuration
+        run: npm run test:deploy
       - name: Test backend integration
         run: npm run test:integration
