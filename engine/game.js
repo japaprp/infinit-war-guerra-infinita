@@ -1842,10 +1842,11 @@ async function pullStateFromBackend() {
                     ...(Array.isArray(localExpedition.claimedIds) ? localExpedition.claimedIds : []),
                     ...(Array.isArray(remoteExpedition.claimedIds) ? remoteExpedition.claimedIds : [])
                 ])].slice(-200),
-                appliedReceiptIds: [...new Set([
-                    ...(Array.isArray(localExpedition.appliedReceiptIds) ? localExpedition.appliedReceiptIds : []),
-                    ...(Array.isArray(remoteExpedition.appliedReceiptIds) ? remoteExpedition.appliedReceiptIds : [])
-                ])].slice(-500),
+                // This ledger tracks receipts applied to this browser's local balance.
+                // Importing server-side IDs here can suppress recovery after localStorage is lost.
+                appliedReceiptIds: Array.isArray(localExpedition.appliedReceiptIds)
+                    ? [...new Set(localExpedition.appliedReceiptIds)].slice(-500)
+                    : [],
                 completedCount: Math.max(
                     Number.isFinite(localExpedition.completedCount) ? localExpedition.completedCount : 0,
                     Number.isFinite(remoteExpedition.completedCount) ? remoteExpedition.completedCount : 0
