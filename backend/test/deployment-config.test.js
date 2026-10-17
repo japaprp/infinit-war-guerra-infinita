@@ -73,18 +73,18 @@ test("production configuration rejects unsafe defaults and ephemeral JSON storag
     );
 });
 
-test("production configuration accepts explicit secrets, MySQL, and exact origins", () => {
+test("production configuration accepts explicit secrets, PostgreSQL, and exact origins", () => {
     assert.doesNotThrow(() => validateRuntimeConfig({
         NODE_ENV: "production",
             FIREBASE_PROJECT_ID: "infinit-war-test",
         JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
         RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
-        DATA_DRIVER: "mysql",
-        MYSQL_HOST: "mysql.example.test",
-        MYSQL_PORT: 3306,
+        DATA_DRIVER: "postgres",
+        MYSQL_HOST: "postgres.example.test",
+        MYSQL_PORT: 5432,
         MYSQL_DATABASE: "infinitwar",
         MYSQL_USER: "infinitwar_app",
-        MYSQL_PASSWORD: "database-password",
+        MYSQL_PASSWORD: "test-only-placeholder",
         CORS_ORIGINS: "https://game.example.test"
     }));
 });
@@ -96,11 +96,11 @@ test("production configuration rejects origins containing paths", () => {
             FIREBASE_PROJECT_ID: "infinit-war-test",
             JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
             RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
-            DATA_DRIVER: "mysql",
-            MYSQL_HOST: "mysql.example.test",
+            DATA_DRIVER: "postgres",
+            MYSQL_HOST: "postgres.example.test",
             MYSQL_DATABASE: "infinitwar",
             MYSQL_USER: "infinitwar_app",
-            MYSQL_PASSWORD: "database-password",
+            MYSQL_PASSWORD: "test-only-placeholder",
             CORS_ORIGINS: "https://game.example.test/path"
         }),
         /exact HTTPS origin/
@@ -108,19 +108,19 @@ test("production configuration rejects origins containing paths", () => {
 });
 
 
-test("production configuration rejects an invalid MySQL port", () => {
+test("production configuration rejects an invalid PostgreSQL port", () => {
     assert.throws(
         () => validateRuntimeConfig({
             NODE_ENV: "production",
             FIREBASE_PROJECT_ID: "infinit-war-test",
             JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
             RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
-            DATA_DRIVER: "mysql",
-            MYSQL_HOST: "mysql.example.test",
+            DATA_DRIVER: "postgres",
+            MYSQL_HOST: "postgres.example.test",
             MYSQL_PORT: 70000,
             MYSQL_DATABASE: "infinitwar",
             MYSQL_USER: "infinitwar_app",
-            MYSQL_PASSWORD: "database-password",
+            MYSQL_PASSWORD: "test-only-placeholder",
             CORS_ORIGINS: "https://game.example.test"
         }),
         /MYSQL_PORT must be an integer between 1 and 65535/
