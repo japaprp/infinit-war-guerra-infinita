@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: infinit-war-web
+    runtime: static
+    buildCommand: echo "No build step required; publishing reviewed browser-only files."
+    staticPublishPath: ./frontend/public
+    buildFilter:
+      paths:
+        - render-frontend.yaml
+        - frontend/public/**
+        - tests/public-frontend-package.test.mjs
