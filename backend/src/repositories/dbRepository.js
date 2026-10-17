@@ -804,7 +804,14 @@ export async function initializeRepository(env) {
         console.log("[repo] DATA_DRIVER=postgres ativo.");
     } catch (error) {
         mode = "json";
+        const pool = postgresPool;
+        const lockPool = postgresLockPool;
         postgresPool = null;
+        postgresLockPool = null;
+        await Promise.all([
+            pool?.end().catch(() => {}),
+            lockPool?.end().catch(() => {})
+        ]);
         if (strictPersistentMode) throw new Error(`Production PostgreSQL initialization failed; refusing JSON fallback: ${error.message}`);
         console.warn(`[repo] Falha ao conectar PostgreSQL (${error.message}). Fallback para JSON local.`);
     }
