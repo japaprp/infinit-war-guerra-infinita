@@ -830,7 +830,9 @@ export async function acquireRepositoryWriteLock() {
         // It must cover read -> mutate -> write, because writeDb persists a full-state snapshot.
         await connection.query("SELECT pg_advisory_lock(1735291, 90210)");
     } catch (error) {
-        connection.release();
+        // The server may have acquired the lock even if the response was lost.
+        // Discard this session rather than returning a possibly locked connection to the pool.
+        connection.release(error);
         throw error;
     }
 
@@ -838,11 +840,19 @@ export async function acquireRepositoryWriteLock() {
     return async () => {
         if (released) return;
         released = true;
+
         try {
-            await connection.query("SELECT pg_advisory_unlock(1735291, 90210)");
-        } finally {
-            connection.release();
+            const [rows] = await connection.query("SELECT pg_advisory_unlock(1735291, 90210)");
+            if (rows?.[0]?.pg_advisory_unlock !== true) {
+                throw new Error("PostgreSQL advisory write lock was not confirmed as released");
+            }
+        } catch (error) {
+            // A failed unlock must destroy the session; closing it releases session-level locks.
+            connection.release(error);
+            throw error;
         }
+
+        connection.release();
     };
 }
 
