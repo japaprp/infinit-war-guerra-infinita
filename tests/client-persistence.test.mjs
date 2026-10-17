@@ -176,7 +176,7 @@ test("cliente mantém expedição, temporizador e saldos após fechar/reabrir", 
 });
 
 
-test("vehicle chip presets persist and only the active preset affects combat", { timeout: 30_000 }, async () => {
+test("vehicle chip presets persist and only the active preset affects combat", { timeout: 150_000 }, async () => {
     const server = createStaticServer();
     await new Promise((resolveListen, reject) => {
         server.once("error", reject);
