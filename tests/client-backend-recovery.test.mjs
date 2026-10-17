@@ -196,6 +196,23 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
         const expeditionId = started.expedition.id;
         const endsAt = started.expedition.endsAt;
 
+        // Remove the browser cache to prove that an authenticated reload can
+        // reconstruct the active expedition from the server alone.
+        await page.evaluate(() => localStorage.removeItem("iwar_village_state_v1"));
+        await page.reload({ waitUntil: "load" });
+        await page.waitForFunction(({ expectedId, expectedEnd }) => {
+            const raw = localStorage.getItem("iwar_village_state_v1");
+            const payload = raw ? JSON.parse(raw).payload : null;
+            return payload?.expedition?.id === expectedId
+                && payload.expedition.serverAuthoritative === true
+                && payload.expedition.endsAt === expectedEnd;
+        }, { expectedId: expeditionId, expectedEnd: endsAt }, { timeout: 20000 });
+        const recoveredActive = await readSavedState(page);
+        assert.equal(recoveredActive.expedition.active, true);
+        assert.equal(recoveredActive.expedition.serverAuthoritative, true);
+        assert.equal(recoveredActive.resources.energy, 85);
+        assert.equal(recoveredActive.expedition.endsAt, endsAt);
+
         // The backend processes the claim, but the browser loses the first response.
         let dropFirstResponse = true;
         let firstProcessedReceipt = null;
