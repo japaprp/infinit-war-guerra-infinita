@@ -324,14 +324,30 @@ export function queryWorldTiles(_user, x, y, radius) {
     };
 }
 
-export function startMarch(_user, _payload) {
+export function startMarch(user, payload = {}) {
+    ensureV1State(user);
+    user.v1.marches ||= [];
+
     const departAtMs = nowMs();
-    const arriveAtMs = departAtMs + 90 * 1000;
-    return {
+    const march = {
         marchId: `march_${crypto.randomUUID()}`,
+        status: "IN_TRANSIT",
+        origin: payload.origin ?? null,
+        target: payload.target ?? null,
+        units: payload.units && typeof payload.units === "object" ? payload.units : {},
         departAtMs,
-        arriveAtMs
+        arriveAtMs: departAtMs + 90 * 1000
     };
+
+    user.v1.marches.push(march);
+    bumpStateVersion(user);
+    return { ...march };
+}
+
+export function listMarches(user) {
+    ensureV1State(user);
+    user.v1.marches ||= [];
+    return { marches: user.v1.marches.map((march) => ({ ...march })) };
 }
 
 export function createRally(userId, payload) {
