@@ -306,6 +306,26 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
         assert.equal(afterReload.expedition.completedCount, 1);
         assert.ok(afterReload.expedition.claimedIds.includes(expeditionId));
 
+        // Clearing the local save must recover expedition rewards from the server receipt,
+        // even if the server's legacy snapshot contains a receipt-applied marker.
+        await reopened.evaluate(() => localStorage.removeItem("iwar_village_state_v1"));
+        await reopened.reload({ waitUntil: "load" });
+        await reopened.waitForFunction(({ expectedId }) => {
+            const raw = localStorage.getItem("iwar_village_state_v1");
+            const payload = raw ? JSON.parse(raw).payload : null;
+            return payload?.expedition?.appliedReceiptIds?.includes(expectedId)
+                && payload?.expedition?.claimedIds?.includes(expectedId);
+        }, { expectedId: expeditionId }, { timeout: 20000 });
+        const afterClearedSave = await readSavedState(reopened);
+        assert.deepEqual({
+            gold: afterClearedSave.resources.gold,
+            silver: afterClearedSave.resources.silver,
+            food: afterClearedSave.resources.food,
+            energy: afterClearedSave.resources.energy
+        }, balances, "the server receipt must restore the same final balances after localStorage loss");
+        assert.equal(afterClearedSave.expedition.active, false);
+        assert.equal(afterClearedSave.expedition.rewardClaimed, true);
+
         const db = await readDb();
         const account = db.users["guest:browser-recovery-user"];
         assert.ok(account, "backend account must be persisted");
