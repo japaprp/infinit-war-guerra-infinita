@@ -21,7 +21,7 @@ Cada entrada de `CHIP_CATALOG` define `basePct` e `levelStepPct`; mudar esses va
 
 ## Estado da ressonância
 
-- O domínio calcula a prontidão quando os quatro espaços do preset ativo estão preenchidos.
+- O domínio calcula a prontidão quando os quatro espaços do preset ativo estão preenchidos com quatro IDs de chip distintos.
 - `ready` não significa que o bônus está ativo: `active` e `bonusApplied` permanecem `false` enquanto a regra original não estiver definida e validada.
 - A interface comunica explicitamente essa distinção. Nenhuma fórmula ou probabilidade é inferida das capturas de referência.
 
