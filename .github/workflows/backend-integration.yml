@@ -195,6 +195,19 @@ jobs:
           PG_PASSWORD: postgres
           PG_SSL: "false"
 
+      - name: Verify PostgreSQL state mutation lock serializes concurrent requests
+        run: node --test test/postgres-concurrent-write-lock.integration.test.js
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          DATA_DRIVER: postgres
+          PG_HOST: 127.0.0.1
+          PG_PORT: 5432
+          PG_DATABASE: infinitwar_test
+          PG_USER: postgres
+          PG_PASSWORD: postgres
+          PG_SSL: "false"
+
       - name: Run backend integration tests
         run: npm run test:integration
         working-directory: backend
