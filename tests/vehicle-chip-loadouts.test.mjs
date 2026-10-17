@@ -89,6 +89,7 @@ test("a full preset is resonance-ready but receives no unconfigured bonus", () =
     assert.deepEqual(readiness, {
         preset: "I",
         filledSlots: 4,
+        uniqueChipCount: 4,
         requiredSlots: 4,
         ready: true,
         active: false,
@@ -101,4 +102,14 @@ test("incomplete or invalid presets are not resonance-ready", () => {
     const loadouts = { I: { assault: "chip-a", vanguard: "chip-b", suppression: null, gravity: null } };
     assert.equal(getResonanceReadiness(loadouts, "I").ready, false);
     assert.equal(getResonanceReadiness(loadouts, "V").ready, false);
+});
+
+test("duplicate chip references do not satisfy resonance readiness", () => {
+    const loadouts = {
+        I: { assault: "chip-a", vanguard: "chip-b", suppression: "chip-c", gravity: "chip-c" }
+    };
+    const readiness = getResonanceReadiness(loadouts, "I");
+    assert.equal(readiness.filledSlots, 4);
+    assert.equal(readiness.uniqueChipCount, 3);
+    assert.equal(readiness.ready, false);
 });
