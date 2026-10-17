@@ -116,6 +116,72 @@ jobs:
           PG_USER: postgres
           PG_PASSWORD: postgres
 
+      - name: Verify player state survives normalized PostgreSQL reads
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { env } from "./src/config/env.js";
+          import { initializeRepository, readDb, writeDb } from "./src/repositories/dbRepository.js";
+          env.DATA_DRIVER = "postgres";
+          env.NODE_ENV = "test";
+          await initializeRepository(env);
+          try {
+            const externalId = "guest:postgres_state_roundtrip";
+            const state = {
+              users: {
+                [externalId]: {
+                  profile: { provider: "guest", providerUid: "postgres_state_roundtrip", email: "", displayName: "Roundtrip" },
+                  state: null,
+                  economy: { gems: 100 },
+                  inventory: { potion_small: 3 },
+                  createdAt: 1000,
+                  updatedAt: 2000,
+                  v1: {
+                    stateVersion: 1,
+                    level: 7,
+                    power: 1200,
+                    vipLevel: 0,
+                    resources: { gold: 123, wood: 45, steel: 67, food: 89, gems: 100, energy: 72, energyMax: 100, energyRegenPerMinute: 1.2 },
+                    heroes: [{ heroId: "lucas", rarity: "LEGENDARY", level: 4, stars: 2, ascension: 0, stats: { atk: 10, def: 20, units: 3, power: 40 }, shardsOwned: 5, skillLevels: [2, 1, 1] }],
+                    buildings: [{ buildingId: "b_hq", buildingType: "hq", slotCode: "center", level: 3, state: "IDLE", endAtMs: 0, taskId: "" }],
+                    alliances: { allianceId: "", name: "", tag: "" },
+                    pass: { seasonId: "season_1", claimed: {} },
+                    expedition: { active: { expeditionId: "exp_keep_me", destinationId: "grey-forest", endsAtMs: 987654321 } },
+                    claimedExpeditionIds: ["exp_already_claimed"],
+                    featureFlags: { tutorialCompleted: true }
+                  }
+                }
+              },
+              receipts: {},
+              alliances: {}
+            };
+            await writeDb(state);
+            const loaded = await readDb();
+            const user = loaded.users[externalId];
+            assert.ok(user, "player row should exist");
+            assert.equal(user.v1.expedition.active.expeditionId, "exp_keep_me");
+            assert.deepEqual(user.v1.claimedExpeditionIds, ["exp_already_claimed"]);
+            assert.equal(user.v1.featureFlags.tutorialCompleted, true);
+            assert.equal(user.v1.resources.gold, 123);
+            assert.equal(user.v1.heroes[0].heroId, "lucas");
+            assert.equal(user.v1.buildings[0].slotCode, "center");
+            assert.equal(user.inventory.potion_small, 3);
+            console.log("Player state round-trip verified, including fields not yet normalized.");
+          } finally {
+            process.exit(0);
+          }
+          NODE
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          DATA_DRIVER: postgres
+          PG_HOST: 127.0.0.1
+          PG_PORT: 5432
+          PG_DATABASE: infinitwar_test
+          PG_USER: postgres
+          PG_PASSWORD: postgres
+          PG_SSL: "false"
+
       - name: Run backend integration tests
         run: npm run test:integration
         working-directory: backend
