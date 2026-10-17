@@ -5,6 +5,7 @@ import test from "node:test";
 import { env } from "../src/config/env.js";
 import { createUserLockMiddleware } from "../src/middlewares/userLockMiddleware.js";
 import { wrapAsyncRouteHandlers } from "../src/middlewares/asyncRoute.js";
+import { createIdempotencyMiddleware } from "../src/middlewares/idempotencyMiddleware.js";
 import { closeRepository, initializeRepository } from "../src/repositories/dbRepository.js";
 
 test("PostgreSQL state mutation lock serializes writes and survives client disconnects", async () => {
@@ -108,6 +109,16 @@ test("PostgreSQL state mutation lock serializes writes and survives client disco
             res.json({ ok: true });
         });
         app.use(errorRouter);
+
+        const idempotencyRouter = wrapAsyncRouteHandlers(Router());
+        const idempotency = createIdempotencyMiddleware();
+        let mutationCount = 0;
+        idempotencyRouter.post("/idempotent-mutate", middleware, idempotency, async (_req, res) => {
+            mutationCount += 1;
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            res.json({ operationId: "single-operation", mutationCount });
+        });
+        app.use(idempotencyRouter);
         app.use((error, _req, res, _next) => {
             res.status(500).json({ code: "INTERNAL_ERROR", message: error.message });
         });
@@ -126,6 +137,17 @@ test("PostgreSQL state mutation lock serializes writes and survives client disco
             const recoveredResponse = await fetch(`${baseUrl}/mutate`, { method: "POST" });
             assert.equal(recoveredResponse.status, 200, "a subsequent writer must acquire the lock after a handler failure");
             assert.deepEqual(await recoveredResponse.json(), { ok: true });
+
+            const headers = { "content-type": "application/json", "x-idempotency-key": "same-concurrent-operation" };
+            const [firstReplay, secondReplay] = await Promise.all([
+                fetch(`${baseUrl}/idempotent-mutate`, { method: "POST", headers, body: "{}" }),
+                fetch(`${baseUrl}/idempotent-mutate`, { method: "POST", headers, body: "{}" })
+            ]);
+            assert.equal(firstReplay.status, 200);
+            assert.equal(secondReplay.status, 200);
+            const [firstBody, secondBody] = await Promise.all([firstReplay.json(), secondReplay.json()]);
+            assert.deepEqual(secondBody, firstBody, "concurrent retries must receive the original operation response");
+            assert.equal(mutationCount, 1, "the same idempotency key must execute the mutation exactly once");
         } finally {
             await new Promise((resolve, reject) => {
                 server.close((error) => error ? reject(error) : resolve());
