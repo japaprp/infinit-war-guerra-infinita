@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createUserLockMiddleware } from "../src/middlewares/userLockMiddleware.js";
+import { createStateWriteLockMiddleware, createUserLockMiddleware } from "../src/middlewares/userLockMiddleware.js";
 
 function mockResponse() {
   const listeners = new Map();
@@ -67,6 +67,29 @@ test("per-user mutation lock is released when the client disconnects before resp
   assert.equal(blockedResponse.statusCode, 429);
 
   disconnectedResponse.close();
+
+  const retryResponse = mockResponse();
+  await middleware(request, retryResponse, () => { nextCalls++; });
+  assert.equal(nextCalls, 2);
+  assert.equal(retryResponse.statusCode, 200);
+});
+
+
+test("shared database write lock rejects overlap and releases after client disconnect", async () => {
+  const middleware = createStateWriteLockMiddleware({ ttlSec: 6 });
+  const request = { method: "POST", user: { sub: "guest:shared-lock-test" } };
+  let nextCalls = 0;
+
+  const firstResponse = mockResponse();
+  await middleware(request, firstResponse, () => { nextCalls++; });
+  assert.equal(nextCalls, 1);
+
+  const overlappingResponse = mockResponse();
+  await middleware({ ...request, user: { sub: "guest:other-user" } }, overlappingResponse, () => { nextCalls++; });
+  assert.equal(overlappingResponse.statusCode, 429);
+  assert.equal(overlappingResponse.body.code, "STATE_WRITE_LOCKED");
+
+  firstResponse.close();
 
   const retryResponse = mockResponse();
   await middleware(request, retryResponse, () => { nextCalls++; });
