@@ -177,7 +177,7 @@ export function createPostgresPool(config) {
         user: config.PG_USER || config.MYSQL_USER || undefined,
         password: config.PG_PASSWORD || config.MYSQL_PASSWORD || undefined,
         ssl: (config.PG_SSL || config.MYSQL_SSL) ? { rejectUnauthorized: true } : undefined,
-        max: 8,
+        max: Number.isInteger(Number(config.POOL_MAX)) && Number(config.POOL_MAX) > 0 ? Number(config.POOL_MAX) : 8,
         connectionTimeoutMillis: 10000
     });
 
