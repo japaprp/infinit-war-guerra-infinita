@@ -9,6 +9,9 @@ on:
     paths:
       - "tests/client-persistence.test.mjs"
       - "tests/client-backend-recovery.test.mjs"
+      - "tests/public-frontend-package.test.mjs"
+      - "frontend/public/**"
+      - "render-frontend.yaml"
       - "backend/**"
       - "api/**"
       - "auth/**"
@@ -21,6 +24,9 @@ on:
     paths:
       - "tests/client-persistence.test.mjs"
       - "tests/client-backend-recovery.test.mjs"
+      - "tests/public-frontend-package.test.mjs"
+      - "frontend/public/**"
+      - "render-frontend.yaml"
       - "backend/**"
       - "api/**"
       - "auth/**"
@@ -32,9 +38,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  # Keep active checks running; only superseded pending runs are coalesced.
-  cancel-in-progress: false
+  group: \${{ github.workflow }}-\${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   browser-persistence:
@@ -50,6 +55,9 @@ jobs:
         with:
           node-version: 24
 
+      - name: Validate public frontend package allowlist and source parity
+        run: node --test tests/public-frontend-package.test.mjs
+
       - name: Install backend runtime dependencies
         run: npm --prefix backend install --no-package-lock --omit=dev
 
@@ -60,4 +68,4 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run real-browser persistence and backend recovery tests
-        run: node --test --test-concurrency=1 tests/client-persistence.test.mjs tests/client-backend-recovery.test.mjs
+        run: node --test tests/client-persistence.test.mjs tests/client-backend-recovery.test.mjs
