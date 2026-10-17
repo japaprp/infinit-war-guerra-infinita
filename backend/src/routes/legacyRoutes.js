@@ -25,7 +25,7 @@ export function createLegacyRoutes(env, runtime = {}) {
         });
     });
 
-    router.post("/auth/session", async (req, res) => {
+    router.post("/auth/session", userLock, async (req, res) => {
         const { provider, providerUid, idToken } = req.body || {};
         if (!provider) return res.status(400).json({ error: "provider is required" });
 
