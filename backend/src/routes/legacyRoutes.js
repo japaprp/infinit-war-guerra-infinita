@@ -128,7 +128,7 @@ export function createLegacyRoutes(env, runtime = {}) {
         return res.json(receipt);
     });
 
-    router.post("/shop/purchase", authMiddleware, idempotency, userLock, async (req, res) => {
+    router.post("/shop/purchase", authMiddleware, userLock, idempotency, async (req, res) => {
         const { receiptId, signature } = req.body || {};
 
         if (!receiptId || !signature) {
