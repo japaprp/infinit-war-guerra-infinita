@@ -25,7 +25,9 @@
             if (!definition || !["attackPct", "hpPct"].includes(definition.stat)) continue;
 
             const level = Number.isFinite(chip.level) ? Math.max(1, Math.floor(chip.level)) : 1;
-            const bonus = Math.max(0, Number(definition.basePct) || 0) + (level - 1) * 9.6;
+            const basePct = Number.isFinite(definition.basePct) ? Math.max(0, definition.basePct) : 0;
+            const levelStepPct = Number.isFinite(definition.levelStepPct) ? Math.max(0, definition.levelStepPct) : 0;
+            const bonus = basePct + (level - 1) * levelStepPct;
             result[definition.stat] += bonus;
             result.appliedChipIds.push(chipId);
         }
