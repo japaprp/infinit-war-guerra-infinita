@@ -14,6 +14,10 @@ test("PostgreSQL state mutation lock serializes requests across different users"
     const makeResponse = () => {
         const response = new EventEmitter();
         response.statusCode = 200;
+        response.end = (...args) => {
+            response.emit("finish");
+            return response;
+        };
         response.status = (statusCode) => {
             response.statusCode = statusCode;
             return response;
@@ -48,13 +52,13 @@ test("PostgreSQL state mutation lock serializes requests across different users"
         await new Promise((resolve) => setTimeout(resolve, 75));
         assert.equal(secondEntered, false, "different players must not mutate the shared snapshot concurrently");
 
-        firstResponse.emit("finish");
+        firstResponse.end();
         await secondRequest;
         assert.equal(secondEntered, true, "second request may proceed after the first releases the lock");
-        secondResponse.emit("finish");
+        secondResponse.end();
     } finally {
-        firstResponse.emit("finish");
-        secondResponse.emit("finish");
+        firstResponse.end();
+        secondResponse.end();
         await closeRepository();
     }
 });
