@@ -87,7 +87,7 @@ test("public game loads chip dependencies before the engine and exports every AP
   assert.ok(scriptOrder.every((index) => index >= 0), "game page must load all chip modules and the engine");
   assert.deepEqual(scriptOrder, [...scriptOrder].sort((a, b) => a - b), "chip helpers must load before engine/game.js");
 
-  const methods = new Set([...gameSource.matchAll(/\\bapi(?:\\?\\.)?\\.([A-Za-z_$][\\w$]*)/g)].map((match) => match[1]));
+  const methods = new Set([...gameSource.matchAll(/\bapi(?:\?\.)?\.([A-Za-z_$][\w$]*)/g)].map((match) => match[1]));
   for (const method of methods) {
     assert.ok(
       new RegExp(`(?:const\\s+${method}\\s*=|\\b${method}\\s*:)`).test(clientSource),
