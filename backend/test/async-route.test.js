@@ -72,6 +72,16 @@ test("Redis idempotency response is stored before a serialized mutation releases
         await new Promise((resolve) => setTimeout(resolve, 5));
         res.json({ orderId: "order_single", mutationCount });
     });
+
+    let retryableCalls = 0;
+    router.post("/retryable", serializedMutation, idempotency, async (_req, res) => {
+        retryableCalls += 1;
+        if (retryableCalls === 1) throw new Error("temporary persistence failure");
+        res.json({ recovered: true, retryableCalls });
+    });
+    router.use(async (error, _req, res, _next) => {
+        res.status(500).json({ code: "INTERNAL_ERROR", message: error.message });
+    });
     app.use(router);
 
     const server = await new Promise((resolve) => {
@@ -92,6 +102,14 @@ test("Redis idempotency response is stored before a serialized mutation releases
         assert.deepEqual(secondBody, firstBody, "the retry must replay the first response");
         assert.equal(mutationCount, 1, "concurrent retries must not execute the mutation twice");
         assert.equal(cache.size, 1, "the replayable response must be in Redis before the first response finishes");
+
+        const retryUrl = `http://127.0.0.1:${server.address().port}/retryable`;
+        const failedAttempt = await fetch(retryUrl, { method: "POST", headers });
+        assert.equal(failedAttempt.status, 500);
+        const recoveredAttempt = await fetch(retryUrl, { method: "POST", headers });
+        assert.equal(recoveredAttempt.status, 200, "a transient 5xx must not be cached as the final idempotent result");
+        assert.deepEqual(await recoveredAttempt.json(), { recovered: true, retryableCalls: 2 });
+        assert.equal(retryableCalls, 2);
     } finally {
         await new Promise((resolve, reject) => {
             server.close((error) => error ? reject(error) : resolve());
