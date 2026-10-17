@@ -46,7 +46,19 @@ export function validateRuntimeConfig(config) {
         for (const key of ["MYSQL_HOST", "MYSQL_DATABASE", "MYSQL_USER", "MYSQL_PASSWORD"]) if (!String(config[key] || "").trim()) problems.push(key + " is required");
         if (!Number.isInteger(Number(config.MYSQL_PORT)) || Number(config.MYSQL_PORT) < 1 || Number(config.MYSQL_PORT) > 65535) problems.push("MYSQL_PORT must be an integer between 1 and 65535");
     }
-    if (driver === "postgres" && !/^postgres(?:ql)?:\/\//i.test(String(config.DATABASE_URL || ""))) problems.push("DATABASE_URL must be a valid PostgreSQL connection URL when DATA_DRIVER=postgres");
+    if (driver === "postgres") {
+        try {
+            const databaseUrl = new URL(String(config.DATABASE_URL || ""));
+            if (!["postgres:", "postgresql:"].includes(databaseUrl.protocol) ||
+                !databaseUrl.hostname ||
+                !databaseUrl.username ||
+                databaseUrl.pathname.length < 2) {
+                problems.push("DATABASE_URL must include a PostgreSQL scheme, username, host, and database name");
+            }
+        } catch {
+            problems.push("DATABASE_URL must be a valid PostgreSQL connection URL when DATA_DRIVER=postgres");
+        }
+    }
 
     const origins = String(config.CORS_ORIGINS || "")
         .split(",")
