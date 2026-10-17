@@ -60,6 +60,10 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
                     body
                 };
 
+                // Transient server failures must remain retryable; caching a 5xx
+                // would replay the failure even after persistence recovers.
+                if (payload.status >= 500) return originalJson(body);
+
                 if (redisClient) {
                     // Persist the replayable response before ending the HTTP response.
                     // When a state-write lock is held, the next request must not enter
