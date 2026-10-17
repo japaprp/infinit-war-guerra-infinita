@@ -80,15 +80,45 @@ function walkSql(sql, transformCode) {
 }
 
 function findKeywordOutsideLiterals(sql, keywordRegex) {
-  let found = -1;
-  walkSql(sql, (segment) => {
-    if (found === -1) {
-      const match = keywordRegex.exec(segment);
-      if (match) found = match.index;
+  let quote = "";
+  let lineComment = false;
+  let blockComment = false;
+  for (let i = 0; i < sql.length; i++) {
+    const ch = sql[i];
+    const next = sql[i + 1];
+    if (lineComment) {
+      if (ch === "\\n") lineComment = false;
+      continue;
     }
-    return segment;
-  });
-  return found;
+    if (blockComment) {
+      if (ch === "*" && next === "/") {
+        blockComment = false;
+        i++;
+      }
+      continue;
+    }
+    if (quote) {
+      if (ch === "\\\\" && i + 1 < sql.length) i++;
+      else if (ch === quote) {
+        if (next === quote) i++;
+        else quote = "";
+      }
+      continue;
+    }
+    if (ch === "'" || ch === '"') quote = ch;
+    else if (ch === "/" && next === "*") {
+      blockComment = true;
+      i++;
+    } else if ((ch === "-" && next === "-" && (i + 2 >= sql.length || /\\s/.test(sql[i + 2]))) || ch === "#") {
+      lineComment = true;
+      if (ch === "-" && next === "-") i++;
+    } else {
+      keywordRegex.lastIndex = 0;
+      const match = keywordRegex.exec(sql.slice(i));
+      if (match && match.index === 0) return i;
+    }
+  }
+  return -1;
 }
 
 function splitTopLevel(input, delimiter = ",") {
