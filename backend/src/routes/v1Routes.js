@@ -31,6 +31,7 @@ import {
 } from "../services/v1StubService.js";
 import { createAuthMiddleware } from "../middlewares/authMiddleware.js";
 import { createUserLockMiddleware } from "../middlewares/userLockMiddleware.js";
+import { wrapAsyncRouteHandlers } from "../middlewares/asyncRoute.js";
 import { createIdempotencyMiddleware } from "../middlewares/idempotencyMiddleware.js";
 
 function asError(res, result) {
@@ -40,7 +41,7 @@ function asError(res, result) {
 }
 
 export function createV1Routes(env, runtime = {}) {
-    const router = Router();
+    const router = wrapAsyncRouteHandlers(Router());
     const authMiddleware = createAuthMiddleware(env.JWT_SECRET);
     const userLock = createUserLockMiddleware({ redisClient: runtime.redisClient, ttlSec: 8 });
     const idempotency = createIdempotencyMiddleware({ redisClient: runtime.redisClient, ttlSec: 300 });
