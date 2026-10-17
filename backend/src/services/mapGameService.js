@@ -104,8 +104,19 @@ function grantBattleRewards(user, operationId, battle) {
     for (const [key, amount] of Object.entries(rewards)) {
         user.v1.resources[key] = Math.max(0, safeInt(user.v1.resources[key]) + amount);
     }
-    const chestReward = battle.outcome === "victory" ? addChest(data, "explorer") : null;
-    const receipt = { operationId, rewards, troopsReturned: Math.max(0, safeInt(battle.troopCount) - Math.floor(safeInt(battle.troopCount) * (battle.outcome === "victory" ? 0.03 : 0.15))), troopsLost: Math.floor(safeInt(battle.troopCount) * (battle.outcome === "victory" ? 0.03 : 0.15)), chestReward };
+    // The browser prototype's original chest drop chance is 10%. Derive the roll
+    // from the operation ID so retries cannot reroll the reward.
+    const chestRoll = crypto.createHash("sha256").update(`${operationId}:chest-drop`).digest()[0] % 100;
+    const chestReward = battle.outcome === "victory" && chestRoll < 10 ? addChest(data, "explorer") : null;
+    const lossRate = battle.outcome === "victory" ? 0.03 : 0.15;
+    const troopsLost = Math.floor(safeInt(battle.troopCount) * lossRate);
+    const receipt = {
+        operationId,
+        rewards,
+        troopsReturned: Math.max(0, safeInt(battle.troopCount) - troopsLost),
+        troopsLost,
+        chestReward
+    };
     return { rewards, receipt, chestReward, resources: { ...user.v1.resources } };
 }
 
@@ -335,40 +346,69 @@ export function getServerChests(user) {
 
 function chestReward(user, chest) {
     const data = ensureGameData(user);
-    const roll = crypto.createHash("sha256").update(chest.id).digest()[0] % 100;
-    if (chest.type === "module" && roll < 40) {
-        data.vehicle.chipMaterials += 10 + (roll % 21);
-        return { type: "chipMaterials", amount: 10 + (roll % 21) };
-    }
+    const digest = crypto.createHash("sha256").update(chest.id).digest();
+    const roll = digest[0] % 100;
+
     if (chest.type === "module") {
-        const chipIds = Object.keys(CHIP_CATALOG);
-        const typeId = chipIds[roll % chipIds.length];
-        const definition = CHIP_CATALOG[typeId];
-        const chip = { id: id("chip"), typeId, name: definition.name, role: definition.role, level: 1, rarity: definition.rarity, source: "server", obtainedAt: nowMs() };
-        data.vehicle.inventory.push(chip);
-        return { type: "chip", chip };
+        // Preserve the original prototype's module-chest distribution:
+        // legendary 0.2%, four rare modules 7.5% each, epic 30%, materials 39.8%.
+        const preciseRoll = (digest.readUInt32BE(0) / 0x1_0000_0000) * 100;
+        if (preciseRoll < 0.2) {
+            const definition = CHIP_CATALOG["assault-module"];
+            const chip = { id: id("chip"), typeId: "assault-module", name: definition.name, role: definition.role, level: 5, rarity: "Lendário", source: "server", obtainedAt: nowMs() };
+            data.vehicle.inventory.push(chip);
+            return { type: "chip", chip };
+        }
+        if (preciseRoll < 7.7) return grantChip(data, "assault-module", 1, "Raro");
+        if (preciseRoll < 15.2) return grantChip(data, "gravity-barrier", 1, "Raro");
+        if (preciseRoll < 22.7) return grantChip(data, "recon-array", 1, "Raro");
+        if (preciseRoll < 30.2) return grantChip(data, "supply-core", 1, "Raro");
+        if (preciseRoll < 60.2) {
+            const typeId = digest[1] % 2 === 0 ? "assault-module" : "gravity-barrier";
+            return grantChip(data, typeId, 2, "Épico");
+        }
+        const amount = 20 + (digest[1] % 41);
+        data.vehicle.chipMaterials += amount;
+        return { type: "chipMaterials", amount };
     }
-    const types = ["resources", "shards", "equipment", "moduleChest"];
-    const type = types[roll % types.length];
-    if (type === "resources") {
-        const rewards = { gold: 120 + roll * 4, steel: 80 + roll * 2, food: 40 + roll };
-        for (const [key, amount] of Object.entries(rewards)) user.v1.resources[key] += amount;
-        return { type, ...rewards };
+
+    // Explorer chest weights match the browser prototype: resources 45%, shards
+    // 25%, equipment 15%, and a module chest 15%. Reward selection is deterministic
+    // per chest ID so an idempotent retry cannot generate a different item.
+    if (roll < 45) {
+        const rewards = { gold: 250 + (digest[1] % 751), steel: 200 + (digest[2] % 601), food: 40 + (digest[3] % 81) };
+        for (const [key, amount] of Object.entries(rewards)) user.v1.resources[key] = safeInt(user.v1.resources[key]) + amount;
+        return { type: "resources", ...rewards };
     }
-    if (type === "shards") {
-        const pool = ["bronze", "silver", "gold"][roll % 3];
-        const amount = 2 + roll % 8;
-        data.shards[pool] = (data.shards[pool] || 0) + amount;
-        return { type, pool, amount };
+    if (roll < 70) {
+        const pool = ["bronze", "silver", "gold"][digest[1] % 3];
+        const amount = pool === "bronze" ? 3 : pool === "silver" ? 2 : 1;
+        data.shards[pool] = safeInt(data.shards[pool]) + amount;
+        return { type: "shards", pool, amount };
     }
-    if (type === "equipment") {
-        const slot = ["weapon", "armor", "boots"][roll % 3];
-        const item = { id: id("equipment"), slot, rarity: roll % 5 === 0 ? "epic" : "rare", rarityLabel: roll % 5 === 0 ? "Épico" : "Raro", name: `Equipamento ${slot}`, bonus: 1 + roll % 20, obtainedAt: nowMs() };
+    if (roll < 85) {
+        const slot = ["weapon", "armor", "boots"][digest[1] % 3];
+        const rarityRoll = digest[2] % 100;
+        const rarity = rarityRoll < 72 ? "common" : rarityRoll < 95 ? "rare" : "epic";
+        const multiplier = rarity === "common" ? 1 : rarity === "rare" ? 1.6 : 2.5;
+        const bonus = Math.max(1, Math.floor((5 + 8 * 0.6) * multiplier));
+        const slotLabel = { weapon: "Lâmina", armor: "Couraça", boots: "Grevas" }[slot];
+        const rarityLabel = { common: "Comum", rare: "Raro", epic: "Épico" }[rarity];
+        const item = { id: id("equipment"), slot, rarity, rarityLabel, name: `${slotLabel} ${rarityLabel}`, bonus, obtainedAt: nowMs() };
         data.equipment.push(item);
-        return { type, item };
+        data.equipment = data.equipment.slice(-500);
+        return { type: "equipment", item };
     }
-    addChest(data, "module");
-    return { type, moduleChestAdded: true };
+    const moduleChest = addChest(data, "module");
+    return { type: "moduleChest", moduleChestAdded: true, moduleChest };
+}
+
+function grantChip(data, typeId, level, rarity) {
+    const definition = CHIP_CATALOG[typeId];
+    const chip = { id: id("chip"), typeId, name: definition.name, role: definition.role, level, rarity, source: "server", obtainedAt: nowMs() };
+    data.vehicle.inventory.push(chip);
+    data.vehicle.inventory = data.vehicle.inventory.slice(-500);
+    return { type: "chip", chip };
 }
 
 export function openServerChest(user, chestId, idempotencyKey) {
