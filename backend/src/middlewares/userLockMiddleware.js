@@ -1,4 +1,5 @@
 ﻿import crypto from "crypto";
+import { acquireRepositoryWriteLock, getRepositoryMode } from "../repositories/dbRepository.js";
 
 const memoryLocks = new Map();
 
@@ -27,6 +28,37 @@ function releaseMemoryLock(key, owner) {
 export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
     return async (req, res, next) => {
         if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+            return next();
+        }
+
+        // PostgreSQL persistence writes a complete shared snapshot. Serialize the
+        // entire read-modify-write request across all app instances, not only per user.
+        if (getRepositoryMode() === "postgres") {
+            let releaseRepositoryLock;
+            try {
+                releaseRepositoryLock = await acquireRepositoryWriteLock();
+            } catch {
+                return res.status(503).json({
+                    code: "PERSISTENCE_LOCK_UNAVAILABLE",
+                    message: "Não foi possível garantir a gravação segura. Tente novamente."
+                });
+            }
+
+            if (!releaseRepositoryLock) {
+                return res.status(503).json({
+                    code: "PERSISTENCE_LOCK_UNAVAILABLE",
+                    message: "O bloqueio de persistência não está disponível."
+                });
+            }
+
+            let released = false;
+            const releaseOnce = async () => {
+                if (released) return;
+                released = true;
+                await releaseRepositoryLock().catch(() => {});
+            };
+            res.once("finish", () => { releaseOnce().catch(() => {}); });
+            res.once("close", () => { releaseOnce().catch(() => {}); });
             return next();
         }
 
@@ -71,6 +103,13 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
 
             return next();
         } catch {
+            // Do not bypass a failed lock in production persistence mode.
+            if (getRepositoryMode() === "postgres") {
+                return res.status(503).json({
+                    code: "PERSISTENCE_LOCK_UNAVAILABLE",
+                    message: "Não foi possível garantir a gravação segura. Tente novamente."
+                });
+            }
             return next();
         }
     };
