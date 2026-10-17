@@ -24,9 +24,9 @@ test("translates MySQL table types and removes unsupported engine/update clauses
 });
 
 test("does not translate question marks inside SQL strings, identifiers, comments, or dollar quotes", () => {
-    const sql = "SELECT ?, '?' AS literal, \"?\" AS quoted_identifier, `?` AS mysql_identifier -- ? ignored\\n/* ? ignored */ WHERE note = $tag$?$tag$ AND id = ?";
+    const sql = "SELECT ?, '?' AS literal, \"?\" AS quoted_identifier, `?` AS mysql_identifier -- ? ignored\n/* ? ignored */ WHERE note = $tag$?$tag$ AND id = ?";
     assert.equal(
         translateSql(sql),
-        "SELECT $1, '?' AS literal, \"?\" AS quoted_identifier, `?` AS mysql_identifier -- ? ignored\\n/* ? ignored */ WHERE note = $tag$?$tag$ AND id = $2"
+        "SELECT $1, '?' AS literal, \"?\" AS quoted_identifier, `?` AS mysql_identifier -- ? ignored\n/* ? ignored */ WHERE note = $tag$?$tag$ AND id = $2"
     );
 });
