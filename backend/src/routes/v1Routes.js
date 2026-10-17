@@ -44,7 +44,7 @@ export function createV1Routes(env, runtime = {}) {
     const userLock = createUserLockMiddleware({ redisClient: runtime.redisClient, ttlSec: 8 });
     const idempotency = createIdempotencyMiddleware({ redisClient: runtime.redisClient, ttlSec: 300 });
 
-    router.post("/auth/login", async (req, res) => {
+    router.post("/auth/login", userLock, async (req, res) => {
         const { provider, idToken, platform, externalId } = req.body || {};
         const requestedProvider = provider || platform || "guest";
         let identity;
@@ -100,7 +100,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(getPlayerMe(req.user.sub, user));
     });
 
-    router.post("/player/sync", async (req, res) => {
+    router.post("/player/sync", userLock, async (req, res) => {
         const db = await readDb();
         const user = db.users[req.user.sub];
         if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
