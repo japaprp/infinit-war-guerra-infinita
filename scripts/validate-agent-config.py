@@ -36,7 +36,7 @@ def check_metadata(path: str, required: tuple[str, ...]) -> str:
         return content
     frontmatter = content[4:closing]
     for key in required:
-        if not re.search(rf"(?m)^{re.escape(key)}:\\s*\\S", frontmatter):
+        if not re.search(rf"(?m)^{re.escape(key)}:\s*\S", frontmatter):
             errors.append(f"{path}: missing non-empty frontmatter field '{key}'")
     if len(content[closing + 4:].strip()) == 0:
         errors.append(f"{path}: body is empty")
