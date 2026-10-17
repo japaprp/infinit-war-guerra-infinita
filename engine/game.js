@@ -32,11 +32,19 @@ const CHEST_REWARD_TABLE = [
 ];
 const EQUIPMENT_SLOTS = { weapon: "Arma", armor: "Armadura", boots: "Botas" };
 const CHIP_CATALOG = [
-    { id: "assault-module", name: "Módulo de Assalto", role: "Guerreiro", stat: "attackPct", statLabel: "Dano de combate", basePct: 32.6, upgradeCopies: 5, rarity: "Épico", color: "#a56bff" },
-    { id: "gravity-barrier", name: "Barreira Gravitacional", role: "Guerreiro", stat: "hpPct", statLabel: "Vida e proteção", basePct: 6.8, upgradeCopies: 3, rarity: "Épico", color: "#53c7e8" },
-    { id: "recon-array", name: "Matriz de Reconhecimento", role: "Batedor", stat: "attackPct", statLabel: "Dano de combate", basePct: 12, upgradeCopies: 4, rarity: "Raro", color: "#4f9bff" },
-    { id: "supply-core", name: "Núcleo de Suprimentos", role: "Suporte", stat: "hpPct", statLabel: "Vida e proteção", basePct: 10, upgradeCopies: 4, rarity: "Raro", color: "#4f9bff" }
+    { id: "assault-module", name: "Módulo de Assalto", role: "Guerreiro", stat: "attackPct", statLabel: "Dano de combate", basePct: 32.6, levelStepPct: 9.6, upgradeCopies: 5, rarity: "Épico", color: "#a56bff" },
+    { id: "gravity-barrier", name: "Barreira Gravitacional", role: "Guerreiro", stat: "hpPct", statLabel: "Vida e proteção", basePct: 6.8, levelStepPct: 9.6, upgradeCopies: 3, rarity: "Épico", color: "#53c7e8" },
+    { id: "recon-array", name: "Matriz de Reconhecimento", role: "Batedor", stat: "attackPct", statLabel: "Dano de combate", basePct: 12, levelStepPct: 9.6, upgradeCopies: 4, rarity: "Raro", color: "#4f9bff" },
+    { id: "supply-core", name: "Núcleo de Suprimentos", role: "Suporte", stat: "hpPct", statLabel: "Vida e proteção", basePct: 10, levelStepPct: 9.6, upgradeCopies: 4, rarity: "Raro", color: "#4f9bff" }
 ];
+function getChipBonusPct(definition, level) {
+    const basePct = Number(definition?.basePct);
+    if (!Number.isFinite(basePct)) return 0;
+    const levelStepPct = Number.isFinite(definition?.levelStepPct) ? definition.levelStepPct : 0;
+    const safeLevel = Number.isFinite(Number(level)) ? Math.max(1, Math.floor(Number(level))) : 1;
+    return basePct + (safeLevel - 1) * levelStepPct;
+}
+
 const CHIP_MAX_LEVEL = 10;
 // Hero promotion reference baseline: five internal steps per star tier.
 // Values are based on secondary community guides and remain configurable pending direct in-game cost screenshots.
@@ -626,7 +634,7 @@ function getHeroRuntime(heroId) {
     // Dark War: Survival's undocumented full chip-level formula.
     const chipPct = (stat) => (equippedChips.reduce((sum, item) => {
         const definition = CHIP_CATALOG.find((chip) => chip.id === item.typeId);
-        return sum + (definition?.stat === stat ? definition.basePct + (item.level - 1) * 9.6 : 0);
+        return sum + (definition?.stat === stat ? getChipBonusPct(definition, item.level) : 0);
     }, 0) + (vehicleChipBonuses[stat] || 0) + (vehicleAccessoryBonuses[stat] || 0)) / 100;
     const starMultiplier = 1 + (heroState.stars - 1) * 0.08 + (heroState.starStep || 0) * 0.01;
 
@@ -1249,7 +1257,7 @@ function equipChip(chipId) {
         }
     });
     hero.equippedChips = { ...(hero.equippedChips || {}), [definition.stat]: chip.id };
-    pushFeed(`${chip.name} equipado em ${getHeroTemplate(state.selectedHeroId).name} (+${(definition.basePct + (chip.level - 1) * 9.6).toLocaleString("pt-BR")}%).`);
+    pushFeed(`${chip.name} equipado em ${getHeroTemplate(state.selectedHeroId).name} (+${getChipBonusPct(definition, chip.level).toLocaleString("pt-BR")}%).`);
     renderAll();
     saveState();
 }
@@ -1400,7 +1408,7 @@ async function upgradeChip(chipId) {
     const consumeIds = new Set(duplicates.slice(0, definition.upgradeCopies).map((item) => item.id));
     state.inventory.chips = state.inventory.chips.filter((item) => !consumeIds.has(item.id));
     chip.level += 1;
-    pushFeed(`${chip.name} evoluiu para Nv.${chip.level}. Bônus atual: +${(definition.basePct + (chip.level - 1) * 9.6).toLocaleString("pt-BR")}%.`);
+    pushFeed(`${chip.name} evoluiu para Nv.${chip.level}. Bônus atual: +${getChipBonusPct(definition, chip.level).toLocaleString("pt-BR")}%.`);
     renderAll();
     saveState();
 }
@@ -1988,7 +1996,7 @@ function renderTabContent() {
             const definition = CHIP_CATALOG.find((item) => item.id === chip.typeId);
             const equippedByHero = hero.heroState.equippedChips?.[definition?.stat] === chip.id;
             const equipped = equippedByHero || window.IWChipLoadouts.PRESETS.some((preset) => window.IWChipLoadouts.isChipInPreset(state.vehicleChipLoadouts, preset, chip.id));
-            const pct = definition ? definition.basePct + (chip.level - 1) * 9.6 : 0;
+            const pct = definition ? getChipBonusPct(definition, chip.level) : 0;
             const copies = chips.filter((item) => item.typeId === chip.typeId && item.id !== chip.id && !isChipEquipped(item.id)).length;
             return `<article class="inventory-item"><span><strong>${chip.name} · Nv.${chip.level}</strong><small>${chip.role} · ${chip.rarityLabel} · +${pct.toLocaleString("pt-BR")}% ${definition?.statLabel || ""} · cópias extras: ${copies}</small></span><div><button class="inline-action" data-action="equip-chip" data-chip-id="${chip.id}" ${equipped ? "disabled" : ""}>${equipped ? "Equipado/salvo" : "Equipar no herói"}</button><button class="inline-action" data-action="assign-vehicle-chip" data-chip-id="${chip.id}" ${window.IWChipLoadouts.isChipInPreset(state.vehicleChipLoadouts, activePreset, chip.id) || filledVehicleSlots >= 4 ? "disabled" : ""}>Instalar na viatura</button><button class="inline-action" data-action="upgrade-chip" data-chip-id="${chip.id}" ${chip.level >= CHIP_MAX_LEVEL || copies < (definition?.upgradeCopies || 999) ? "disabled" : ""}>Evoluir (${definition?.upgradeCopies || "—"} cópias)</button></div></article>`;
         }).join("") : "<p>Nenhum módulo no inventário. Encontre um Baú de Módulos em baús de explorador.</p>";
