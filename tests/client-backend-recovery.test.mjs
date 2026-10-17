@@ -49,10 +49,12 @@ async function startBackend() {
     };
 }
 
-async function api(baseUrl, method, routePath, body) {
+async function api(baseUrl, method, routePath, body, token) {
+    const headers = { "content-type": "application/json" };
+    if (token) headers.authorization = `Bearer ${token}`;
     const response = await fetch(`${baseUrl}${routePath}`, {
         method,
-        headers: { "content-type": "application/json" },
+        headers,
         body: body ? JSON.stringify(body) : undefined
     });
     const payload = await response.json().catch(() => ({}));
@@ -150,6 +152,18 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
         const page = await context.newPage();
         const pageErrors = [];
         page.on("pageerror", error => pageErrors.push(error.message));
+        // Keep the legacy snapshot absent to prove V1 status is independently sufficient.
+        await page.route(`${web.baseUrl}/player/state`, async route => {
+            if (route.request().method() === "PUT") {
+                await route.fulfill({
+                    status: 503,
+                    contentType: "application/json",
+                    body: JSON.stringify({ error: "simulated legacy snapshot write failure" })
+                });
+                return;
+            }
+            await route.continue();
+        });
         await page.goto(`${web.baseUrl}/game.html`, { waitUntil: "load" });
         await page.waitForFunction(() => {
             const button = document.querySelector("#startExpeditionBtn");
@@ -195,6 +209,26 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
         assert.equal(started.resources.energy, 85);
         const expeditionId = started.expedition.id;
         const endsAt = started.expedition.endsAt;
+        const legacySnapshot = await api(backend.baseUrl, "GET", "/player/state", undefined, token);
+        assert.equal(legacySnapshot.state, null, "the legacy snapshot must remain absent during this recovery test");
+
+        // Remove the browser cache to prove that an authenticated reload can
+        // reconstruct the active expedition from the server alone.
+        await page.evaluate(() => localStorage.removeItem("iwar_village_state_v1"));
+        await page.reload({ waitUntil: "load" });
+        await page.waitForFunction(({ expectedId, expectedEnd }) => {
+            const raw = localStorage.getItem("iwar_village_state_v1");
+            const payload = raw ? JSON.parse(raw).payload : null;
+            return payload?.expedition?.id === expectedId
+                && payload.expedition.serverAuthoritative === true
+                && payload.expedition.endsAt === expectedEnd;
+        }, { expectedId: expeditionId, expectedEnd: endsAt }, { timeout: 20000 });
+        const recoveredActive = await readSavedState(page);
+        assert.equal(recoveredActive.expedition.active, true);
+        assert.equal(recoveredActive.expedition.serverAuthoritative, true);
+        assert.equal(recoveredActive.resources.energy, 85);
+        assert.equal(recoveredActive.expedition.endsAt, endsAt);
+        assert.equal(await page.locator("#startExpeditionBtn").isDisabled(), true, "the client must not offer a second expedition while the server has one active");
 
         // The backend processes the claim, but the browser loses the first response.
         let dropFirstResponse = true;
@@ -273,6 +307,26 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
         }, balances);
         assert.equal(afterReload.expedition.completedCount, 1);
         assert.ok(afterReload.expedition.claimedIds.includes(expeditionId));
+
+        // Clearing the local save must recover expedition rewards from the server receipt,
+        // even if the server's legacy snapshot contains a receipt-applied marker.
+        await reopened.evaluate(() => localStorage.removeItem("iwar_village_state_v1"));
+        await reopened.reload({ waitUntil: "load" });
+        await reopened.waitForFunction(({ expectedId }) => {
+            const raw = localStorage.getItem("iwar_village_state_v1");
+            const payload = raw ? JSON.parse(raw).payload : null;
+            return payload?.expedition?.appliedReceiptIds?.includes(expectedId)
+                && payload?.expedition?.claimedIds?.includes(expectedId);
+        }, { expectedId: expeditionId }, { timeout: 20000 });
+        const afterClearedSave = await readSavedState(reopened);
+        assert.deepEqual({
+            gold: afterClearedSave.resources.gold,
+            silver: afterClearedSave.resources.silver,
+            food: afterClearedSave.resources.food,
+            energy: afterClearedSave.resources.energy
+        }, balances, "the server receipt must restore the same final balances after localStorage loss");
+        assert.equal(afterClearedSave.expedition.active, false);
+        assert.equal(afterClearedSave.expedition.rewardClaimed, true);
 
         const db = await readDb();
         const account = db.users["guest:browser-recovery-user"];

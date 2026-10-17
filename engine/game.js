@@ -1717,74 +1717,92 @@ function renderAll() {
     renderExpeditionPanel();
 }
 
+async function syncExpeditionStatusFromServer(api) {
+    if (!api || typeof api.getExpeditionStatusV1 !== "function") return false;
+
+    try {
+        const status = await api.getExpeditionStatusV1();
+        if (!status || typeof status !== "object") return false;
+
+        const active = status.active;
+        const serverClaimedIds = Array.isArray(status.claimedIds) ? status.claimedIds : [];
+        const receipts = status.receipts && typeof status.receipts === "object" ? status.receipts : {};
+        state.expedition.appliedReceiptIds = Array.isArray(state.expedition.appliedReceiptIds)
+            ? state.expedition.appliedReceiptIds
+            : [];
+
+        for (const [receiptId, receipt] of Object.entries(receipts)) {
+            if (!receipt || !receipt.rewards || state.expedition.appliedReceiptIds.includes(receiptId)) continue;
+            const rewards = receipt.rewards;
+            const amounts = {
+                gold: Number(rewards.gold),
+                silver: Number(rewards.steel),
+                food: Number(rewards.food)
+            };
+            if (Object.values(amounts).some((amount) => !Number.isFinite(amount) || amount < 0)) continue;
+
+            state.resources.gold += amounts.gold;
+            state.resources.silver += amounts.silver;
+            state.resources.food += amounts.food;
+            state.expedition.appliedReceiptIds = [...state.expedition.appliedReceiptIds, receiptId].slice(-500);
+        }
+
+        const localExpedition = state.expedition || {};
+        if (active?.expeditionId && Number.isFinite(active.endsAtMs)) {
+            state.expedition = {
+                ...localExpedition,
+                id: active.expeditionId,
+                destinationId: active.destinationId,
+                objectiveId: active.objectiveId,
+                active: true,
+                startedAt: active.startedAtMs,
+                endsAt: active.endsAtMs,
+                rewardClaimed: false,
+                serverAuthoritative: true,
+                claimedIds: [...new Set([...(localExpedition.claimedIds || []), ...serverClaimedIds])].slice(-200)
+            };
+        } else {
+            state.expedition = {
+                ...localExpedition,
+                claimedIds: [...new Set([...(localExpedition.claimedIds || []), ...serverClaimedIds])].slice(-200)
+            };
+            if (state.expedition.serverAuthoritative && state.expedition.id && serverClaimedIds.includes(state.expedition.id)) {
+                state.expedition.active = false;
+                state.expedition.rewardClaimed = true;
+                state.expedition.serverAuthoritative = false;
+            } else if (state.expedition.serverAuthoritative && state.expedition.active) {
+                // A missing server expedition must never be resurrected from a local save.
+                state.expedition.active = false;
+                state.expedition.rewardClaimed = true;
+                state.expedition.serverAuthoritative = false;
+            }
+        }
+
+        if (Number.isFinite(status.resources?.energy)) {
+            state.resources.energy = status.resources.energy;
+        }
+        return true;
+    } catch {
+        // Keep cached state when offline; authoritative status will retry on next sync.
+        return false;
+    }
+}
+
 async function pullStateFromBackend() {
     const api = getApiClient();
     if (!api || !api.hasToken || !api.hasToken()) {
         return;
     }
 
+    let remote = null;
     try {
-        const remote = await api.pullState();
-        if (!remote || !remote.state || !remote.state.resources) {
-            return;
-        }
+        remote = await api.pullState();
+    } catch (error) {
+        // A missing legacy snapshot must not prevent recovery of V1 expedition state.
+        pushFeed(`Sync do estado legado indisponível: ${error.message}`);
+    }
 
-        // Recover the active expedition from the authenticated server after reload.
-        // LocalStorage is a cache, not the source of truth for expedition timers/rewards.
-        if (typeof api.getExpeditionStatusV1 === "function") {
-            try {
-                const status = await api.getExpeditionStatusV1();
-                const active = status?.active;
-                const serverClaimedIds = Array.isArray(status?.claimedIds) ? status.claimedIds : [];
-                const receipts = status?.receipts && typeof status.receipts === "object" ? status.receipts : {};
-                state.expedition.appliedReceiptIds = Array.isArray(state.expedition.appliedReceiptIds) ? state.expedition.appliedReceiptIds : [];
-                for (const [receiptId, receipt] of Object.entries(receipts)) {
-                    if (!receipt || !receipt.rewards || state.expedition.appliedReceiptIds.includes(receiptId)) continue;
-                    const rewards = receipt.rewards;
-                    const amounts = {
-                        gold: Number(rewards.gold),
-                        silver: Number(rewards.steel),
-                        food: Number(rewards.food)
-                    };
-                    if (Object.values(amounts).some((amount) => !Number.isFinite(amount) || amount < 0)) continue;
-                    state.resources.gold += amounts.gold;
-                    state.resources.silver += amounts.silver;
-                    state.resources.food += amounts.food;
-                    state.expedition.appliedReceiptIds = [...state.expedition.appliedReceiptIds, receiptId].slice(-500);
-                }
-                if (active?.expeditionId && Number.isFinite(active.endsAtMs)) {
-                    state.expedition = {
-                        ...state.expedition,
-                        id: active.expeditionId,
-                        destinationId: active.destinationId,
-                        objectiveId: active.objectiveId,
-                        active: true,
-                        startedAt: active.startedAtMs,
-                        endsAt: active.endsAtMs,
-                        rewardClaimed: false,
-                        serverAuthoritative: true,
-                        claimedIds: [...new Set([...(state.expedition.claimedIds || []), ...serverClaimedIds])].slice(-200)
-                    };
-                    if (Number.isFinite(status.resources?.energy)) state.resources.energy = status.resources.energy;
-                } else {
-                    state.expedition.claimedIds = [...new Set([...(state.expedition.claimedIds || []), ...serverClaimedIds])].slice(-200);
-                    if (state.expedition.serverAuthoritative && state.expedition.id && serverClaimedIds.includes(state.expedition.id)) {
-                        state.expedition.active = false;
-                        state.expedition.rewardClaimed = true;
-                        state.expedition.serverAuthoritative = false;
-                    } else if (state.expedition.serverAuthoritative && state.expedition.active) {
-                        // A missing server expedition must never be resurrected from a local save.
-                        state.expedition.active = false;
-                        state.expedition.rewardClaimed = true;
-                        state.expedition.serverAuthoritative = false;
-                    }
-                    if (Number.isFinite(status.resources?.energy)) state.resources.energy = status.resources.energy;
-                }
-            } catch {
-                // Keep cached state when offline; authoritative status will retry on next sync.
-            }
-        }
-
+    if (remote?.state?.resources) {
         // A economia principal ainda contém ganhos/gastos legados apenas no cliente.
         // Não sobrescrever esses saldos com zeros de um snapshot remoto parcial; energia
         // da expedição é autoritativa no backend e continua sendo sincronizada.
@@ -1824,10 +1842,11 @@ async function pullStateFromBackend() {
                     ...(Array.isArray(localExpedition.claimedIds) ? localExpedition.claimedIds : []),
                     ...(Array.isArray(remoteExpedition.claimedIds) ? remoteExpedition.claimedIds : [])
                 ])].slice(-200),
-                appliedReceiptIds: [...new Set([
-                    ...(Array.isArray(localExpedition.appliedReceiptIds) ? localExpedition.appliedReceiptIds : []),
-                    ...(Array.isArray(remoteExpedition.appliedReceiptIds) ? remoteExpedition.appliedReceiptIds : [])
-                ])].slice(-500),
+                // This ledger tracks receipts applied to this browser's local balance.
+                // Importing server-side IDs here can suppress recovery after localStorage is lost.
+                appliedReceiptIds: Array.isArray(localExpedition.appliedReceiptIds)
+                    ? [...new Set(localExpedition.appliedReceiptIds)].slice(-500)
+                    : [],
                 completedCount: Math.max(
                     Number.isFinite(localExpedition.completedCount) ? localExpedition.completedCount : 0,
                     Number.isFinite(remoteExpedition.completedCount) ? remoteExpedition.completedCount : 0
@@ -1837,16 +1856,20 @@ async function pullStateFromBackend() {
         }
         state.buildQueue = Array.isArray(remote.state.buildQueue) ? remote.state.buildQueue.slice(0, 2) : state.buildQueue;
         state.heroes = { ...state.heroes, ...(remote.state.heroes || {}) };
+    }
 
-        if (remote.economy && Number.isFinite(remote.economy.gems)) {
-            state.resources.gems = remote.economy.gems;
-        }
+    if (remote?.economy && Number.isFinite(remote.economy.gems)) {
+        state.resources.gems = remote.economy.gems;
+    }
 
-        renderAll();
-        saveState();
+    // Apply authoritative expedition state after the legacy snapshot merge so
+    // stale/local expedition fields cannot overwrite the server's active timer.
+    const expeditionStatusSynced = await syncExpeditionStatusFromServer(api);
+    renderAll();
+    saveState();
+
+    if (remote?.state?.resources || expeditionStatusSynced) {
         pushFeed("Progresso sincronizado com servidor.");
-    } catch (error) {
-        pushFeed(`Sync backend indisponivel: ${error.message}`);
     }
 }
 
