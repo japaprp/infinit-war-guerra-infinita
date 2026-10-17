@@ -787,12 +787,13 @@ export async function initializeRepository(env) {
 
     try {
         postgresPool = postgres.createPool({
-            host: env.POSTGRES_HOST,
-            port: env.POSTGRES_PORT,
-            user: env.POSTGRES_USER,
-            password: env.POSTGRES_PASSWORD,
-            database: env.POSTGRES_DATABASE,
-            ...(env.POSTGRES_SSL ? { ssl: { rejectUnauthorized: true } } : {}),
+            DATABASE_URL: env.DATABASE_URL,
+            host: env.MYSQL_HOST,
+            port: env.MYSQL_PORT,
+            user: env.MYSQL_USER,
+            password: env.MYSQL_PASSWORD,
+            database: env.MYSQL_DATABASE,
+            MYSQL_SSL: env.MYSQL_SSL,
             waitForConnections: true,
             connectionLimit: 8,
             queueLimit: 0
