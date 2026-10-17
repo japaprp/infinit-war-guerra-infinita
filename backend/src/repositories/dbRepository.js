@@ -9,6 +9,7 @@ const DB_PATH = process.env.IWAR_DB_PATH || path.join(__dirname, "..", "..", "da
 
 let mode = "json";
 let postgresPool = null;
+let postgresLockPool = null;
 let strictPersistentMode = false;
 
 function safeNumber(value, fallback = 0) {
@@ -773,6 +774,7 @@ export async function initializeRepository(env) {
     strictPersistentMode = String(env.NODE_ENV || "development").toLowerCase() === "production";
     mode = "json";
     postgresPool = null;
+    postgresLockPool = null;
 
     if (env.DATA_DRIVER !== "postgres") {
         if (strictPersistentMode) throw new Error("Production requires DATA_DRIVER=postgres; JSON-file persistence is not durable on ephemeral hosts.");
@@ -780,7 +782,7 @@ export async function initializeRepository(env) {
     }
 
     try {
-        postgresPool = postgres.createPool({
+        const poolConfig = {
             DATABASE_URL: env.DATABASE_URL,
             MYSQL_HOST: env.MYSQL_HOST,
             MYSQL_PORT: env.MYSQL_PORT,
@@ -788,7 +790,11 @@ export async function initializeRepository(env) {
             MYSQL_PASSWORD: env.MYSQL_PASSWORD,
             MYSQL_DATABASE: env.MYSQL_DATABASE,
             MYSQL_SSL: env.MYSQL_SSL
-        });
+        };
+        postgresPool = postgres.createPool(poolConfig);
+        // A one-connection pool queues local lock waiters without exhausting the
+        // application query pool while another request holds the advisory lock.
+        postgresLockPool = postgres.createPool({ ...poolConfig, POOL_MAX: 1 });
 
         await ensureSqlSchema();
         await migrateAppStateToNormalizedIfNeeded();
@@ -811,7 +817,7 @@ export function getRepositoryMode() {
 export async function acquireRepositoryWriteLock() {
     if (mode !== "postgres" || !postgresPool) return null;
 
-    const connection = await postgresPool.getConnection();
+    const connection = await postgresLockPool.getConnection();
     try {
         // This lock is shared by every backend instance using the same PostgreSQL database.
         // It must cover read -> mutate -> write, because writeDb persists a full-state snapshot.
@@ -834,12 +840,13 @@ export async function acquireRepositoryWriteLock() {
 }
 
 export async function closeRepository() {
-    if (postgresPool) {
-        const pool = postgresPool;
-        postgresPool = null;
-        await pool.end();
-    }
+    const pool = postgresPool;
+    const lockPool = postgresLockPool;
+    postgresPool = null;
+    postgresLockPool = null;
     mode = "json";
+    if (pool) await pool.end();
+    if (lockPool) await lockPool.end();
 }
 
 export async function readDb() {
