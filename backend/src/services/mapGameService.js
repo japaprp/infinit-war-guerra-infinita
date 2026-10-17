@@ -96,6 +96,11 @@ function grantBattleRewards(user, operationId, battle) {
 function recordBattle(db, userId, battle) {
     db.battles ||= {};
     db.battles[battle.operationId] = battle;
+    const battleIds = Object.keys(db.battles);
+    if (battleIds.length > 1000) {
+        const removable = battleIds.sort((a, b) => (db.battles[a]?.endedAtMs || 0) - (db.battles[b]?.endedAtMs || 0));
+        for (const oldId of removable.slice(0, battleIds.length - 1000)) delete db.battles[oldId];
+    }
     const user = db.users[userId];
     if (user) {
         const data = ensureGameData(user);
@@ -114,7 +119,7 @@ export function startHunt(userId, user, payload = {}) {
     const operationId = String(payload.operationId || "").trim();
     const targetId = String(payload.targetId || "").trim();
     if (!operationId || operationId.length > 120 || !targetId || targetId.length > 120) return resultError(400, "operationId and targetId are required");
-    if (data.hunts[operationId]) return { ...data.hunts[operationId], replayed: true };
+    if (data.hunts[operationId]) return { ...data.hunts[operationId], resources: { ...user.v1.resources }, stateVersion: user.v1.stateVersion, replayed: true };
     const formation = validateFormation(user, payload);
     if (formation.error) return formation;
     if (user.v1.resources.energy < 10) return resultError(409, "Insufficient energy");
@@ -122,6 +127,11 @@ export function startHunt(userId, user, payload = {}) {
     const hunt = { operationId, huntId: id("hunt"), ownerPlayerId: userId, targetId, heroIds: payload.heroIds.slice(), troopCount: formation.troopCount, status: "IN_PROGRESS", startedAtMs, endsAtMs: startedAtMs + 60_000, result: null, rewardReceipt: null };
     user.v1.resources.energy -= 10;
     data.hunts[operationId] = hunt;
+    const huntIds = Object.keys(data.hunts);
+    if (huntIds.length > 100) {
+        const removable = huntIds.sort((a, b) => (data.hunts[a]?.startedAtMs || 0) - (data.hunts[b]?.startedAtMs || 0));
+        for (const oldId of removable.slice(0, huntIds.length - 100)) delete data.hunts[oldId];
+    }
     user.v1.stateVersion += 1;
     return { ...hunt, resources: { ...user.v1.resources }, stateVersion: user.v1.stateVersion };
 }
@@ -130,7 +140,7 @@ export function resolveHunt(db, userId, user, operationId) {
     const data = ensureGameData(user);
     const hunt = data.hunts[String(operationId || "")];
     if (!hunt) return resultError(404, "Hunt not found for this player");
-    if (hunt.status === "RESOLVED") return { ...hunt, result: hunt.result, rewardReceipt: hunt.rewardReceipt, resources: { ...user.v1.resources }, replayed: true };
+    if (hunt.status === "RESOLVED") return { ...hunt, result: hunt.result, rewardReceipt: hunt.rewardReceipt, chestReward: hunt.rewardReceipt?.chestReward || null, resources: { ...user.v1.resources }, replayed: true };
     if (nowMs() < hunt.endsAtMs) return resultError(409, "Hunt has not arrived yet");
     const heroes = hunt.heroIds.map((heroId) => user.v1.heroes.find((hero) => hero.heroId === heroId)).filter(Boolean);
     const result = battleResult({ operationId: hunt.operationId, targetId: hunt.targetId, heroes, troopCount: hunt.troopCount });
@@ -162,6 +172,13 @@ export function createAllianceRally(db, userId, user, payload = {}) {
         result: null, rewardReceipts: {}
     };
     db.rallies[operationId] = rally;
+    const rallyIds = Object.keys(db.rallies);
+    if (rallyIds.length > 500) {
+        const removable = rallyIds
+            .filter((key) => db.rallies[key]?.status === "RESOLVED")
+            .sort((a, b) => (db.rallies[a]?.resolvedAtMs || 0) - (db.rallies[b]?.resolvedAtMs || 0));
+        for (const oldId of removable.slice(0, Math.max(0, rallyIds.length - 500))) delete db.rallies[oldId];
+    }
     return { rally, resources: { ...user.v1.resources } };
 }
 
@@ -214,7 +231,7 @@ export function resolveAllianceRally(db, userId, operationId) {
     if (!user || user.v1?.alliances?.allianceId !== rally.allianceId) return resultError(403, "Only members of this alliance can resolve the rally");
     if (rally.status === "RESOLVED") {
         const prior = rally.rewardReceipts[userId];
-        return { rally, ...(prior || {}), resources: { ...user.v1.resources }, replayed: true };
+        return { rally, result: rally.result, rewardReceipt: prior || null, ...(prior || {}), resources: { ...user.v1.resources }, replayed: true };
     }
     if (rally.status !== "DISPATCHED") return resultError(409, "Dispatch the rally before resolving it");
     if (nowMs() < rally.endsAtMs) return resultError(409, "Rally has not arrived yet");
