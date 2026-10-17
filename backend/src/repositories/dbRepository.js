@@ -9,6 +9,7 @@ const DB_PATH = process.env.IWAR_DB_PATH || path.join(__dirname, "..", "..", "da
 
 let mode = "json";
 let mysqlPool = null;
+let strictPersistentMode = false;
 
 function safeNumber(value, fallback = 0) {
     const numeric = Number(value);
@@ -775,10 +776,14 @@ async function migrateReceiptsFromAppStateIfNeeded() {
 }
 
 export async function initializeRepository(env) {
+    strictPersistentMode = String(env.NODE_ENV || "development").toLowerCase() === "production";
     mode = "json";
     mysqlPool = null;
 
-    if (env.DATA_DRIVER !== "mysql") return;
+    if (env.DATA_DRIVER !== "mysql") {
+        if (strictPersistentMode) throw new Error("Production requires DATA_DRIVER=mysql; JSON-file persistence is not durable on ephemeral hosts.");
+        return;
+    }
 
     try {
         mysqlPool = mysql.createPool({
@@ -787,6 +792,7 @@ export async function initializeRepository(env) {
             user: env.MYSQL_USER,
             password: env.MYSQL_PASSWORD,
             database: env.MYSQL_DATABASE,
+            ...(env.MYSQL_SSL ? { ssl: { rejectUnauthorized: true } } : {}),
             waitForConnections: true,
             connectionLimit: 8,
             queueLimit: 0
@@ -801,6 +807,7 @@ export async function initializeRepository(env) {
     } catch (error) {
         mode = "json";
         mysqlPool = null;
+        if (strictPersistentMode) throw new Error(`Production MySQL initialization failed; refusing JSON fallback: ${error.message}`);
         console.warn(`[repo] Falha ao conectar MySQL (${error.message}). Fallback para JSON local.`);
     }
 }
@@ -829,6 +836,7 @@ export async function readDb() {
 
         return await readDbFromMySqlAppState();
     } catch (error) {
+        if (strictPersistentMode) throw new Error(`Production MySQL read failed; refusing JSON fallback: ${error.message}`);
         console.warn(`[repo] Erro ao ler MySQL (${error.message}). Usando JSON local.`);
         mode = "json";
         return readDbFromFile();
@@ -847,6 +855,7 @@ export async function writeDb(db) {
         await syncNormalizedTables(normalized);
         await writeDbToMySqlAppState(normalized);
     } catch (error) {
+        if (strictPersistentMode) throw new Error(`Production MySQL write failed; refusing JSON fallback: ${error.message}`);
         console.warn(`[repo] Erro ao gravar MySQL (${error.message}). Gravando em JSON local.`);
         mode = "json";
         writeDbToFile(normalized);

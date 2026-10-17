@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: infinit-war-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DRIVER
+        value: mysql
+      - key: MYSQL_SSL
+        value: "true"
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: RECEIPT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+      - key: MYSQL_HOST
+        sync: false
+      - key: MYSQL_PORT
+        sync: false
+      - key: MYSQL_DATABASE
+        sync: false
+      - key: MYSQL_USER
+        sync: false
+      - key: MYSQL_PASSWORD
+        sync: false
