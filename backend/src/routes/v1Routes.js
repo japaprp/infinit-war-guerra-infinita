@@ -16,6 +16,7 @@ import {
     speedUpBuild,
     queryWorldTiles,
     startMarch,
+    listMarches,
     createRally,
     createAlliance,
     searchAlliances,
@@ -241,12 +242,22 @@ export function createV1Routes(env, runtime = {}) {
         res.json(queryWorldTiles(user, x, y, radius));
     });
 
+    router.get("/world/marches", async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+
+        res.json(listMarches(user));
+    });
+
     router.post("/world/marches/start", userLock, async (req, res) => {
         const db = await readDb();
         const user = db.users[req.user.sub];
         if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
 
-        res.json(startMarch(user, req.body || {}));
+        const march = startMarch(user, req.body || {});
+        await writeDb(db);
+        res.status(201).json(march);
     });
 
     router.post("/world/rallies", userLock, async (req, res) => {
