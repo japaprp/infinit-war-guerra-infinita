@@ -126,3 +126,33 @@ test("production configuration rejects an invalid MySQL port", () => {
         /MYSQL_PORT must be an integer between 1 and 65535/
     );
 });
+
+
+test("production configuration accepts a PostgreSQL connection URL", () => {
+    assert.doesNotThrow(() => validateRuntimeConfig({
+        NODE_ENV: "production",
+        FIREBASE_PROJECT_ID: "infinit-war-test",
+        JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
+        RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
+        DATA_DRIVER: "postgres",
+        DATABASE_URL: "postgresql://game_user:private-password@db.example.test:5432/infinitwar?sslmode=require",
+        CORS_ORIGINS: "https://game.example.test"
+    }));
+});
+
+test("production configuration rejects malformed PostgreSQL connection URLs", () => {
+    for (const DATABASE_URL of ["not-a-url", "https://db.example.test/infinitwar", "postgresql://db.example.test/"]) {
+        assert.throws(
+            () => validateRuntimeConfig({
+                NODE_ENV: "production",
+                FIREBASE_PROJECT_ID: "infinit-war-test",
+                JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
+                RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
+                DATA_DRIVER: "postgres",
+                DATABASE_URL,
+                CORS_ORIGINS: "https://game.example.test"
+            }),
+            /Invalid production configuration/
+        );
+    }
+});
