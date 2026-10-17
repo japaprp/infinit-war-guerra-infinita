@@ -109,7 +109,7 @@ export function getBattleHistory(user, limit = 20) {
     return { battles: data.battleHistory.slice(0, count) };
 }
 
-export function startHunt(user, payload = {}) {
+export function startHunt(userId, user, payload = {}) {
     const data = ensureGameData(user);
     const operationId = String(payload.operationId || "").trim();
     const targetId = String(payload.targetId || "").trim();
@@ -119,7 +119,7 @@ export function startHunt(user, payload = {}) {
     if (formation.error) return formation;
     if (user.v1.resources.energy < 10) return resultError(409, "Insufficient energy");
     const startedAtMs = nowMs();
-    const hunt = { operationId, huntId: id("hunt"), ownerPlayerId: user.id || null, targetId, heroIds: payload.heroIds.slice(), troopCount: formation.troopCount, status: "IN_PROGRESS", startedAtMs, endsAtMs: startedAtMs + 60_000, result: null, rewardReceipt: null };
+    const hunt = { operationId, huntId: id("hunt"), ownerPlayerId: userId, targetId, heroIds: payload.heroIds.slice(), troopCount: formation.troopCount, status: "IN_PROGRESS", startedAtMs, endsAtMs: startedAtMs + 60_000, result: null, rewardReceipt: null };
     user.v1.resources.energy -= 10;
     data.hunts[operationId] = hunt;
     user.v1.stateVersion += 1;
