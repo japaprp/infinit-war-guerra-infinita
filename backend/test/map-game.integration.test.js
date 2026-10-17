@@ -184,10 +184,11 @@ test("server chest opening is idempotent and vehicle presets enforce ownership a
         const user = db.users["guest:vehicle-player"];
         user.v1.gameData = {
             vehicle: {
-                inventory: [
-                    { id: "chip-a", typeId: "assault-module", name: "Módulo de Assalto", role: "Guerreiro", level: 1, rarity: "Épico", source: "server", obtainedAt: Date.now() },
-                    { id: "chip-b", typeId: "assault-module", name: "Módulo de Assalto", role: "Guerreiro", level: 1, rarity: "Épico", source: "server", obtainedAt: Date.now() }
-                ],
+                inventory: Array.from({ length: 6 }, (_, index) => ({
+                    id: `chip-${index === 0 ? "a" : String.fromCharCode(97 + index)}`,
+                    typeId: "assault-module", name: "Módulo de Assalto", role: "Guerreiro",
+                    level: 1, rarity: "Épico", source: "server", obtainedAt: Date.now()
+                })),
                 presets: { I: { assault: null, vanguard: null, suppression: null, gravity: null } },
                 activePreset: "I",
                 chipMaterials: 0
@@ -199,7 +200,7 @@ test("server chest opening is idempotent and vehicle presets enforce ownership a
 
         const loadout = await api(server.baseUrl, "GET", "/v1/vehicle/loadout", { token });
         assert.equal(loadout.status, 200);
-        assert.equal(loadout.body.inventory.length, 2);
+        assert.equal(loadout.body.inventory.length, 6);
         const equip = await api(server.baseUrl, "POST", "/v1/vehicle/chips/equip", {
             token, body: { chipId: "chip-a", slotId: "assault", presetId: "I" }
         });
@@ -212,6 +213,11 @@ test("server chest opening is idempotent and vehicle presets enforce ownership a
             token, body: { slotId: "assault", presetId: "I" }
         });
         assert.equal(remove.status, 200);
+        const upgrade = await api(server.baseUrl, "POST", "/v1/vehicle/chips/chip-a/upgrade", { token, body: {} });
+        assert.equal(upgrade.status, 200);
+        assert.equal(upgrade.body.inventory.length, 1);
+        assert.equal(upgrade.body.inventory[0].id, "chip-a");
+        assert.equal(upgrade.body.inventory[0].level, 2);
 
         const chests = await api(server.baseUrl, "GET", "/v1/inventory/chests", { token });
         assert.equal(chests.status, 200);
@@ -228,15 +234,16 @@ test("server chest opening is idempotent and vehicle presets enforce ownership a
         assert.deepEqual(replay.body, opened.body);
 
         const beforeRestart = await api(server.baseUrl, "GET", "/v1/inventory/chests", { token });
-        assert.equal(beforeRestart.body.chests.length, 0);
+        assert.equal(beforeRestart.body.chests.some((chest) => chest.id === "chest-integration-1"), false);
         await server.stop();
         server = await bootServer();
         const afterRestart = await api(server.baseUrl, "GET", "/v1/vehicle/loadout", { token });
         assert.equal(afterRestart.status, 200);
-        assert.equal(afterRestart.body.inventory.length, 2);
+        assert.equal(afterRestart.body.inventory.length, 1);
+        assert.equal(afterRestart.body.inventory[0].level, 2);
         assert.equal(afterRestart.body.presets.I.assault, null);
         const afterChestRestart = await api(server.baseUrl, "GET", "/v1/inventory/chests", { token });
-        assert.equal(afterChestRestart.body.chests.length, 0);
+        assert.equal(afterChestRestart.body.chests.some((chest) => chest.id === "chest-integration-1"), false);
         assert.ok(afterChestRestart.body.receipts.some((receipt) => receipt.chestId === "chest-integration-1"));
     } finally {
         await server.stop();
