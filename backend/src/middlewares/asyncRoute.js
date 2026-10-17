@@ -13,6 +13,12 @@ function wrapHandler(handler) {
         return handler;
     }
 
+    if (handler.length === 4) {
+        return function asyncErrorRouteHandler(error, req, res, next) {
+            return Promise.resolve(handler(error, req, res, next)).catch(next);
+        };
+    }
+
     return function asyncRouteHandler(req, res, next) {
         return Promise.resolve(handler(req, res, next)).catch(next);
     };
