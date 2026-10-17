@@ -16,6 +16,7 @@ import {
     speedUpBuild,
     queryWorldTiles,
     startMarch,
+    listMarches,
     createRally,
     createAlliance,
     searchAlliances,
@@ -30,6 +31,7 @@ import {
 } from "../services/v1StubService.js";
 import { createAuthMiddleware } from "../middlewares/authMiddleware.js";
 import { createUserLockMiddleware } from "../middlewares/userLockMiddleware.js";
+import { wrapAsyncRouteHandlers } from "../middlewares/asyncRoute.js";
 import { createIdempotencyMiddleware } from "../middlewares/idempotencyMiddleware.js";
 
 function asError(res, result) {
@@ -39,7 +41,7 @@ function asError(res, result) {
 }
 
 export function createV1Routes(env, runtime = {}) {
-    const router = Router();
+    const router = wrapAsyncRouteHandlers(Router());
     const authMiddleware = createAuthMiddleware(env.JWT_SECRET);
     const userLock = createUserLockMiddleware({ redisClient: runtime.redisClient, ttlSec: 8 });
     const idempotency = createIdempotencyMiddleware({ redisClient: runtime.redisClient, ttlSec: 300 });
@@ -204,7 +206,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(result);
     });
 
-    router.post("/buildings/complete", idempotency, userLock, async (req, res) => {
+    router.post("/buildings/complete", userLock, idempotency, async (req, res) => {
         const { taskId } = req.body || {};
         const db = await readDb();
         const user = db.users[req.user.sub];
@@ -241,12 +243,22 @@ export function createV1Routes(env, runtime = {}) {
         res.json(queryWorldTiles(user, x, y, radius));
     });
 
-    router.post("/world/marches/start", userLock, async (req, res) => {
+    router.get("/world/marches", async (req, res) => {
         const db = await readDb();
         const user = db.users[req.user.sub];
         if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
 
-        res.json(startMarch(user, req.body || {}));
+        res.json(listMarches(user));
+    });
+
+    router.post("/world/marches/start", userLock, idempotency, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+
+        const march = startMarch(user, req.body || {});
+        await writeDb(db);
+        res.status(201).json(march);
     });
 
     router.post("/world/rallies", userLock, async (req, res) => {
@@ -294,7 +306,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(getPowerRanking(db, page, pageSize));
     });
 
-    router.post("/shop/purchase", idempotency, userLock, async (req, res) => {
+    router.post("/shop/purchase", userLock, idempotency, async (req, res) => {
         const { sku, quantity, idempotencyKey } = req.body || {};
         if (!sku || !idempotencyKey) {
             return res.status(400).json({ code: "BAD_REQUEST", message: "sku and idempotencyKey are required" });
@@ -311,7 +323,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(result);
     });
 
-    router.post("/pass/claim", idempotency, userLock, async (req, res) => {
+    router.post("/pass/claim", userLock, idempotency, async (req, res) => {
         const { seasonId, tier, premiumTrack } = req.body || {};
         const db = await readDb();
         const user = db.users[req.user.sub];

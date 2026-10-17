@@ -57,8 +57,18 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
                 released = true;
                 await releaseRepositoryLock().catch(() => {});
             };
+            // Do not release on "close": a disconnected client does not cancel
+            // the async handler or its database write. Releasing here would allow a
+            // second writer to enter while the first handler is still running.
+            // res.end is reached only when the handler has produced its terminal response;
+            // this also covers handlers that finish after the peer has disconnected.
+            const originalEnd = res.end.bind(res);
+            res.end = (...args) => {
+                const result = originalEnd(...args);
+                releaseOnce().catch(() => {});
+                return result;
+            };
             res.once("finish", () => { releaseOnce().catch(() => {}); });
-            res.once("close", () => { releaseOnce().catch(() => {}); });
             return next();
         }
 
@@ -85,10 +95,14 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
             const release = async () => {
                 try {
                     if (redisClient) {
-                        const raw = await redisClient.get(lockKey);
-                        if (raw === owner) {
-                            await redisClient.del(lockKey);
-                        }
+                        // Compare-and-delete atomically: GET followed by DEL can delete a
+                        // newer owner's lock if the original lease expires between commands.
+                        await redisClient.eval(
+                            "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+                            1,
+                            lockKey,
+                            owner
+                        );
                     } else {
                         releaseMemoryLock(lockKey, owner);
                     }
