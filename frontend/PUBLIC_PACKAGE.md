@@ -15,6 +15,12 @@ O diretório público contém apenas:
 
 O teste `tests/public-frontend-package.test.mjs` exige que a lista corresponda exatamente a essa allowlist, que os arquivos publicados sejam cópias idênticas das fontes e que as dependências locais de HTML existam.
 
+## Blueprint do frontend no Render
+
+O arquivo `render-frontend.yaml` descreve um site estático separado chamado `infinit-war-web` e publica **somente** `frontend/public/`. O blueprint não contém banco, chaves privadas nem configuração da API; ele é apenas preparação versionada e **não foi aplicado ao Render**. Não criar/aplicar o Blueprint nem publicar o site até a revisão e autorização explícita.
+
+O teste de pacote também verifica que o caminho de publicação não pode ser a raiz do repositório. O blueprint usa um comando sem etapa de build porque os arquivos são HTML/CSS/JavaScript estáticos.
+
 ## Bloqueios antes de publicar
 
 1. A configuração Firebase contém valores de projeto. Antes de publicar, confirmar no Console Firebase o projeto correto, os domínios autorizados, os provedores de login habilitados e as restrições da chave de API; esses valores de cliente não substituem essa validação.
