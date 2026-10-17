@@ -73,3 +73,26 @@ test("public package excludes server, tooling, tests, and private project docume
     assert.ok(!fs.existsSync(path.join(publicRoot, item)), `private/server path must not be published: ${item}`);
   }
 });
+
+test("public game loads chip dependencies before the engine and exports every API method it calls", () => {
+  const gameHtml = fs.readFileSync(path.join(root, "game.html"), "utf8");
+  const gameSource = fs.readFileSync(path.join(root, "engine/game.js"), "utf8");
+  const clientSource = fs.readFileSync(path.join(root, "api/client.js"), "utf8");
+  const scriptOrder = [
+    "engine/chip-loadouts.js",
+    "engine/vehicle-chip-combat.js",
+    "engine/vehicle-accessories.js",
+    "engine/game.js"
+  ].map((src) => gameHtml.indexOf(`src="${src}"`));
+  assert.ok(scriptOrder.every((index) => index >= 0), "game page must load all chip modules and the engine");
+  assert.deepEqual(scriptOrder, [...scriptOrder].sort((a, b) => a - b), "chip helpers must load before engine/game.js");
+
+  const methods = new Set([...gameSource.matchAll(/\\bapi(?:\\?\\.)?\\.([A-Za-z_$][\\w$]*)/g)].map((match) => match[1]));
+  for (const method of methods) {
+    assert.ok(
+      new RegExp(`(?:const\\s+${method}\\s*=|\\b${method}\\s*:)`).test(clientSource),
+      `api/client.js must implement ${method}`
+    );
+    assert.match(clientSource, new RegExp(`\\b${method}\\s*(?:,|:)`), `api/client.js must export ${method}`);
+  }
+});
