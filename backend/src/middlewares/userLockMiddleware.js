@@ -80,3 +80,59 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
         }
     };
 }
+
+
+/**
+ * Snapshot-based repository writes can otherwise overwrite each other's changes
+ * when two different users mutate global app state at the same time. Serialize
+ * mutating requests until repository writes are transaction-scoped. Redis makes
+ * the lock shared between instances; memory mode protects a single process.
+ */
+export function createStateWriteLockMiddleware({ redisClient, ttlSec = 30 } = {}) {
+    return async (req, res, next) => {
+        if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) return next();
+
+        const lockKey = "lock:database:write";
+        const owner = crypto.randomUUID();
+        try {
+            let acquired = false;
+            if (redisClient) {
+                const result = await redisClient.set(lockKey, owner, "EX", ttlSec, "NX");
+                acquired = result === "OK";
+            } else {
+                acquired = acquireMemoryLock(lockKey, owner, ttlSec);
+            }
+
+            if (!acquired) {
+                return res.status(429).json({
+                    code: "STATE_WRITE_LOCKED",
+                    message: "Outra gravação está em andamento. Tente novamente em instantes."
+                });
+            }
+
+            const release = async () => {
+                try {
+                    if (redisClient) {
+                        const raw = await redisClient.get(lockKey);
+                        if (raw === owner) await redisClient.del(lockKey);
+                    } else {
+                        releaseMemoryLock(lockKey, owner);
+                    }
+                } catch {
+                    // TTL is the fallback if the lock store becomes unavailable.
+                }
+            };
+            const releaseLock = () => { release().catch(() => {}); };
+            res.on("finish", releaseLock);
+            res.on("close", releaseLock);
+            return next();
+        } catch {
+            // Fail closed for mutating requests; allowing writes without the
+            // serialization lock would reintroduce lost-update races.
+            return res.status(503).json({
+                code: "STATE_LOCK_UNAVAILABLE",
+                message: "Não foi possível confirmar o bloqueio de gravação. Tente novamente."
+            });
+        }
+    };
+}
