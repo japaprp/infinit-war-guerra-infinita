@@ -11,10 +11,11 @@ test("rejected async route handlers reach Express error middleware", async () =>
         throw new Error("simulated persistence failure");
     });
 
-    app.use(router);
-    app.use((error, _req, res, _next) => {
+    router.use(async (error, _req, res, _next) => {
+        await Promise.resolve();
         res.status(500).json({ code: "INTERNAL_ERROR", message: error.message });
     });
+    app.use(router);
 
     const server = await new Promise((resolve) => {
         const instance = app.listen(0, () => resolve(instance));
