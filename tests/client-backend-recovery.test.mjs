@@ -212,6 +212,7 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
         assert.equal(recoveredActive.expedition.serverAuthoritative, true);
         assert.equal(recoveredActive.resources.energy, 85);
         assert.equal(recoveredActive.expedition.endsAt, endsAt);
+        assert.equal(await page.locator("#startExpeditionBtn").isDisabled(), true, "the client must not offer a second expedition while the server has one active");
 
         // The backend processes the claim, but the browser loses the first response.
         let dropFirstResponse = true;
