@@ -12,7 +12,7 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "u
 function loadConfig(hostname, configuredApiUrl = "", metaApiUrl = "") {
     const window = { location: { hostname }, IWAR_API_BASE_URL: configuredApiUrl };
     const document = { querySelector: (selector) => selector === 'meta[name="iwar-api-base-url"]' ? { content: metaApiUrl } : null };
-    vm.runInNewContext(read("api/config.js"), { window, document });
+    vm.runInNewContext(read("api/config.js"), { window, document, URL });
     return window;
 }
 
