@@ -93,6 +93,6 @@ test("public game loads chip dependencies before the engine and exports every AP
       new RegExp(`(?:const\\s+${method}\\s*=|\\b${method}\\s*:)`).test(clientSource),
       `api/client.js must implement ${method}`
     );
-    assert.match(clientSource, new RegExp(`\\b${method}\\s*(?:,|:)`), `api/client.js must export ${method}`);
+    assert.match(clientSource, new RegExp(`\\b${method}\\s*(?:,|:|\\})`), `api/client.js must export ${method}`);
   }
 });
