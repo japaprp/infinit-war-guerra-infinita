@@ -363,12 +363,36 @@ async function readDbFromNormalizedTables() {
 
     if (!userRows.length) return null;
 
+    // Keep fields that are not yet represented in normalized tables (for example
+    // expedition state and claim ledgers) from the complete app_state snapshot.
+    // The normalized columns remain authoritative for the fields explicitly mapped below.
+    const legacyDb = await readDbFromMySqlAppState();
     const db = normalizeDbShape(null);
     const externalBySqlUserId = new Map();
 
     for (const row of userRows) {
         const externalId = row.external_id;
-        db.users[externalId] = buildUserFromRow(row);
+        const normalizedUser = buildUserFromRow(row);
+        const legacyUser = legacyDb.users?.[externalId];
+
+        db.users[externalId] = legacyUser
+            ? {
+                ...legacyUser,
+                ...normalizedUser,
+                economy: { ...(legacyUser.economy || {}), ...(normalizedUser.economy || {}) },
+                inventory: {},
+                v1: {
+                    ...(legacyUser.v1 || {}),
+                    ...(normalizedUser.v1 || {}),
+                    resources: {
+                        ...(legacyUser.v1?.resources || {}),
+                        ...(normalizedUser.v1?.resources || {})
+                    },
+                    heroes: [],
+                    buildings: []
+                }
+            }
+            : normalizedUser;
         externalBySqlUserId.set(safeNumber(row.id, 0), externalId);
     }
 
@@ -423,13 +447,16 @@ async function readDbFromNormalizedTables() {
         db.receipts[receipt.receiptId] = receipt;
     }
 
-    for (const user of Object.values(db.users)) {
+    for (const [externalId, user] of Object.entries(db.users)) {
+        const legacyUser = legacyDb.users?.[externalId];
         const defaults = buildDefaultV1(user.economy?.gems || 4210);
         if (!Array.isArray(user.v1.heroes) || user.v1.heroes.length === 0) {
-            user.v1.heroes = defaults.heroes;
+            const legacyHeroes = legacyUser?.v1?.heroes;
+            user.v1.heroes = Array.isArray(legacyHeroes) && legacyHeroes.length > 0 ? legacyHeroes : defaults.heroes;
         }
         if (!Array.isArray(user.v1.buildings) || user.v1.buildings.length === 0) {
-            user.v1.buildings = defaults.buildings;
+            const legacyBuildings = legacyUser?.v1?.buildings;
+            user.v1.buildings = Array.isArray(legacyBuildings) && legacyBuildings.length > 0 ? legacyBuildings : defaults.buildings;
         }
         user.v1.resources.gems = user.economy?.gems || 4210;
     }
