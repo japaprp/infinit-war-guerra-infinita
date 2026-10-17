@@ -65,9 +65,14 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
                 }
             };
 
-            res.on("finish", () => {
+            // "finish" covers normal responses; "close" releases the lock when
+            // the client disconnects before the response completes. release() is
+            // owner-checked and therefore safe if both events fire.
+            const releaseLock = () => {
                 release().catch(() => {});
-            });
+            };
+            res.on("finish", releaseLock);
+            res.on("close", releaseLock);
 
             return next();
         } catch {
