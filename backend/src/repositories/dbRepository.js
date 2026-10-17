@@ -804,6 +804,15 @@ export function getRepositoryMode() {
     return mode;
 }
 
+export async function closeRepository() {
+    if (postgresPool) {
+        const pool = postgresPool;
+        postgresPool = null;
+        await pool.end();
+    }
+    mode = "json";
+}
+
 export async function readDb() {
     if (mode !== "postgres" || !postgresPool) {
         return readDbFromFile();
