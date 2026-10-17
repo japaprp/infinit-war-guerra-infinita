@@ -808,6 +808,31 @@ export function getRepositoryMode() {
     return mode;
 }
 
+export async function acquireRepositoryWriteLock() {
+    if (mode !== "postgres" || !postgresPool) return null;
+
+    const connection = await postgresPool.getConnection();
+    try {
+        // This lock is shared by every backend instance using the same PostgreSQL database.
+        // It must cover read -> mutate -> write, because writeDb persists a full-state snapshot.
+        await connection.query("SELECT pg_advisory_lock(1735291, 90210)");
+    } catch (error) {
+        connection.release();
+        throw error;
+    }
+
+    let released = false;
+    return async () => {
+        if (released) return;
+        released = true;
+        try {
+            await connection.query("SELECT pg_advisory_unlock(1735291, 90210)");
+        } finally {
+            connection.release();
+        }
+    };
+}
+
 export async function closeRepository() {
     if (postgresPool) {
         const pool = postgresPool;
