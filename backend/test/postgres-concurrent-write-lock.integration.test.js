@@ -5,7 +5,7 @@ import { env } from "../src/config/env.js";
 import { createUserLockMiddleware } from "../src/middlewares/userLockMiddleware.js";
 import { closeRepository, initializeRepository } from "../src/repositories/dbRepository.js";
 
-test("PostgreSQL state mutation lock serializes requests across different users", async () => {
+test("PostgreSQL state mutation lock serializes writes and survives client disconnects", async () => {
     env.NODE_ENV = "production";
     env.DATA_DRIVER = "postgres";
     await initializeRepository(env);
@@ -56,6 +56,35 @@ test("PostgreSQL state mutation lock serializes requests across different users"
         await secondRequest;
         assert.equal(secondEntered, true, "second request may proceed after the first releases the lock");
         secondResponse.end();
+
+        const disconnectedResponse = makeResponse();
+        const waitingResponse = makeResponse();
+        let disconnectedHandlerEntered = false;
+        let waitingHandlerEntered = false;
+
+        await middleware(
+            { method: "POST", user: { sub: "guest:disconnect_a" } },
+            disconnectedResponse,
+            () => { disconnectedHandlerEntered = true; }
+        );
+        assert.equal(disconnectedHandlerEntered, true);
+
+        const waitingRequest = middleware(
+            { method: "POST", user: { sub: "guest:disconnect_b" } },
+            waitingResponse,
+            () => { waitingHandlerEntered = true; }
+        );
+
+        // A dropped client connection must not release the lock while the
+        // asynchronous mutation handler may still be writing shared state.
+        disconnectedResponse.emit("close");
+        await new Promise((resolve) => setTimeout(resolve, 75));
+        assert.equal(waitingHandlerEntered, false, "client disconnect must not release an active mutation lock");
+
+        disconnectedResponse.end();
+        await waitingRequest;
+        assert.equal(waitingHandlerEntered, true, "waiting write proceeds when the first handler ends");
+        waitingResponse.end();
     } finally {
         firstResponse.end();
         secondResponse.end();
