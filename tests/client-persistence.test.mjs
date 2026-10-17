@@ -200,7 +200,7 @@ test("vehicle chip presets persist and only the active preset affects combat", {
         await page.goto(`${baseUrl}/game.html`, { waitUntil: "load" });
         await page.waitForFunction(() => !document.querySelector("#loadingScreen")
             || document.querySelector("#loadingScreen").classList.contains("is-hidden"), null, { timeout: 15000 });
-        await page.waitForTimeout(500);
+        await page.waitForFunction(() => Boolean(localStorage.getItem("iwar_village_state_v1")), null, { timeout: 5000 });
 
         const payload = await readSavedState(page);
         assert.ok(payload, "the initial local save must exist");
