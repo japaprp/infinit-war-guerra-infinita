@@ -99,8 +99,8 @@ test("public game loads chip dependencies before the engine and exports every AP
 
 test("Render frontend blueprint publishes only the reviewed browser package", () => {
   const blueprint = fs.readFileSync(path.join(root, "render-frontend.yaml"), "utf8");
-  assert.match(blueprint, /name:\\s*infinit-war-web/);
-  assert.match(blueprint, /runtime:\\s*static/);
-  assert.match(blueprint, /staticPublishPath:\\s*\\.\\/frontend\\/public/);
-  assert.doesNotMatch(blueprint, /staticPublishPath:\\s*\\.\\/?\\s*(?:#.*)?$/m, "the repository root must never be published");
+  assert.match(blueprint, /name:\s*infinit-war-web/);
+  assert.match(blueprint, /runtime:\s*static/);
+  assert.match(blueprint, /staticPublishPath:\s*\.\/frontend\/public/);
+  assert.doesNotMatch(blueprint, /staticPublishPath:\s*\.\/?\s*(?:#.*)?$/m, "the repository root must never be published");
 });
