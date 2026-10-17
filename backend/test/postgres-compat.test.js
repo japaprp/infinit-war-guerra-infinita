@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { convertDdl, translateSql } from "../src/repositories/postgresCompat.js";
+import { convertDdl, translateSql, wrapClient } from "../src/repositories/postgresCompat.js";
 
 test("translates MySQL parameter placeholders to PostgreSQL placeholders", () => {
     assert.equal(translateSql("SELECT * FROM users WHERE external_id = ?"), "SELECT * FROM users WHERE external_id = $1");
@@ -29,4 +29,24 @@ test("does not translate question marks inside SQL strings, identifiers, comment
         translateSql(sql),
         "SELECT $1, '?' AS literal, \"?\" AS quoted_identifier, `?` AS mysql_identifier -- ? ignored\n/* ? ignored */ WHERE note = $tag$?$tag$ AND id = $2"
     );
+});
+
+
+test("discards a PostgreSQL client when release receives an error", async () => {
+    const connectionError = new Error("simulated connection failure");
+    let releasedWith;
+    const client = {
+        async query() {
+            throw connectionError;
+        },
+        release(error) {
+            releasedWith = error;
+        }
+    };
+
+    const connection = wrapClient(client);
+    await assert.rejects(connection.query("SELECT pg_advisory_unlock(1735291, 90210)"), connectionError);
+    connection.release(connectionError);
+
+    assert.equal(releasedWith, connectionError);
 });
