@@ -9,12 +9,13 @@ export const env = {
     JWT_SECRET: process.env.JWT_SECRET || "unsafe_dev_secret",
     RECEIPT_SECRET: process.env.RECEIPT_SECRET || "unsafe_receipt_secret",
     DATA_DRIVER: (process.env.DATA_DRIVER || "json").toLowerCase(),
-    MYSQL_HOST: process.env.MYSQL_HOST || "127.0.0.1",
-    MYSQL_PORT: Number(process.env.MYSQL_PORT || 3306),
-    MYSQL_DATABASE: process.env.MYSQL_DATABASE || "infinitwar",
-    MYSQL_USER: process.env.MYSQL_USER || "root",
-    MYSQL_PASSWORD: process.env.MYSQL_PASSWORD || "",
-    MYSQL_SSL: String(process.env.MYSQL_SSL || "false").toLowerCase() === "true",
+    DATABASE_URL: process.env.DATABASE_URL || "",
+    MYSQL_HOST: process.env.PG_HOST || process.env.MYSQL_HOST || "127.0.0.1",
+    MYSQL_PORT: Number(process.env.PG_PORT || process.env.MYSQL_PORT || 5432),
+    MYSQL_DATABASE: process.env.PG_DATABASE || process.env.MYSQL_DATABASE || "postgres",
+    MYSQL_USER: process.env.PG_USER || process.env.MYSQL_USER || "postgres",
+    MYSQL_PASSWORD: process.env.PG_PASSWORD || process.env.MYSQL_PASSWORD || "",
+    MYSQL_SSL: String(process.env.PG_SSL || process.env.MYSQL_SSL || "false").toLowerCase() === "true",
     CORS_ORIGINS: process.env.CORS_ORIGINS || "",
     FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || "",
     REDIS_ENABLED: String(process.env.REDIS_ENABLED || "false").toLowerCase() === "true",
@@ -39,8 +40,8 @@ export function validateRuntimeConfig(config) {
         problems.push("JWT_SECRET and RECEIPT_SECRET must be different values");
     }
 
-    if (String(config.DATA_DRIVER || "").toLowerCase() !== "mysql") {
-        problems.push("DATA_DRIVER must be mysql for persistent hosted gameplay");
+    if (String(config.DATA_DRIVER || "").toLowerCase() !== "postgres") {
+        problems.push("DATA_DRIVER must be postgres for persistent hosted gameplay");
     }
 
     for (const key of ["MYSQL_HOST", "MYSQL_DATABASE", "MYSQL_USER", "MYSQL_PASSWORD"]) {
