@@ -10,7 +10,8 @@ const {
     assignChip,
     clearSlot,
     isChipInPreset,
-    filledSlotCount
+    filledSlotCount,
+    getResonanceReadiness
 } = chipLoadouts;
 
 const chipIds = new Set(["chip-a", "chip-b", "chip-c", "chip-d"]);
@@ -78,4 +79,26 @@ test("clears a slot without changing other slots", () => {
     assert.equal(cleared.loadouts.I.assault, null);
     assert.equal(cleared.loadouts.I.gravity, "chip-b");
     assert.equal(filledSlotCount(cleared.loadouts, "I"), 1);
+});
+
+test("a full preset is resonance-ready but receives no unconfigured bonus", () => {
+    const loadouts = {
+        I: { assault: "chip-a", vanguard: "chip-b", suppression: "chip-c", gravity: "chip-d" }
+    };
+    const readiness = getResonanceReadiness(loadouts, "I");
+    assert.deepEqual(readiness, {
+        preset: "I",
+        filledSlots: 4,
+        requiredSlots: 4,
+        ready: true,
+        active: false,
+        bonusApplied: false,
+        reason: "rule-not-configured"
+    });
+});
+
+test("incomplete or invalid presets are not resonance-ready", () => {
+    const loadouts = { I: { assault: "chip-a", vanguard: "chip-b", suppression: null, gravity: null } };
+    assert.equal(getResonanceReadiness(loadouts, "I").ready, false);
+    assert.equal(getResonanceReadiness(loadouts, "V").ready, false);
 });
