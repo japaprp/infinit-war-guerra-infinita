@@ -60,6 +60,14 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
             // Do not release on "close": a disconnected client does not cancel
             // the async handler or its database write. Releasing here would allow a
             // second writer to enter while the first handler is still running.
+            // res.end is reached only when the handler has produced its terminal response;
+            // this also covers handlers that finish after the peer has disconnected.
+            const originalEnd = res.end.bind(res);
+            res.end = (...args) => {
+                const result = originalEnd(...args);
+                releaseOnce().catch(() => {});
+                return result;
+            };
             res.once("finish", () => { releaseOnce().catch(() => {}); });
             return next();
         }
