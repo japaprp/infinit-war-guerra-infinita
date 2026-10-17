@@ -23,6 +23,8 @@ on:
     paths:
       - "tests/client-persistence.test.mjs"
       - "tests/client-backend-recovery.test.mjs"
+      - "tests/public-frontend-package.test.mjs"
+      - "frontend/public/**"
       - "backend/**"
       - "api/**"
       - "auth/**"
