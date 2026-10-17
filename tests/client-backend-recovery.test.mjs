@@ -150,6 +150,18 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
         const page = await context.newPage();
         const pageErrors = [];
         page.on("pageerror", error => pageErrors.push(error.message));
+        // Keep the legacy snapshot absent to prove V1 status is independently sufficient.
+        await page.route(`${web.baseUrl}/player/state`, async route => {
+            if (route.request().method() === "PUT") {
+                await route.fulfill({
+                    status: 503,
+                    contentType: "application/json",
+                    body: JSON.stringify({ error: "simulated legacy snapshot write failure" })
+                });
+                return;
+            }
+            await route.continue();
+        });
         await page.goto(`${web.baseUrl}/game.html`, { waitUntil: "load" });
         await page.waitForFunction(() => {
             const button = document.querySelector("#startExpeditionBtn");
@@ -195,6 +207,8 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
         assert.equal(started.resources.energy, 85);
         const expeditionId = started.expedition.id;
         const endsAt = started.expedition.endsAt;
+        const legacySnapshot = await api(backend.baseUrl, "GET", "/player/state", { token });
+        assert.equal(legacySnapshot.state, null, "the legacy snapshot must remain absent during this recovery test");
 
         // Remove the browser cache to prove that an authenticated reload can
         // reconstruct the active expedition from the server alone.
