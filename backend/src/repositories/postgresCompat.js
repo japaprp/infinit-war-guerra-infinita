@@ -73,13 +73,13 @@ function wrapClient(client) {
 
 export function createPostgresPool(config) {
     const pool = new Pool({
-        connectionString: config.DATABASE_URL || undefined,
-        host: config.PG_HOST || undefined,
-        port: config.PG_PORT ? Number(config.PG_PORT) : undefined,
-        database: config.PG_DATABASE || undefined,
-        user: config.PG_USER || undefined,
-        password: config.PG_PASSWORD || undefined,
-        ssl: config.PG_SSL ? { rejectUnauthorized: true } : undefined,
+        connectionString: config.DATABASE_URL || config.MYSQL_URL || undefined,
+        host: config.PG_HOST || config.MYSQL_HOST || undefined,
+        port: config.PG_PORT || config.MYSQL_PORT ? Number(config.PG_PORT || config.MYSQL_PORT) : undefined,
+        database: config.PG_DATABASE || config.MYSQL_DATABASE || undefined,
+        user: config.PG_USER || config.MYSQL_USER || undefined,
+        password: config.PG_PASSWORD || config.MYSQL_PASSWORD || undefined,
+        ssl: (config.PG_SSL || config.MYSQL_SSL) ? { rejectUnauthorized: true } : undefined,
         max: 8,
         connectionTimeoutMillis: 10000
     });
@@ -98,3 +98,5 @@ export function createPostgresPool(config) {
         }
     };
 }
+
+export default { createPool: createPostgresPool };
