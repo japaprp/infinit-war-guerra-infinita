@@ -55,6 +55,7 @@
     <button class="rail-btn" id="focusMissionBtn">MIS</button>
     <button class="rail-btn" id="openHeroesRailBtn">BAG</button>
     <button class="rail-btn" id="focusPvpBtn">PVP</button>
+    <button class="rail-btn" id="openVehicleAccessoriesBtn" aria-label="Acessórios da viatura">ACC</button>
 </aside>
 
 <aside class="right-rail">
@@ -135,6 +136,66 @@
     <div class="slice-actions"><button id="startExpeditionBtn">Iniciar expedição (15 energia)</button><button id="claimExpeditionBtn" disabled>Resgatar recompensa</button></div>
 </section>
 
+<section class="vertical-slice-panel expedition-panel" id="mapRallyPanel">
+    <header><strong>Caçadas e Incursões</strong><small>Online · servidor</small></header>
+    <p id="mapRallyStatus" role="status">Entre na conta e atualize a lista de heróis para usar as caçadas online.</p>
+    <div class="expedition-field">
+        <label for="mapRallyTarget">Alvo</label>
+        <select id="mapRallyTarget">
+            <option value="grey-forest-stalker">Rastreador da Floresta · Nv. 1 · 15 energia</option>
+            <option value="old-ruins-brute">Bruto das Ruínas · Nv. 2 · 15 energia</option>
+        </select>
+    </div>
+    <fieldset class="expedition-field" id="mapRallyHeroField">
+        <legend>Formação (escolha até 5 heróis)</legend>
+        <div id="mapRallyHeroList" class="slice-steps">Atualize os heróis primeiro.</div>
+    </fieldset>
+    <div class="slice-actions">
+        <button id="mapRallyRefreshHeroesBtn" type="button">Atualizar heróis</button>
+        <button id="mapHuntStartBtn" type="button">Iniciar caçada</button>
+    </div>
+    <label class="expedition-field" for="mapRallyHuntOperationId">Código da caçada ativa
+        <input id="mapRallyHuntOperationId" type="text" maxlength="100" placeholder="Preenchido ao iniciar uma caçada">
+    </label>
+    <div class="slice-actions">
+        <button id="mapHuntResolveBtn" type="button">Resolver combate / resgatar</button>
+    </div>
+    <hr>
+    <label class="expedition-field" for="mapRallyTroops">Tropas para a incursão
+        <input id="mapRallyTroops" type="number" min="1" max="1000000" step="1" value="100">
+    </label>
+    <div class="slice-actions">
+        <button id="mapRallyCreateBtn" type="button">Criar incursão</button>
+    </div>
+    <label class="expedition-field" for="mapRallyOperationId">Código da incursão
+        <input id="mapRallyOperationId" type="text" maxlength="100" placeholder="Cole o código compartilhado">
+    </label>
+    <div class="slice-actions">
+        <button id="mapRallyJoinBtn" type="button">Participar</button>
+        <button id="mapRallyRefreshBtn" type="button">Consultar</button>
+        <button id="mapRallyCloseBtn" type="button">Fechar inscrições</button>
+        <button id="mapRallyDispatchBtn" type="button">Despachar</button>
+        <button id="mapRallyResolveBtn" type="button">Resolver combate / recompensas</button>
+    </div>
+    <div id="mapRallyDetails" class="slice-steps">As incursões exigem conta autenticada e uma aliança.</div>
+    <hr>
+    <div class="slice-actions">
+        <button id="mapBattleHistoryRefreshBtn" type="button">Atualizar histórico de batalhas</button>
+    </div>
+    <div id="mapBattleHistory" class="slice-steps" aria-live="polite">O histórico pessoal aparece aqui após consultar.</div>
+</section>
+
+<section class="vehicle-accessories-panel" id="vehicleAccessoriesPanel" aria-hidden="true">
+    <header><strong>Acessórios da Viatura</strong><button class="close-btn" id="closeVehicleAccessoriesBtn">Fechar</button></header>
+    <p id="vehicleAccessoryStatus">Recursos e custos de fabricação.</p>
+    <label class="expedition-field" for="vehicleAccessoryType">Tipo de acessório
+        <select id="vehicleAccessoryType"></select>
+    </label>
+    <button class="accessory-craft-btn" data-action="craft-accessory">Fabricar acessório (300 ouro · 200 prata · 100 madeira)</button>
+    <div id="vehicleAccessoryInventory" class="accessory-inventory"></div>
+    <small class="accessory-footnote">Custos e bônus são valores originais de protótipo. Sincronia de Núcleo permanece desativada.</small>
+</section>
+
 <nav class="bottom-nav">
     <button class="nav-btn" id="toggleHeroes">Heroi</button>
     <button class="nav-btn center">Construir</button>
@@ -189,6 +250,9 @@
 <script src="engine/ui.js"></script>
 <script src="api/config.js"></script>
 <script src="api/client.js"></script>
+<script src="engine/chip-loadouts.js"></script>
+<script src="engine/vehicle-chip-combat.js"></script>
+<script src="engine/vehicle-accessories.js"></script>
 <script src="engine/game.js"></script>
 </body>
 </html>
