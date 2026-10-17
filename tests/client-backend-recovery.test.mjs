@@ -156,6 +156,29 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
             return button && !button.disabled;
         }, null, { timeout: 20000 });
 
+        const marchInput = {
+            origin: { x: 1, y: 2 },
+            target: { x: 3, y: 4 },
+            units: { infantry: 10 },
+            idempotencyKey: "browser-march-retry-1"
+        };
+        const createdMarch = await page.evaluate(
+            (payload) => window.IWARApi.startMarchV1(payload),
+            marchInput
+        );
+        const replayedMarch = await page.evaluate(
+            (payload) => window.IWARApi.startMarchV1(payload),
+            marchInput
+        );
+        const listedMarches = await page.evaluate(() => window.IWARApi.listMarchesV1());
+        assert.ok(createdMarch.marchId, "client API must return the persisted march ID");
+        assert.equal(replayedMarch.marchId, createdMarch.marchId, "retry must replay the original march");
+        assert.equal(
+            listedMarches.marches.filter((march) => march.marchId === createdMarch.marchId).length,
+            1,
+            "retry must not create a duplicate march"
+        );
+
         await page.locator("#expeditionDestination").selectOption("old-ruins");
         await page.locator("#expeditionObjective").selectOption("hunt");
         await page.locator("#startExpeditionBtn").click();
