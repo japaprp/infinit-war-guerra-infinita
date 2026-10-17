@@ -49,10 +49,12 @@ async function startBackend() {
     };
 }
 
-async function api(baseUrl, method, routePath, body) {
+async function api(baseUrl, method, routePath, body, token) {
+    const headers = { "content-type": "application/json" };
+    if (token) headers.authorization = `Bearer ${token}`;
     const response = await fetch(`${baseUrl}${routePath}`, {
         method,
-        headers: { "content-type": "application/json" },
+        headers,
         body: body ? JSON.stringify(body) : undefined
     });
     const payload = await response.json().catch(() => ({}));
@@ -207,7 +209,7 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
         assert.equal(started.resources.energy, 85);
         const expeditionId = started.expedition.id;
         const endsAt = started.expedition.endsAt;
-        const legacySnapshot = await api(backend.baseUrl, "GET", "/player/state", { token });
+        const legacySnapshot = await api(backend.baseUrl, "GET", "/player/state", undefined, token);
         assert.equal(legacySnapshot.state, null, "the legacy snapshot must remain absent during this recovery test");
 
         // Remove the browser cache to prove that an authenticated reload can
