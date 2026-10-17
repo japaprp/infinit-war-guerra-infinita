@@ -414,8 +414,8 @@ test("authenticated players cannot read or mutate another player's state", async
         const profileB = await api(server.baseUrl, "GET", "/v1/player/me", { token: tokenB });
         assert.equal(profileA.status, 200);
         assert.equal(profileB.status, 200);
-        assert.equal(profileA.body.player.playerId, "guest:isolation_user_a");
-        assert.equal(profileB.body.player.playerId, "guest:isolation_user_b");
+        assert.equal(profileA.body.playerId, "guest:isolation_user_a");
+        assert.equal(profileB.body.playerId, "guest:isolation_user_b");
 
         const startA = await api(server.baseUrl, "POST", "/v1/expeditions/start", {
             token: tokenA,
