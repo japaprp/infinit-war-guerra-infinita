@@ -46,6 +46,9 @@ test("both browser pages use only the confirmed Render API origin in connect-src
     for (const relativePath of ["index.html", "game.html"]) {
         const page = read(relativePath);
         assert.match(page, /https:\/\/infinit-war-api\.onrender\.com/);
-        assert.doesNotMatch(page, /connect-src[^"]*https:\/\/[^\s"']+\.onrender\.com(?!;)/);
+        const csp = page.match(/Content-Security-Policy" content="([^"]+)"/)?.[1] || "";
+        const connectSrc = csp.match(/connect-src ([^;]+)/)?.[1] || "";
+        const renderOrigins = [...connectSrc.matchAll(/https:\/\/[^\s]+?\.onrender\.com/g)].map((match) => match[0]);
+        assert.deepEqual(renderOrigins, ["https://infinit-war-api.onrender.com"]);
     }
 });
