@@ -249,3 +249,33 @@ test("server chest opening is idempotent and vehicle presets enforce ownership a
         await server.stop();
     }
 });
+
+
+test("shared write lock prevents overlapping player mutations from overwriting snapshots", async () => {
+    await fs.rm(dbPath, { force: true });
+    const server = await bootServer();
+    try {
+        const tokenA = await login(server.baseUrl, "concurrent-player-a");
+        const tokenB = await login(server.baseUrl, "concurrent-player-b");
+        const [first, second] = await Promise.all([
+            api(server.baseUrl, "POST", "/v1/world/hunts/start", {
+                token: tokenA,
+                body: { targetId: "target-a", heroIds: ["lucas"], troopCount: 10, operationId: "concurrent-hunt-a" }
+            }),
+            api(server.baseUrl, "POST", "/v1/world/hunts/start", {
+                token: tokenB,
+                body: { targetId: "target-b", heroIds: ["lucas"], troopCount: 10, operationId: "concurrent-hunt-b" }
+            })
+        ]);
+        const statuses = [first.status, second.status].sort((a, b) => a - b);
+        assert.deepEqual(statuses, [200, 429]);
+
+        const db = await readDb();
+        const energyA = db.users["guest:concurrent-player-a"].v1.resources.energy;
+        const energyB = db.users["guest:concurrent-player-b"].v1.resources.energy;
+        assert.equal([energyA, energyB].filter((energy) => energy === 90).length, 1);
+        assert.equal([energyA, energyB].filter((energy) => energy === 100).length, 1);
+    } finally {
+        await server.stop();
+    }
+});
