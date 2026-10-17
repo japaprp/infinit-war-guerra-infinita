@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import express, { Router } from "express";
 import { EventEmitter } from "node:events";
 import test from "node:test";
 import { env } from "../src/config/env.js";
 import { createUserLockMiddleware } from "../src/middlewares/userLockMiddleware.js";
+import { wrapAsyncRouteHandlers } from "../src/middlewares/asyncRoute.js";
 import { closeRepository, initializeRepository } from "../src/repositories/dbRepository.js";
 
 test("PostgreSQL state mutation lock serializes writes and survives client disconnects", async () => {
@@ -92,6 +94,43 @@ test("PostgreSQL state mutation lock serializes writes and survives client disco
         await waitingRequest;
         assert.equal(waitingHandlerEntered, true, "waiting write proceeds when the first handler ends");
         waitingResponse.end();
+
+        // A rejected async handler must reach Express error middleware, end the
+        // response, and release the PostgreSQL lock so a later writer can proceed.
+        const app = express();
+        const errorRouter = wrapAsyncRouteHandlers(Router());
+        let failingHandlerCalls = 0;
+        errorRouter.post("/mutate", middleware, async (_req, res) => {
+            failingHandlerCalls += 1;
+            if (failingHandlerCalls === 1) {
+                throw new Error("simulated persistence failure");
+            }
+            res.json({ ok: true });
+        });
+        app.use(errorRouter);
+        app.use((error, _req, res, _next) => {
+            res.status(500).json({ code: "INTERNAL_ERROR", message: error.message });
+        });
+        const server = await new Promise((resolve) => {
+            const instance = app.listen(0, () => resolve(instance));
+        });
+        try {
+            const baseUrl = `http://127.0.0.1:${server.address().port}`;
+            const failedResponse = await fetch(`${baseUrl}/mutate`, { method: "POST" });
+            assert.equal(failedResponse.status, 500);
+            assert.deepEqual(await failedResponse.json(), {
+                code: "INTERNAL_ERROR",
+                message: "simulated persistence failure"
+            });
+
+            const recoveredResponse = await fetch(`${baseUrl}/mutate`, { method: "POST" });
+            assert.equal(recoveredResponse.status, 200, "a subsequent writer must acquire the lock after a handler failure");
+            assert.deepEqual(await recoveredResponse.json(), { ok: true });
+        } finally {
+            await new Promise((resolve, reject) => {
+                server.close((error) => error ? reject(error) : resolve());
+            });
+        }
     } finally {
         firstResponse.end();
         disconnectedResponse?.end();
