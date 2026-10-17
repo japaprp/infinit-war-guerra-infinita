@@ -206,7 +206,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(result);
     });
 
-    router.post("/buildings/complete", idempotency, userLock, async (req, res) => {
+    router.post("/buildings/complete", userLock, idempotency, async (req, res) => {
         const { taskId } = req.body || {};
         const db = await readDb();
         const user = db.users[req.user.sub];
@@ -306,7 +306,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(getPowerRanking(db, page, pageSize));
     });
 
-    router.post("/shop/purchase", idempotency, userLock, async (req, res) => {
+    router.post("/shop/purchase", userLock, idempotency, async (req, res) => {
         const { sku, quantity, idempotencyKey } = req.body || {};
         if (!sku || !idempotencyKey) {
             return res.status(400).json({ code: "BAD_REQUEST", message: "sku and idempotencyKey are required" });
@@ -323,7 +323,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(result);
     });
 
-    router.post("/pass/claim", idempotency, userLock, async (req, res) => {
+    router.post("/pass/claim", userLock, idempotency, async (req, res) => {
         const { seasonId, tier, premiumTrack } = req.body || {};
         const db = await readDb();
         const user = db.users[req.user.sub];
