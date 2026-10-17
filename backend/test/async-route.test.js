@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import express, { Router } from "express";
 import test from "node:test";
 import { wrapAsyncRouteHandlers } from "../src/middlewares/asyncRoute.js";
+import { createIdempotencyMiddleware } from "../src/middlewares/idempotencyMiddleware.js";
 
 test("rejected async route handlers reach Express error middleware", async () => {
     const app = express();
@@ -30,6 +31,67 @@ test("rejected async route handlers reach Express error middleware", async () =>
             code: "INTERNAL_ERROR",
             message: "simulated persistence failure"
         });
+    } finally {
+        await new Promise((resolve, reject) => {
+            server.close((error) => error ? reject(error) : resolve());
+        });
+    }
+});
+
+
+test("Redis idempotency response is stored before a serialized mutation releases its lock", async () => {
+    const cache = new Map();
+    const redisClient = {
+        async get(key) {
+            return cache.get(key) ?? null;
+        },
+        async set(key, value) {
+            await new Promise((resolve) => setTimeout(resolve, 30));
+            cache.set(key, value);
+            return "OK";
+        }
+    };
+
+    const app = express();
+    const router = wrapAsyncRouteHandlers(Router());
+    const idempotency = createIdempotencyMiddleware({ redisClient });
+    let mutationCount = 0;
+    let queue = Promise.resolve();
+
+    const serializedMutation = async (_req, res, next) => {
+        const previous = queue;
+        let release;
+        queue = new Promise((resolve) => { release = resolve; });
+        await previous;
+        res.once("finish", release);
+        next();
+    };
+
+    router.post("/purchase", serializedMutation, idempotency, async (_req, res) => {
+        mutationCount += 1;
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        res.json({ orderId: "order_single", mutationCount });
+    });
+    app.use(router);
+
+    const server = await new Promise((resolve) => {
+        const instance = app.listen(0, () => resolve(instance));
+    });
+
+    try {
+        const url = `http://127.0.0.1:${server.address().port}/purchase`;
+        const headers = { "x-idempotency-key": "redis-concurrent-key" };
+        const [firstResponse, secondResponse] = await Promise.all([
+            fetch(url, { method: "POST", headers }),
+            fetch(url, { method: "POST", headers })
+        ]);
+
+        assert.equal(firstResponse.status, 200);
+        assert.equal(secondResponse.status, 200);
+        const [firstBody, secondBody] = await Promise.all([firstResponse.json(), secondResponse.json()]);
+        assert.deepEqual(secondBody, firstBody, "the retry must replay the first response");
+        assert.equal(mutationCount, 1, "concurrent retries must not execute the mutation twice");
+        assert.equal(cache.size, 1, "the replayable response must be in Redis before the first response finishes");
     } finally {
         await new Promise((resolve, reject) => {
             server.close((error) => error ? reject(error) : resolve());
