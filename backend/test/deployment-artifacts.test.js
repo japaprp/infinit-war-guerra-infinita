@@ -39,7 +39,7 @@ test("both browser pages expose the verified HTTPS API origin and retain CSP", (
         assert.match(page, /connect-src[^"]*http:\/\/localhost:4000/);
         assert.ok(page.includes("https://infinit-war-api.onrender.com"));
     }
-    assert.match(docs, /actual frontend and API origins are confirmed/i);
+    assert.match(docs, /not deploy-ready until the frontend origin and production database configuration are confirmed/i);
     assert.match(docs, /Do not commit secrets or invent a production URL/i);
 });
 
