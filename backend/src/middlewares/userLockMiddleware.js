@@ -110,17 +110,32 @@ export function createStateWriteLockMiddleware({ redisClient, ttlSec = 30 } = {}
                 });
             }
 
-            const release = async () => {
-                try {
-                    if (redisClient) {
-                        const raw = await redisClient.get(lockKey);
-                        if (raw === owner) await redisClient.del(lockKey);
-                    } else {
-                        releaseMemoryLock(lockKey, owner);
+            let releasePromise = null;
+            const release = () => {
+                if (releasePromise) return releasePromise;
+                releasePromise = (async () => {
+                    try {
+                        if (redisClient) {
+                            const raw = await redisClient.get(lockKey);
+                            if (raw === owner) await redisClient.del(lockKey);
+                        } else {
+                            releaseMemoryLock(lockKey, owner);
+                        }
+                    } catch {
+                        // TTL is the fallback if the lock store becomes unavailable.
                     }
-                } catch {
-                    // TTL is the fallback if the lock store becomes unavailable.
-                }
+                })();
+                return releasePromise;
+            };
+
+            // Release before the JSON response reaches the client. This avoids a
+            // fast retry observing a stale lock after the prior request completed.
+            const originalJson = res.json.bind(res);
+            res.json = (body) => {
+                release().finally(() => {
+                    try { originalJson(body); } catch { /* client may have disconnected */ }
+                });
+                return res;
             };
             const releaseLock = () => { release().catch(() => {}); };
             res.on("finish", releaseLock);
