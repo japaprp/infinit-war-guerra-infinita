@@ -1,11 +1,11 @@
 # Deployment preparation
 
-This repository is prepared for a hosted API, but it is **not deploy-ready until the actual frontend and API origins are confirmed**.
+This repository is prepared for a hosted API, but it is **not deploy-ready until the frontend origin and production database configuration are confirmed**.
 
 ## Frontend API URL
 
 - Local development on `localhost` or `127.0.0.1` defaults to `http://localhost:4000`.
-- Hosted environments intentionally have no implicit API URL. The `index.html` and `game.html` pages now expose `<meta name="iwar-api-base-url" content="">`; once the backend URL is known, set that value to the confirmed HTTPS API origin on both pages. `api/config.js` reads this metadata while preserving the local-only localhost default.
+- The Render account confirms the API origin `https://infinit-war-api.onrender.com`; both pages use it in `iwar-api-base-url` and their `connect-src` policy. `api/config.js` rejects insecure hosted endpoints, paths, and remote localhost fallbacks while preserving `http://localhost:4000` only for local development. The API is not currently booting because required Render environment variables are missing; do not treat the URL alone as proof of availability.
 - Do not commit secrets or invent a production URL.
 - `index.html` has a Content Security Policy. Once the actual API hostname is confirmed, add that exact HTTPS origin to `connect-src`; do not use a broad wildcard.
 
