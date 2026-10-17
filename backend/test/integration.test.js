@@ -391,3 +391,53 @@ test("idempotency with Redis persists across server restart", async (t) => {
         await server.stop();
     }
 });
+
+
+test("authenticated players cannot read or mutate another player's state", async () => {
+    await fs.rm(dbPath, { force: true });
+    const server = await bootServer({ redisEnabled: false });
+
+    try {
+        const loginA = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "isolation_user_a" }
+        });
+        const loginB = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "isolation_user_b" }
+        });
+        assert.equal(loginA.status, 200);
+        assert.equal(loginB.status, 200);
+        assert.notEqual(loginA.body.accessToken, loginB.body.accessToken);
+
+        const tokenA = loginA.body.accessToken;
+        const tokenB = loginB.body.accessToken;
+        const profileA = await api(server.baseUrl, "GET", "/v1/player/me", { token: tokenA });
+        const profileB = await api(server.baseUrl, "GET", "/v1/player/me", { token: tokenB });
+        assert.equal(profileA.status, 200);
+        assert.equal(profileB.status, 200);
+        assert.equal(profileA.body.player.playerId, "guest:isolation_user_a");
+        assert.equal(profileB.body.player.playerId, "guest:isolation_user_b");
+
+        const startA = await api(server.baseUrl, "POST", "/v1/expeditions/start", {
+            token: tokenA,
+            body: { destinationId: "grey-forest", objectiveId: "explore" }
+        });
+        assert.equal(startA.status, 200);
+
+        const statusA = await api(server.baseUrl, "GET", "/v1/expeditions/status", { token: tokenA });
+        const statusB = await api(server.baseUrl, "GET", "/v1/expeditions/status", { token: tokenB });
+        assert.equal(statusA.body.active.expeditionId, startA.body.expeditionId);
+        assert.equal(statusB.body.active, null);
+        assert.equal(statusA.body.resources.energy, 85);
+        assert.equal(statusB.body.resources.energy, 100);
+
+        const claimFromB = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
+            token: tokenB,
+            body: { expeditionId: startA.body.expeditionId, idempotencyKey: "isolation-attempt-b" }
+        });
+        assert.equal(claimFromB.status, 409);
+        const statusAAfter = await api(server.baseUrl, "GET", "/v1/expeditions/status", { token: tokenA });
+        assert.equal(statusAAfter.body.active.expeditionId, startA.body.expeditionId);
+    } finally {
+        await server.stop();
+    }
+});
