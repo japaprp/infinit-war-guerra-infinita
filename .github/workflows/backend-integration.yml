@@ -29,6 +29,19 @@ jobs:
     timeout-minutes: 15
 
     services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: infinitwar_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d infinitwar_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
       redis:
         image: redis:7-alpine
         ports:
@@ -53,6 +66,55 @@ jobs:
       - name: Install backend dependencies
         run: npm install
         working-directory: backend
+
+      - name: Initialize repository against real PostgreSQL
+        run: npm run migrate:postgres
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          DATA_DRIVER: postgres
+          PG_HOST: 127.0.0.1
+          PG_PORT: 5432
+          PG_DATABASE: infinitwar_test
+          PG_USER: postgres
+          PG_PASSWORD: postgres
+          PG_SSL: "false"
+
+      - name: Verify PostgreSQL schema and JSONB operations
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import pg from "pg";
+          const client = new pg.Client({
+            host: process.env.PG_HOST,
+            port: Number(process.env.PG_PORT),
+            database: process.env.PG_DATABASE,
+            user: process.env.PG_USER,
+            password: process.env.PG_PASSWORD,
+            ssl: false
+          });
+          await client.connect();
+          try {
+            const tables = await client.query(
+              "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ANY($1::text[]) ORDER BY table_name",
+              [["app_state", "users", "heroes", "buildings", "inventory", "receipts", "alliances"]]
+            );
+            assert.equal(tables.rows.length, 7, "Expected all seven repository tables");
+            const state = await client.query("SELECT payload FROM app_state WHERE id = 1");
+            assert.equal(state.rows.length, 1, "Expected initialized app_state row");
+            assert.equal(typeof state.rows[0].payload, "object", "Expected JSONB payload to decode as an object");
+            console.log("PostgreSQL connection, seven tables, and JSONB app_state verified.");
+          } finally {
+            await client.end();
+          }
+          NODE
+        working-directory: backend
+        env:
+          PG_HOST: 127.0.0.1
+          PG_PORT: 5432
+          PG_DATABASE: infinitwar_test
+          PG_USER: postgres
+          PG_PASSWORD: postgres
 
       - name: Run backend integration tests
         run: npm run test:integration
