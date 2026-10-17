@@ -6,9 +6,11 @@ import { env } from "../src/config/env.js";
 import { createUserLockMiddleware } from "../src/middlewares/userLockMiddleware.js";
 import { wrapAsyncRouteHandlers } from "../src/middlewares/asyncRoute.js";
 import { createIdempotencyMiddleware } from "../src/middlewares/idempotencyMiddleware.js";
-import { closeRepository, initializeRepository } from "../src/repositories/dbRepository.js";
+import { closeRepository, initializeRepository, readDb, writeDb } from "../src/repositories/dbRepository.js";
+import { ensureUser, ensureV1State, getUserId } from "../src/services/userService.js";
+import { startMarch } from "../src/services/v1StubService.js";
 
-test("PostgreSQL state mutation lock serializes writes and survives client disconnects", async () => {
+test("PostgreSQL preserves marches, serializes writes, and survives client disconnects", async () => {
     env.NODE_ENV = "production";
     env.DATA_DRIVER = "postgres";
     await initializeRepository(env);
@@ -43,6 +45,32 @@ test("PostgreSQL state mutation lock serializes writes and survives client disco
     let waitingRequest;
 
     try {
+        // The march must survive a fresh repository/pool instance, not just a
+        // JSON-file restart or a read from the in-memory object we just mutated.
+        const marchUserId = getUserId("guest", `march-persistence-${Date.now()}`);
+        const dbBeforeMarch = await readDb();
+        const marchUser = ensureUser(dbBeforeMarch, marchUserId, {
+            provider: "guest",
+            providerUid: marchUserId.slice("guest:".length),
+            email: "",
+            displayName: "March Persistence Test"
+        });
+        ensureV1State(marchUser);
+        const expectedMarch = startMarch(marchUser, {
+            origin: { x: 1, y: 2 },
+            target: { x: 3, y: 4 },
+            units: { infantry: 10 }
+        });
+        await writeDb(dbBeforeMarch);
+        await closeRepository();
+        await initializeRepository(env);
+        const dbAfterRestart = await readDb();
+        assert.deepEqual(
+            dbAfterRestart.users[marchUserId]?.v1?.marches,
+            [expectedMarch],
+            "marches must survive a PostgreSQL repository restart and normalized-table read"
+        );
+
         await middleware(
             { method: "POST", user: { sub: "guest:concurrency_a" } },
             firstResponse,
