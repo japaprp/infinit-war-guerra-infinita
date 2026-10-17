@@ -76,5 +76,28 @@
         return SLOTS.filter((slot) => !!loadouts[preset][slot.id]).length;
     }
 
-    return Object.freeze({ PRESETS, SLOTS, createDefaultLoadouts, normalizeLoadouts, assignChip, clearSlot, isChipInPreset, filledSlotCount });
+    function getResonanceReadiness(loadouts, preset) {
+        const filledSlots = filledSlotCount(loadouts, preset);
+        return {
+            preset: PRESETS.includes(preset) ? preset : null,
+            filledSlots,
+            requiredSlots: SLOTS.length,
+            ready: filledSlots === SLOTS.length,
+            active: false,
+            bonusApplied: false,
+            reason: "rule-not-configured"
+        };
+    }
+
+    return Object.freeze({
+        PRESETS,
+        SLOTS,
+        createDefaultLoadouts,
+        normalizeLoadouts,
+        assignChip,
+        clearSlot,
+        isChipInPreset,
+        filledSlotCount,
+        getResonanceReadiness
+    });
 });
