@@ -146,7 +146,7 @@ export function convertDdl(sql) {
     return translated;
 }
 
-function wrapClient(client) {
+export function wrapClient(client) {
     return {
         async query(sql, values = []) {
             const translated = /CREATE\s+TABLE/i.test(String(sql)) ? convertDdl(sql) : translateSql(sql);
@@ -162,8 +162,8 @@ function wrapClient(client) {
         rollback() {
             return client.query("ROLLBACK");
         },
-        release() {
-            client.release();
+        release(error) {
+            client.release(error);
         }
     };
 }
