@@ -11,6 +11,7 @@ on:
       - "tests/client-backend-recovery.test.mjs"
       - "tests/public-frontend-package.test.mjs"
       - "frontend/public/**"
+      - "render-frontend.yaml"
       - "backend/**"
       - "api/**"
       - "auth/**"
