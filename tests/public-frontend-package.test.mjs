@@ -53,6 +53,17 @@ test("public frontend files match the source files and local HTML dependencies r
   }
 });
 
+test("public menu contains every statically referenced authentication control", () => {
+  const indexHtml = fs.readFileSync(path.join(publicRoot, "index.html"), "utf8");
+  for (const relative of ["auth/auth.js", "main.js"]) {
+    const source = fs.readFileSync(path.join(publicRoot, relative), "utf8");
+    const ids = new Set([...source.matchAll(/getElementById\(["']([^"']+)["']\)/g)].map((match) => match[1]));
+    for (const id of ids) {
+      assert.match(indexHtml, new RegExp(`id=["']${id}["']`), `index.html is missing ${id}, referenced by ${relative}`);
+    }
+  }
+});
+
 test("public package excludes server, tooling, tests, and private project documentation", () => {
   const forbidden = ["backend", "tests", "docs", "scripts", "electron", ".github", "package.json", "render.yaml", "DEPLOYMENT_PREPARATION.md"];
   for (const item of forbidden) {
