@@ -50,19 +50,30 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
                 return res.status(429).json({ code: "LOCKED", message: "Operacao em andamento para este usuario. Tente novamente." });
             }
 
-            const release = async () => {
-                try {
-                    if (redisClient) {
-                        const raw = await redisClient.get(lockKey);
-                        if (raw === owner) {
-                            await redisClient.del(lockKey);
+            let releasePromise = null;
+            const release = () => {
+                if (releasePromise) return releasePromise;
+                releasePromise = (async () => {
+                    try {
+                        if (redisClient) {
+                            const raw = await redisClient.get(lockKey);
+                            if (raw === owner) await redisClient.del(lockKey);
+                        } else {
+                            releaseMemoryLock(lockKey, owner);
                         }
-                    } else {
-                        releaseMemoryLock(lockKey, owner);
+                    } catch {
+                        // noop; the lock TTL is the fallback.
                     }
-                } catch {
-                    // noop
-                }
+                })();
+                return releasePromise;
+            };
+
+            const originalJson = res.json.bind(res);
+            res.json = (body) => {
+                release().finally(() => {
+                    try { originalJson(body); } catch { /* client may have disconnected */ }
+                });
+                return res;
             };
 
             // "finish" covers normal responses; "close" releases the lock when
