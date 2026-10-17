@@ -26,7 +26,7 @@ test("Render blueprint is an explicitly free backend template with a health chec
     assert.doesNotMatch(yaml, /type: pserv|type: worker|type: cron/);
 });
 
-test("both browser pages expose a blank API-origin placeholder and retain CSP", () => {
+test("both browser pages configure the confirmed API origin and retain CSP", () => {
     const config = read("api/config.js");
     const html = read("index.html");
     const gameHtml = read("game.html");
@@ -34,16 +34,18 @@ test("both browser pages expose a blank API-origin placeholder and retain CSP", 
     assert.match(config, /configuredMeta/);
     assert.match(config, /isLocalDevelopment \? "http:\/\/localhost:4000" : ""/);
     for (const page of [html, gameHtml]) {
-        assert.match(page, /name="iwar-api-base-url" content=""/);
+        assert.match(page, /name="iwar-api-base-url" content="https:\/\/infinit-war-api\.onrender\.com"/);
         assert.match(page, /Content-Security-Policy/);
         assert.match(page, /connect-src[^"]*http:\/\/localhost:4000/);
     }
-    assert.match(docs, /actual frontend and API origins are confirmed/i);
+    assert.match(docs, /frontend origin and production database configuration are confirmed/i);
     assert.match(docs, /Do not commit secrets or invent a production URL/i);
 });
 
-test("deployment preparation does not contain a committed production API hostname", () => {
-    const config = read("api/config.js");
-    assert.doesNotMatch(config, /https:\/\/[^\s"']+\.onrender\.com/);
-    assert.doesNotMatch(config, /https:\/\/api\.[^\s"']+/);
+test("both browser pages use only the confirmed Render API origin in connect-src", () => {
+    for (const relativePath of ["index.html", "game.html"]) {
+        const page = read(relativePath);
+        assert.match(page, /https:\/\/infinit-war-api\.onrender\.com/);
+        assert.doesNotMatch(page, /connect-src[^"]*https:\/\/[^\s"']+\.onrender\.com(?!;)/);
+    }
 });
