@@ -821,6 +821,21 @@ export function getRepositoryMode() {
     return mode;
 }
 
+export async function releaseAdvisoryWriteLock(connection) {
+    try {
+        const [rows] = await connection.query("SELECT pg_advisory_unlock(1735291, 90210)");
+        if (rows?.[0]?.pg_advisory_unlock !== true) {
+            throw new Error("PostgreSQL advisory write lock was not confirmed as released");
+        }
+    } catch (error) {
+        // A failed unlock must destroy the session; closing it releases session-level locks.
+        connection.release(error);
+        throw error;
+    }
+
+    connection.release();
+}
+
 export async function acquireRepositoryWriteLock() {
     if (mode !== "postgres" || !postgresPool) return null;
 
@@ -841,18 +856,7 @@ export async function acquireRepositoryWriteLock() {
         if (released) return;
         released = true;
 
-        try {
-            const [rows] = await connection.query("SELECT pg_advisory_unlock(1735291, 90210)");
-            if (rows?.[0]?.pg_advisory_unlock !== true) {
-                throw new Error("PostgreSQL advisory write lock was not confirmed as released");
-            }
-        } catch (error) {
-            // A failed unlock must destroy the session; closing it releases session-level locks.
-            connection.release(error);
-            throw error;
-        }
-
-        connection.release();
+        await releaseAdvisoryWriteLock(connection);
     };
 }
 
