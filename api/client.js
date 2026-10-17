@@ -106,7 +106,8 @@
     const listBuildingsV1 = async () => request("GET", "/v1/buildings");
     const startBuildV1 = async ({ buildingType, slotCode, targetLevel }) =>
         request("POST", "/v1/buildings/start", { buildingType, slotCode, targetLevel });
-    const completeBuildV1 = async (taskId) => request("POST", "/v1/buildings/complete", { taskId });
+    const completeBuildV1 = async (taskId, idempotencyKey) =>
+        request("POST", "/v1/buildings/complete", { taskId }, undefined, idempotencyKey ? { "X-Idempotency-Key": idempotencyKey } : {});
     const queryTilesV1 = async ({ x, y, radius }) => request("GET", `/v1/world/tiles?x=${x}&y=${y}&radius=${radius}`);
     const listMarchesV1 = async () => request("GET", "/v1/world/marches");
     const startMarchV1 = async ({ origin, target, units = {}, idempotencyKey }) =>
@@ -118,7 +119,13 @@
             idempotencyKey ? { "X-Idempotency-Key": idempotencyKey } : {}
         );
     const purchaseSkuV1 = async ({ sku, quantity = 1, idempotencyKey }) =>
-        request("POST", "/v1/shop/purchase", { sku, quantity, idempotencyKey }, undefined, { "X-Idempotency-Key": idempotencyKey });
+        request(
+            "POST",
+            "/v1/shop/purchase",
+            { sku, quantity, idempotencyKey },
+            undefined,
+            idempotencyKey ? { "X-Idempotency-Key": idempotencyKey } : {}
+        );
 
     const api = {
         setToken,
