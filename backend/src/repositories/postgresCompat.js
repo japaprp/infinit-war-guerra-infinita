@@ -38,9 +38,106 @@ export function translateSql(input) {
         return `ON CONFLICT (${target}) DO UPDATE SET ${updates}`;
     });
 
-    let parameterIndex = 0;
-    sql = sql.replace(/\?/g, () => `$${++parameterIndex}`);
+    sql = translateQuestionMarkPlaceholders(sql);
     return sql.replace(/;\s*$/, "");
+}
+
+function translateQuestionMarkPlaceholders(input) {
+    let output = "";
+    let parameterIndex = 0;
+    let state = "normal";
+    let dollarTag = "";
+    for (let i = 0; i < input.length; i += 1) {
+        const char = input[i];
+        const next = input[i + 1] || "";
+
+        if (state === "single") {
+            output += char;
+            if (char === "'" && next === "'") {
+                output += next;
+                i += 1;
+            } else if (char === "'") {
+                state = "normal";
+            } else if (char === "\\\\") {
+                output += next;
+                i += 1;
+            }
+            continue;
+        }
+        if (state === "double" || state === "backtick") {
+            output += char;
+            const closing = state === "double" ? '"' : "`";
+            if (char === closing && next === closing) {
+                output += next;
+                i += 1;
+            } else if (char === closing) {
+                state = "normal";
+            }
+            continue;
+        }
+        if (state === "line-comment") {
+            output += char;
+            if (char === "\\n") state = "normal";
+            continue;
+        }
+        if (state === "block-comment") {
+            output += char;
+            if (char === "*" && next === "/") {
+                output += next;
+                i += 1;
+                state = "normal";
+            }
+            continue;
+        }
+        if (state === "dollar-quote") {
+            if (input.startsWith(dollarTag, i)) {
+                output += dollarTag;
+                i += dollarTag.length - 1;
+                state = "normal";
+            } else {
+                output += char;
+            }
+            continue;
+        }
+
+        if (char === "'") {
+            state = "single";
+            output += char;
+        } else if (char === '"') {
+            state = "double";
+            output += char;
+        } else if (char === "`") {
+            state = "backtick";
+            output += char;
+        } else if (char === "-" && next === "-") {
+            state = "line-comment";
+            output += char + next;
+            i += 1;
+        } else if (char === "#") {
+            state = "line-comment";
+            output += char;
+        } else if (char === "/" && next === "*") {
+            state = "block-comment";
+            output += char + next;
+            i += 1;
+        } else if (char === "$") {
+            const match = input.slice(i).match(/^\\$[A-Za-z_][A-Za-z0-9_]*\\$|^\\$\\$/);
+            if (match) {
+                dollarTag = match[0];
+                state = "dollar-quote";
+                output += dollarTag;
+                i += dollarTag.length - 1;
+            } else {
+                output += char;
+            }
+        } else if (char === "?") {
+            output += `${++parameterIndex}`;
+        } else {
+            output += char;
+        }
+    }
+    return output;
+}
 }
 
 export function convertDdl(sql) {
