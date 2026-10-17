@@ -251,7 +251,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(listMarches(user));
     });
 
-    router.post("/world/marches/start", userLock, async (req, res) => {
+    router.post("/world/marches/start", userLock, idempotency, async (req, res) => {
         const db = await readDb();
         const user = db.users[req.user.sub];
         if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
