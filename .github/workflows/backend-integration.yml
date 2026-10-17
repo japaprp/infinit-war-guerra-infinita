@@ -121,7 +121,7 @@ jobs:
           node --input-type=module <<'NODE'
           import assert from "node:assert/strict";
           import { env } from "./src/config/env.js";
-          import { initializeRepository, readDb, writeDb } from "./src/repositories/dbRepository.js";
+          import { closeRepository, initializeRepository, readDb, writeDb } from "./src/repositories/dbRepository.js";
           env.DATA_DRIVER = "postgres";
           env.NODE_ENV = "test";
           await initializeRepository(env);
@@ -168,7 +168,7 @@ jobs:
             assert.equal(user.inventory.potion_small, 3);
             console.log("Player state round-trip verified, including fields not yet normalized.");
           } finally {
-            process.exit(0);
+            await closeRepository();
           }
           NODE
         working-directory: backend
