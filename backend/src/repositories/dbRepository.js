@@ -257,7 +257,7 @@ async function writeDbToMySqlAppState(db) {
     await postgresPool.query(
         `INSERT INTO app_state (id, payload)
          VALUES (1, ?)
-         ON DUPLICATE KEY UPDATE payload = VALUES(payload), updated_at = CURRENT_TIMESTAMP(3)`,
+         ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, updated_at = CURRENT_TIMESTAMP(3)`,
         [payload]
     );
 }
@@ -455,15 +455,7 @@ async function syncHeroesForUser(connection, sqlUserId, heroes) {
         await connection.query(
             `INSERT INTO heroes (user_id, hero_code, rarity, level, stars, ascension, shards_owned, stats_json, skill_levels_json)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-                rarity = VALUES(rarity),
-                level = VALUES(level),
-                stars = VALUES(stars),
-                ascension = VALUES(ascension),
-                shards_owned = VALUES(shards_owned),
-                stats_json = VALUES(stats_json),
-                skill_levels_json = VALUES(skill_levels_json),
-                updated_at = CURRENT_TIMESTAMP(3)`,
+             ON CONFLICT (user_id, hero_code) DO UPDATE SET rarity = EXCLUDED.rarity, level = EXCLUDED.level, stars = EXCLUDED.stars, ascension = EXCLUDED.ascension, shards_owned = EXCLUDED.shards_owned, stats_json = EXCLUDED.stats_json, skill_levels_json = EXCLUDED.skill_levels_json, updated_at = CURRENT_TIMESTAMP(3)`,
             [
                 sqlUserId,
                 heroCode,
@@ -501,13 +493,7 @@ async function syncBuildingsForUser(connection, sqlUserId, buildings) {
         await connection.query(
             `INSERT INTO buildings (user_id, building_type, slot_code, level, state, end_at_ms, task_id)
              VALUES (?, ?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-                building_type = VALUES(building_type),
-                level = VALUES(level),
-                state = VALUES(state),
-                end_at_ms = VALUES(end_at_ms),
-                task_id = VALUES(task_id),
-                updated_at = CURRENT_TIMESTAMP(3)`,
+             ON CONFLICT (user_id, slot_code) DO UPDATE SET building_type = EXCLUDED.building_type, level = EXCLUDED.level, state = EXCLUDED.state, end_at_ms = EXCLUDED.end_at_ms, task_id = EXCLUDED.task_id, updated_at = CURRENT_TIMESTAMP(3)`,
             [
                 sqlUserId,
                 String(building?.buildingType || "unknown"),
@@ -539,7 +525,7 @@ async function syncInventoryForUser(connection, externalId, inventory) {
         await connection.query(
             `INSERT INTO inventory (external_id, item_code, quantity, metadata_json)
              VALUES (?, ?, ?, NULL)
-             ON DUPLICATE KEY UPDATE quantity = VALUES(quantity), updated_at = CURRENT_TIMESTAMP(3)`,
+             ON CONFLICT (external_id, item_code) DO UPDATE SET quantity = EXCLUDED.quantity, updated_at = CURRENT_TIMESTAMP(3)`,
             [externalId, itemCode, quantity]
         );
     }
@@ -561,13 +547,7 @@ async function syncAlliances(connection, alliances) {
         await connection.query(
             `INSERT INTO alliances (alliance_uid, realm_id, name, tag, leader_external_id, member_count, power)
              VALUES (?, ?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-                realm_id = VALUES(realm_id),
-                name = VALUES(name),
-                tag = VALUES(tag),
-                leader_external_id = VALUES(leader_external_id),
-                member_count = VALUES(member_count),
-                power = VALUES(power)`,
+             ON CONFLICT (alliance_uid) DO UPDATE SET realm_id = EXCLUDED.realm_id, name = EXCLUDED.name, tag = EXCLUDED.tag, leader_external_id = EXCLUDED.leader_external_id, member_count = EXCLUDED.member_count, power = EXCLUDED.power`,
             [
                 String(item.allianceId || allianceUid),
                 safeNumber(item.realmId, 1),
@@ -597,16 +577,7 @@ async function syncReceipts(connection, receipts) {
         await connection.query(
             `INSERT INTO receipts (receipt_id, external_id, hero_id, pack_id, cost_gems, issued_at_ms, signature, used, used_at_ms)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-                external_id = VALUES(external_id),
-                hero_id = VALUES(hero_id),
-                pack_id = VALUES(pack_id),
-                cost_gems = VALUES(cost_gems),
-                issued_at_ms = VALUES(issued_at_ms),
-                signature = VALUES(signature),
-                used = VALUES(used),
-                used_at_ms = VALUES(used_at_ms),
-                updated_at = CURRENT_TIMESTAMP(3)`,
+             ON CONFLICT (receipt_id) DO UPDATE SET external_id = EXCLUDED.external_id, hero_id = EXCLUDED.hero_id, pack_id = EXCLUDED.pack_id, cost_gems = EXCLUDED.cost_gems, issued_at_ms = EXCLUDED.issued_at_ms, signature = EXCLUDED.signature, used = EXCLUDED.used, used_at_ms = EXCLUDED.used_at_ms, updated_at = CURRENT_TIMESTAMP(3)`,
             [
                 String(receipt.receiptId || receiptId),
                 String(receipt.userId || "guest:guest"),
@@ -678,14 +649,7 @@ async function syncNormalizedTables(db) {
             await connection.query(
                 `INSERT INTO users (external_id, nickname, level, vip_level, power, realm_id, profile_json)
                  VALUES (?, ?, ?, ?, ?, ?, ?)
-                 ON DUPLICATE KEY UPDATE
-                    nickname = VALUES(nickname),
-                    level = VALUES(level),
-                    vip_level = VALUES(vip_level),
-                    power = VALUES(power),
-                    realm_id = VALUES(realm_id),
-                    profile_json = VALUES(profile_json),
-                    updated_at = CURRENT_TIMESTAMP(3)`,
+                 ON CONFLICT (external_id) DO UPDATE SET nickname = EXCLUDED.nickname, level = EXCLUDED.level, vip_level = EXCLUDED.vip_level, power = EXCLUDED.power, realm_id = EXCLUDED.realm_id, profile_json = EXCLUDED.profile_json, updated_at = CURRENT_TIMESTAMP(3)`,
                 [
                     externalId,
                     nickname,
