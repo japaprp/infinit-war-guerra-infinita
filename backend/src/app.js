@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { createLegacyRoutes } from "./routes/legacyRoutes.js";
 import { createV1Routes } from "./routes/v1Routes.js";
+import { createStateWriteLockMiddleware } from "./middlewares/userLockMiddleware.js";
 
 export function createApp(env, runtime) {
     const app = express();
@@ -23,6 +24,7 @@ export function createApp(env, runtime) {
         }
     }));
     app.use(express.json({ limit: "1mb" }));
+    app.use(createStateWriteLockMiddleware({ redisClient: runtime?.redisClient, ttlSec: 30 }));
 
     app.use("/", createLegacyRoutes(env, runtime));
     app.use("/v1", createV1Routes(env, runtime));
