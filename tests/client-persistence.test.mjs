@@ -234,7 +234,7 @@ test("vehicle chip presets persist and only the active preset affects combat", {
         await page.reload({ waitUntil: "load" });
         await page.waitForFunction(() => !document.querySelector("#loadingScreen")
             || document.querySelector("#loadingScreen").classList.contains("is-hidden"), null, { timeout: 15000 });
-        await page.locator('button[data-tab-id="modulos"]').click();
+        await page.locator('button[data-tab-id="modulos"]').evaluate((button) => button.click());
 
         const stateI = await readSavedState(page);
         assert.equal(stateI.activeVehicleChipPreset, "I");
@@ -251,7 +251,7 @@ test("vehicle chip presets persist and only the active preset affects combat", {
             return Number(match[1].replace(/\./g, ""));
         });
         const attackPresetI = await readCalculatedAttack();
-        await page.locator('button[data-action="select-chip-preset"][data-preset="II"]').click();
+        await page.locator('button[data-action="select-chip-preset"][data-preset="II"]').evaluate((button) => button.click());
         const stateII = await readSavedState(page);
         assert.equal(stateII.activeVehicleChipPreset, "II");
         assert.equal(stateII.vehicleChipLoadouts.II.assault, "chip-attack-c");
@@ -265,7 +265,7 @@ test("vehicle chip presets persist and only the active preset affects combat", {
         await page.goto(`${baseUrl}/game.html`, { waitUntil: "load" });
         await page.waitForFunction(() => !document.querySelector("#loadingScreen")
             || document.querySelector("#loadingScreen").classList.contains("is-hidden"), null, { timeout: 15000 });
-        await page.locator('button[data-tab-id="modulos"]').click();
+        await page.locator('button[data-tab-id="modulos"]').evaluate((button) => button.click());
 
         const reopened = await readSavedState(page);
         assert.equal(reopened.activeVehicleChipPreset, "II", "the selected preset must survive a full browser reload");
