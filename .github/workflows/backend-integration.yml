@@ -64,7 +64,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install backend dependencies
-        run: npm install
+        run: npm ci
         working-directory: backend
 
       - name: Initialize repository against real PostgreSQL
