@@ -70,7 +70,15 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
                     // the mutation window before this idempotency record is visible.
                     Promise.resolve()
                         .then(() => redisClient.set(key, JSON.stringify(payload), "EX", ttlSec))
-                        .then(() => originalJson(body), () => originalJson(body))
+                        .then(
+                            () => originalJson(body),
+                            () => {
+                                // Keep same-process retries safe if Redis fails after
+                                // the mutation has already been persisted.
+                                setInMemory(key, payload, ttlSec);
+                                return originalJson(body);
+                            }
+                        )
                         .catch(() => {});
                     return res;
                 }
@@ -81,6 +89,15 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
 
             return next();
         } catch {
+            // If Redis is configured but cannot be read, fail closed before the
+            // mutation runs. Bypassing idempotency here could duplicate a purchase
+            // or reward while the cache is temporarily unavailable.
+            if (redisClient) {
+                return res.status(503).json({
+                    code: "IDEMPOTENCY_UNAVAILABLE",
+                    message: "Não foi possível validar a operação com segurança. Tente novamente."
+                });
+            }
             return next();
         }
     };
