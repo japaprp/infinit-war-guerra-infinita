@@ -40,7 +40,7 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
             let cached = null;
             if (redisClient) {
                 const raw = await redisClient.get(key);
-                cached = raw ? JSON.parse(raw) : null;
+                cached = raw ? JSON.parse(raw) : getFromMemory(key);
             } else {
                 cached = getFromMemory(key);
             }
@@ -93,6 +93,8 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
             // mutation runs. Bypassing idempotency here could duplicate a purchase
             // or reward while the cache is temporarily unavailable.
             if (redisClient) {
+                const localFallback = getFromMemory(key);
+                if (localFallback) return res.status(localFallback.status).json(localFallback.body);
                 return res.status(503).json({
                     code: "IDEMPOTENCY_UNAVAILABLE",
                     message: "Não foi possível validar a operação com segurança. Tente novamente."
