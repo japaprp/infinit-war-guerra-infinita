@@ -58,7 +58,7 @@ function translateQuestionMarkPlaceholders(input) {
                 i += 1;
             } else if (char === "'") {
                 state = "normal";
-            } else if (char === "\\\\") {
+            } else if (char === "\\") {
                 output += next;
                 i += 1;
             }
@@ -66,7 +66,7 @@ function translateQuestionMarkPlaceholders(input) {
         }
         if (state === "double" || state === "backtick") {
             output += char;
-            const closing = state === "double" ? '"' : "`";
+            const closing = state === "double" ? '"' : "\`";
             if (char === closing && next === closing) {
                 output += next;
                 i += 1;
@@ -77,7 +77,7 @@ function translateQuestionMarkPlaceholders(input) {
         }
         if (state === "line-comment") {
             output += char;
-            if (char === "\\n") state = "normal";
+            if (char === "\n") state = "normal";
             continue;
         }
         if (state === "block-comment") {
@@ -106,7 +106,7 @@ function translateQuestionMarkPlaceholders(input) {
         } else if (char === '"') {
             state = "double";
             output += char;
-        } else if (char === "`") {
+        } else if (char === "\`") {
             state = "backtick";
             output += char;
         } else if (char === "-" && next === "-") {
@@ -121,7 +121,7 @@ function translateQuestionMarkPlaceholders(input) {
             output += char + next;
             i += 1;
         } else if (char === "$") {
-            const match = input.slice(i).match(/^\\$[A-Za-z_][A-Za-z0-9_]*\\$|^\\$\\$/);
+            const match = input.slice(i).match(/^\$[A-Za-z_][A-Za-z0-9_]*\$|^\$\$/);
             if (match) {
                 dollarTag = match[0];
                 state = "dollar-quote";
@@ -131,13 +131,12 @@ function translateQuestionMarkPlaceholders(input) {
                 output += char;
             }
         } else if (char === "?") {
-            output += `${++parameterIndex}`;
+            output += "$" + (++parameterIndex);
         } else {
             output += char;
         }
     }
     return output;
-}
 }
 
 export function convertDdl(sql) {
