@@ -15,16 +15,17 @@ Status: **implementação inicial em validação**.
 
 O cálculo reutiliza a progressão já existente para os chips do Guerra Infinita:
 
-`bônus percentual = percentual base do tipo + (nível - 1) × 9,6`
+`bônus percentual = percentual base do tipo + (nível - 1) × levelStepPct`
 
-Os percentuais de chips ativos são somados por atributo e aplicados como um multiplicador. Esta é uma regra provisória e configurável do **nosso jogo**, não uma afirmação sobre a fórmula completa de Dark War: Survival.
+Cada entrada de `CHIP_CATALOG` define `basePct` e `levelStepPct`; mudar esses valores altera o balanceamento sem alterar o motor de combate. Os percentuais dos chips ativos são somados por atributo e aplicados como um multiplicador. Esta é uma regra provisória e configurável do **nosso jogo**, não uma afirmação sobre a fórmula completa de Dark War: Survival.
 
 ## Arquivos
 
 - `engine/vehicle-chip-combat.js`: cálculo puro dos bônus do preset ativo.
 - `engine/game.js`: integração com os atributos calculados dos heróis.
 - `game.html`: carrega o helper antes do motor de jogo.
-- `tests/vehicle-chip-combat.test.mjs`: testes unitários de seleção, duplicação, dados ausentes e progressão.
+- `tests/vehicle-chip-combat.test.mjs`: testes unitários de seleção, duplicação, dados ausentes e progressão configurável.
+- `tests/vehicle-chip-loadouts.test.mjs`: testes de prontidão da ressonância sem aplicar bônus enquanto a regra não estiver definida.
 - `tests/vehicle-chip-loadouts.test.mjs`: testes do domínio de presets.
 
 ## Validação pendente
