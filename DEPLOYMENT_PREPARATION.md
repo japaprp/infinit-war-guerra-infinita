@@ -15,6 +15,12 @@ The static-site publish root must be `frontend/public/` only, never the reposito
 
 The package is **staged, not yet approved for publication**. Keep the static site undeployed until the new test passes and all workflows finish successfully. Do not add backend source, tests, environment examples, scripts, Electron files, or internal documentation to `frontend/public/`.
 
+## Static frontend Blueprint
+
+A separate `render-frontend.yaml` template defines the static site `infinit-war-web` and sets `staticPublishPath: ./frontend/public`. It is deliberately separate from the API Blueprint so preparing the frontend cannot change the existing API's database configuration. The template has **not** been applied and no Render service has been created. Do not apply it until the integration branch is reviewed and publication is explicitly authorized.
+
+Render documents static sites as `type: web` with `runtime: static`, served from a configured publish path. See the [Render Blueprint specification](https://render.com/docs/blueprint-spec).
+
 ## Backend environment
 
 Required for a hosted instance:
