@@ -12,7 +12,7 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "u
 function loadConfig(hostname, configuredApiUrl = "", metaApiUrl = "") {
     const window = { location: { hostname }, IWAR_API_BASE_URL: configuredApiUrl };
     const document = { querySelector: (selector) => selector === 'meta[name="iwar-api-base-url"]' ? { content: metaApiUrl } : null };
-    vm.runInNewContext(read("api/config.js"), { window, document });
+    vm.runInNewContext(read("api/config.js"), { window, document, URL });
     return window;
 }
 
@@ -37,6 +37,30 @@ test("an explicitly configured API URL is preserved and normalized", () => {
     const hosted = loadConfig("infinit-war.example", "https://api.example.test/");
     assert.equal(hosted.IWAR_API_BASE_URL, "https://api.example.test");
     assert.equal(hosted.GDE_API_BASE_URL, "https://api.example.test");
+    assert.equal(hosted.IWAR_API_CONFIG_ERROR, "");
+});
+
+test("hosted configuration rejects insecure HTTP API origins", () => {
+    const hosted = loadConfig("infinit-war.example", "", "http://api.example.test");
+    assert.equal(hosted.IWAR_API_BASE_URL, "");
+    assert.equal(hosted.GDE_API_BASE_URL, "");
+    assert.match(hosted.IWAR_API_CONFIG_ERROR, /exact HTTPS origin/);
+});
+
+test("hosted configuration rejects localhost and URL paths", () => {
+    const localhost = loadConfig("infinit-war.example", "", "http://localhost:4000");
+    const withPath = loadConfig("infinit-war.example", "", "https://api.example.test/v1");
+    assert.equal(localhost.IWAR_API_BASE_URL, "");
+    assert.equal(withPath.IWAR_API_BASE_URL, "");
+    assert.match(localhost.IWAR_API_CONFIG_ERROR, /exact HTTPS origin/);
+    assert.match(withPath.IWAR_API_CONFIG_ERROR, /exact HTTPS origin/);
+});
+
+test("local development rejects an HTTPS URL with a path but keeps local HTTP", () => {
+    const local = loadConfig("localhost");
+    const invalid = loadConfig("localhost", "", "https://api.example.test/path");
+    assert.equal(local.IWAR_API_BASE_URL, "http://localhost:4000");
+    assert.equal(invalid.IWAR_API_BASE_URL, "");
 });
 
 test("API client reports missing hosted configuration before attempting fetch", async () => {
