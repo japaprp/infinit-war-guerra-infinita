@@ -21,6 +21,9 @@ function mockResponse() {
     },
     finish() {
       listeners.get("finish")?.();
+    },
+    close() {
+      listeners.get("close")?.();
     }
   };
 }
@@ -47,4 +50,26 @@ test("per-user mutation lock rejects overlapping writes and releases after respo
   await middleware(request, afterReleaseResponse, () => { nextCalls++; });
   assert.equal(nextCalls, 2);
   assert.equal(afterReleaseResponse.statusCode, 200);
+});
+
+
+test("per-user mutation lock is released when the client disconnects before response finish", async () => {
+  const middleware = createUserLockMiddleware({ ttlSec: 6 });
+  const request = { method: "POST", user: { sub: "guest:disconnect-lock-test" } };
+  let nextCalls = 0;
+
+  const disconnectedResponse = mockResponse();
+  await middleware(request, disconnectedResponse, () => { nextCalls++; });
+  assert.equal(nextCalls, 1);
+
+  const blockedResponse = mockResponse();
+  await middleware(request, blockedResponse, () => { nextCalls++; });
+  assert.equal(blockedResponse.statusCode, 429);
+
+  disconnectedResponse.close();
+
+  const retryResponse = mockResponse();
+  await middleware(request, retryResponse, () => { nextCalls++; });
+  assert.equal(nextCalls, 2);
+  assert.equal(retryResponse.statusCode, 200);
 });
