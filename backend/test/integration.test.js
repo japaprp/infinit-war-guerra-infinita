@@ -441,3 +441,53 @@ test("authenticated players cannot read or mutate another player's state", async
         await server.stop();
     }
 });
+
+
+test("world march is persisted and restored after backend restart", async () => {
+    await fs.rm(dbPath, { force: true });
+    let server = await bootServer({ redisEnabled: false });
+    let token;
+    let marchId;
+
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_march_persistence" }
+        });
+        assert.equal(login.status, 200);
+        token = login.body.accessToken;
+
+        const start = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            body: { origin: { x: 1, y: 2 }, target: { x: 8, y: 9 }, units: { infantry: 10 } }
+        });
+        assert.equal(start.status, 201);
+        assert.ok(start.body.marchId);
+        assert.equal(start.body.status, "IN_TRANSIT");
+        marchId = start.body.marchId;
+
+        const listed = await api(server.baseUrl, "GET", "/v1/world/marches", { token });
+        assert.equal(listed.status, 200);
+        assert.ok(listed.body.marches.some((march) => march.marchId === marchId));
+    } finally {
+        await server.stop();
+    }
+
+    server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_march_persistence" }
+        });
+        assert.equal(login.status, 200);
+
+        const restored = await api(server.baseUrl, "GET", "/v1/world/marches", {
+            token: login.body.accessToken
+        });
+        assert.equal(restored.status, 200);
+        const march = restored.body.marches.find((item) => item.marchId === marchId);
+        assert.ok(march, "march should remain available after restart");
+        assert.deepEqual(march.units, { infantry: 10 });
+        assert.deepEqual(march.target, { x: 8, y: 9 });
+    } finally {
+        await server.stop();
+    }
+});
