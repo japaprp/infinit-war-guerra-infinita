@@ -33,6 +33,8 @@ test("PostgreSQL state mutation lock serializes writes and survives client disco
     const secondResponse = makeResponse();
     let firstEntered = false;
     let secondEntered = false;
+    let disconnectedResponse;
+    let waitingResponse;
 
     try {
         await middleware(
@@ -57,8 +59,8 @@ test("PostgreSQL state mutation lock serializes writes and survives client disco
         assert.equal(secondEntered, true, "second request may proceed after the first releases the lock");
         secondResponse.end();
 
-        const disconnectedResponse = makeResponse();
-        const waitingResponse = makeResponse();
+        disconnectedResponse = makeResponse();
+        waitingResponse = makeResponse();
         let disconnectedHandlerEntered = false;
         let waitingHandlerEntered = false;
 
@@ -88,6 +90,8 @@ test("PostgreSQL state mutation lock serializes writes and survives client disco
     } finally {
         firstResponse.end();
         secondResponse.end();
+        disconnectedResponse?.end();
+        waitingResponse?.end();
         await closeRepository();
     }
 });
