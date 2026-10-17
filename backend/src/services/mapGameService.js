@@ -23,23 +23,39 @@ function resultError(status, message) { return { error: { status, message } }; }
 
 export function ensureGameData(user) {
     ensureV1State(user);
-    user.v1.gameData ||= {};
+    if (!user.v1.gameData || typeof user.v1.gameData !== "object" || Array.isArray(user.v1.gameData)) user.v1.gameData = {};
     const data = user.v1.gameData;
-    data.hunts ||= {};
-    data.vehicle ||= {};
-    data.vehicle.inventory = Array.isArray(data.vehicle.inventory) ? data.vehicle.inventory : [];
-    data.vehicle.presets ||= Object.fromEntries(PRESETS.map((preset) => [preset, Object.fromEntries(SLOTS.map((slot) => [slot, null]))]));
+    if (!data.hunts || typeof data.hunts !== "object" || Array.isArray(data.hunts)) data.hunts = {};
+    if (!data.vehicle || typeof data.vehicle !== "object" || Array.isArray(data.vehicle)) data.vehicle = {};
+    data.vehicle.inventory = Array.isArray(data.vehicle.inventory)
+        ? data.vehicle.inventory.filter((chip) => chip && typeof chip.id === "string" && Object.hasOwn(CHIP_CATALOG, chip.typeId) && Number.isInteger(chip.level) && chip.level >= 1 && chip.level <= 10).slice(0, 500)
+        : [];
+    const sourcePresets = data.vehicle.presets && typeof data.vehicle.presets === "object" && !Array.isArray(data.vehicle.presets) ? data.vehicle.presets : {};
+    const ownedIds = new Set(data.vehicle.inventory.map((chip) => chip.id));
+    const presets = Object.fromEntries(PRESETS.map((preset) => [preset, Object.fromEntries(SLOTS.map((slot) => [slot, null]))]));
     for (const preset of PRESETS) {
-        data.vehicle.presets[preset] ||= Object.fromEntries(SLOTS.map((slot) => [slot, null]));
-        for (const slot of SLOTS) if (!(slot in data.vehicle.presets[preset])) data.vehicle.presets[preset][slot] = null;
+        const seen = new Set();
+        for (const slot of SLOTS) {
+            const chipId = sourcePresets[preset]?.[slot];
+            if (typeof chipId === "string" && ownedIds.has(chipId) && !seen.has(chipId)) {
+                presets[preset][slot] = chipId;
+                seen.add(chipId);
+            }
+        }
     }
+    data.vehicle.presets = presets;
     data.vehicle.activePreset = PRESETS.includes(data.vehicle.activePreset) ? data.vehicle.activePreset : "I";
     data.vehicle.chipMaterials = Math.max(0, safeInt(data.vehicle.chipMaterials));
-    data.chests = Array.isArray(data.chests) ? data.chests : [];
-    data.equipment = Array.isArray(data.equipment) ? data.equipment : [];
-    data.shards = data.shards && typeof data.shards === "object" ? data.shards : { bronze: 0, silver: 0, gold: 0 };
-    data.chestReceipts ||= {};
-    data.battleHistory = Array.isArray(data.battleHistory) ? data.battleHistory : [];
+    data.chests = Array.isArray(data.chests)
+        ? data.chests.filter((chest) => chest && typeof chest.id === "string" && CHEST_TYPES.has(chest.type)).slice(-100)
+        : [];
+    data.equipment = Array.isArray(data.equipment)
+        ? data.equipment.filter((item) => item && typeof item.id === "string" && ["weapon", "armor", "boots"].includes(item.slot) && Number.isFinite(item.bonus) && item.bonus > 0).slice(-500)
+        : [];
+    data.shards = data.shards && typeof data.shards === "object" && !Array.isArray(data.shards) ? data.shards : { bronze: 0, silver: 0, gold: 0 };
+    for (const key of ["bronze", "silver", "gold"]) data.shards[key] = Math.max(0, safeInt(data.shards[key]));
+    if (!data.chestReceipts || typeof data.chestReceipts !== "object" || Array.isArray(data.chestReceipts)) data.chestReceipts = {};
+    data.battleHistory = Array.isArray(data.battleHistory) ? data.battleHistory.filter((battle) => battle && typeof battle.operationId === "string").slice(0, 100) : [];
     return data;
 }
 
