@@ -9,6 +9,8 @@ on:
     paths:
       - "tests/client-persistence.test.mjs"
       - "tests/client-backend-recovery.test.mjs"
+      - "tests/public-frontend-package.test.mjs"
+      - "frontend/public/**"
       - "backend/**"
       - "api/**"
       - "auth/**"
@@ -48,6 +50,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+
+      - name: Validate public frontend package allowlist and source parity
+        run: node --test tests/public-frontend-package.test.mjs
 
       - name: Install backend runtime dependencies
         run: npm --prefix backend install --no-package-lock --omit=dev
