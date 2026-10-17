@@ -251,10 +251,10 @@ async function readDbFromMySqlAppState() {
     return normalizeDbShape(parsed);
 }
 
-async function writeDbToMySqlAppState(db) {
-    if (!postgresPool) return;
+async function writeDbToMySqlAppState(db, executor = postgresPool) {
+    if (!executor) return;
     const payload = JSON.stringify(normalizeDbShape(db));
-    await postgresPool.query(
+    await executor.query(
         `INSERT INTO app_state (id, payload)
          VALUES (1, ?)
          ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, updated_at = CURRENT_TIMESTAMP(3)`,
@@ -715,6 +715,10 @@ async function syncNormalizedTables(db) {
 
         await syncAlliances(connection, normalized.alliances || {});
         await syncReceipts(connection, normalized.receipts || {});
+
+        // Keep the normalized tables and legacy snapshot in one transaction.
+        // If the snapshot write fails, all normalized writes must roll back too.
+        await writeDbToMySqlAppState(normalized, connection);
         await connection.commit();
     } catch (error) {
         await connection.rollback();
@@ -850,7 +854,6 @@ export async function writeDb(db) {
 
     try {
         await syncNormalizedTables(normalized);
-        await writeDbToMySqlAppState(normalized);
     } catch (error) {
         if (strictPersistentMode) throw new Error(`Production PostgreSQL write failed; refusing JSON fallback: ${error.message}`);
         console.warn(`[repo] Erro ao gravar PostgreSQL (${error.message}). Gravando em JSON local.`);
