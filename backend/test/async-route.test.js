@@ -116,3 +116,76 @@ test("Redis idempotency response is stored before a serialized mutation releases
         });
     }
 });
+
+
+test("Redis idempotency read failure fails closed before running a mutation", async () => {
+    const app = express();
+    const router = wrapAsyncRouteHandlers(Router());
+    const idempotency = createIdempotencyMiddleware({
+        redisClient: {
+            async get() { throw new Error("Redis unavailable"); },
+            async set() { throw new Error("Redis unavailable"); }
+        }
+    });
+    let mutationCount = 0;
+    router.post("/purchase", idempotency, async (_req, res) => {
+        mutationCount += 1;
+        res.json({ ok: true });
+    });
+    app.use(router);
+
+    const server = await new Promise((resolve) => {
+        const instance = app.listen(0, () => resolve(instance));
+    });
+
+    try {
+        const response = await fetch(`http://127.0.0.1:${server.address().port}/purchase`, {
+            method: "POST",
+            headers: { "x-idempotency-key": "redis-read-failure" }
+        });
+        assert.equal(response.status, 503);
+        assert.equal((await response.json()).code, "IDEMPOTENCY_UNAVAILABLE");
+        assert.equal(mutationCount, 0, "the mutation must not run when a prior result cannot be checked");
+    } finally {
+        await new Promise((resolve, reject) => {
+            server.close((error) => error ? reject(error) : resolve());
+        });
+    }
+});
+
+test("same-process idempotency fallback protects retries when Redis writes fail", async () => {
+    const app = express();
+    const router = wrapAsyncRouteHandlers(Router());
+    const redisClient = {
+        async get() { return null; },
+        async set() { throw new Error("Redis write unavailable"); }
+    };
+    const idempotency = createIdempotencyMiddleware({ redisClient });
+    let mutationCount = 0;
+    router.post("/purchase", idempotency, async (_req, res) => {
+        mutationCount += 1;
+        res.json({ orderId: "local-fallback-order", mutationCount });
+    });
+    app.use(router);
+
+    const server = await new Promise((resolve) => {
+        const instance = app.listen(0, () => resolve(instance));
+    });
+
+    try {
+        const url = `http://127.0.0.1:${server.address().port}/purchase`;
+        const headers = { "x-idempotency-key": "redis-write-failure" };
+        const firstResponse = await fetch(url, { method: "POST", headers });
+        const secondResponse = await fetch(url, { method: "POST", headers });
+        assert.equal(firstResponse.status, 200);
+        assert.equal(secondResponse.status, 200);
+        const firstBody = await firstResponse.json();
+        const secondBody = await secondResponse.json();
+        assert.deepEqual(secondBody, firstBody);
+        assert.equal(mutationCount, 1);
+    } finally {
+        await new Promise((resolve, reject) => {
+            server.close((error) => error ? reject(error) : resolve());
+        });
+    }
+});
