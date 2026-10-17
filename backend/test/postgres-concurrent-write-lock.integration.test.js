@@ -35,6 +35,9 @@ test("PostgreSQL state mutation lock serializes writes and survives client disco
     let secondEntered = false;
     let disconnectedResponse;
     let waitingResponse;
+    const pendingRequests = [];
+    let secondRequest;
+    let waitingRequest;
 
     try {
         await middleware(
@@ -44,11 +47,12 @@ test("PostgreSQL state mutation lock serializes writes and survives client disco
         );
         assert.equal(firstEntered, true);
 
-        const secondRequest = middleware(
+        secondRequest = middleware(
             { method: "POST", user: { sub: "guest:concurrency_b" } },
             secondResponse,
             () => { secondEntered = true; }
         );
+        pendingRequests.push(secondRequest);
 
         // Let the second middleware reach PostgreSQL's advisory-lock wait.
         await new Promise((resolve) => setTimeout(resolve, 75));
@@ -71,11 +75,12 @@ test("PostgreSQL state mutation lock serializes writes and survives client disco
         );
         assert.equal(disconnectedHandlerEntered, true);
 
-        const waitingRequest = middleware(
+        waitingRequest = middleware(
             { method: "POST", user: { sub: "guest:disconnect_b" } },
             waitingResponse,
             () => { waitingHandlerEntered = true; }
         );
+        pendingRequests.push(waitingRequest);
 
         // A dropped client connection must not release the lock while the
         // asynchronous mutation handler may still be writing shared state.
@@ -89,8 +94,9 @@ test("PostgreSQL state mutation lock serializes writes and survives client disco
         waitingResponse.end();
     } finally {
         firstResponse.end();
-        secondResponse.end();
         disconnectedResponse?.end();
+        await Promise.allSettled(pendingRequests);
+        secondResponse.end();
         waitingResponse?.end();
         await closeRepository();
     }
