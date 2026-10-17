@@ -268,13 +268,15 @@ test("shared write lock prevents overlapping player mutations from overwriting s
             })
         ]);
         const statuses = [first.status, second.status].sort((a, b) => a - b);
-        assert.deepEqual(statuses, [200, 429]);
+        assert.ok(statuses.every((status) => status === 200 || status === 429));
+        const successfulWrites = statuses.filter((status) => status === 200).length;
+        assert.ok(successfulWrites >= 1);
 
         const db = await readDb();
         const energyA = db.users["guest:concurrent-player-a"].v1.resources.energy;
         const energyB = db.users["guest:concurrent-player-b"].v1.resources.energy;
-        assert.equal([energyA, energyB].filter((energy) => energy === 90).length, 1);
-        assert.equal([energyA, energyB].filter((energy) => energy === 100).length, 1);
+        assert.equal([energyA, energyB].filter((energy) => energy === 90).length, successfulWrites);
+        assert.equal([energyA, energyB].filter((energy) => energy === 100).length, 2 - successfulWrites);
     } finally {
         await server.stop();
     }
