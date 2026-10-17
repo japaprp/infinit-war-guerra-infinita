@@ -1985,6 +1985,10 @@ function renderTabContent() {
         const activePreset = state.activeVehicleChipPreset;
         const activeLoadout = state.vehicleChipLoadouts[activePreset];
         const filledVehicleSlots = window.IWChipLoadouts.filledSlotCount(state.vehicleChipLoadouts, activePreset);
+        const resonanceStatus = window.IWChipLoadouts.getResonanceReadiness(state.vehicleChipLoadouts, activePreset);
+        const resonanceMessage = resonanceStatus.ready
+            ? "Ressonância pronta (4/4), mas sem bônus até a regra original ser definida e validada."
+            : `Ressonância em preparação (${resonanceStatus.filledSlots}/${resonanceStatus.requiredSlots}); bônus desativado até a regra original ser definida e validada.`;
         const presetButtons = window.IWChipLoadouts.PRESETS.map((preset) => `<button class="inline-action" data-action="select-chip-preset" data-preset="${preset}" ${preset === activePreset ? "disabled" : ""}>Preset ${preset}${preset === activePreset ? " · ativo" : ""}</button>`).join("");
         const vehicleSlotRows = window.IWChipLoadouts.SLOTS.map((slot) => {
             const chipId = activeLoadout[slot.id];
@@ -2002,7 +2006,7 @@ function renderTabContent() {
         }).join("") : "<p>Nenhum módulo no inventário. Encontre um Baú de Módulos em baús de explorador.</p>";
         const moduleChests = state.inventory.chests.filter((chest) => chest.type === "module");
         ui.heroTabContent.innerHTML = `
-            <section class="inventory-section"><h3>Configuração de viatura · Preset ${activePreset}</h3><p>Configuração original com quatro espaços. A ressonância ainda não concede bônus até sua regra ser definida e testada.</p><div class="preset-switcher">${presetButtons}</div><p>Espaços ocupados: <strong>${filledVehicleSlots}/4</strong></p>${vehicleSlotRows}</section>
+            <section class="inventory-section" data-resonance-ready="${resonanceStatus.ready}" data-resonance-active="${resonanceStatus.active}"><h3>Configuração de viatura · Preset ${activePreset}</h3><p>Configuração original com quatro espaços. ${resonanceMessage}</p><div class="preset-switcher">${presetButtons}</div><p>Espaços ocupados: <strong>${filledVehicleSlots}/4</strong></p>${vehicleSlotRows}</section>
             <section class="inventory-section"><h3>Módulos do herói · ${hero.template.name}</h3><p>ATQ calculado: ${hero.atk.toLocaleString("pt-BR")} · Unidades: ${hero.troops.toLocaleString("pt-BR")}</p>
             <p>Materiais de módulo: <strong>${state.inventory.chipMaterials || 0}</strong></p></section>
             <section class="inventory-section"><h3>Baús de Módulos (${moduleChests.length})</h3>
