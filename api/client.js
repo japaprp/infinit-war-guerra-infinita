@@ -45,7 +45,12 @@
 
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-            throw new Error(payload.error || `HTTP ${response.status}`);
+            const errorMessage = (typeof payload.error === "string" && payload.error)
+                || payload.message
+                || payload.error?.message
+                || payload.code
+                || `HTTP ${response.status}`;
+            throw new Error(errorMessage);
         }
 
         return payload;
