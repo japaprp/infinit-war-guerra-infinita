@@ -50,18 +50,28 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
             }
 
             const originalJson = res.json.bind(res);
+            let responseJsonCalled = false;
             res.json = (body) => {
+                if (responseJsonCalled) return res;
+                responseJsonCalled = true;
+
                 const payload = {
                     status: res.statusCode || 200,
                     body
                 };
 
                 if (redisClient) {
-                    redisClient.set(key, JSON.stringify(payload), "EX", ttlSec).catch(() => {});
-                } else {
-                    setInMemory(key, payload, ttlSec);
+                    // Persist the replayable response before ending the HTTP response.
+                    // When a state-write lock is held, the next request must not enter
+                    // the mutation window before this idempotency record is visible.
+                    Promise.resolve()
+                        .then(() => redisClient.set(key, JSON.stringify(payload), "EX", ttlSec))
+                        .then(() => originalJson(body), () => originalJson(body))
+                        .catch(() => {});
+                    return res;
                 }
 
+                setInMemory(key, payload, ttlSec);
                 return originalJson(body);
             };
 
