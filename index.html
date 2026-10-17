@@ -4,9 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="iwar-api-base-url" content="https://infinit-war-api.onrender.com">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:4000 https://infinit-war-api.onrender.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:4000 https://infinit-war-api.onrender.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://*.facebook.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://www.facebook.com;">
 <title>Infinit War (Guerra Infinita)</title>
 <link rel="stylesheet" href="style.css">
+<style>
+.email-auth-form { display: grid; gap: 8px; margin-top: 12px; }
+.email-auth-form input { margin: 0; }
+.email-auth-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.email-auth-actions button, .verification-actions button { min-height: 38px; border: 1px solid #ffffff2d; border-radius: 8px; color: #fff; background: #263b57; padding: 8px; cursor: pointer; }
+.verification-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.auth-help { margin: 8px 0 0; color: #d7e2f1; font-size: 12px; }
+.auth-actions button:disabled, .email-auth-actions button:disabled, .verification-actions button:disabled { opacity: .55; cursor: not-allowed; }
+</style>
 </head>
 <body class="menu">
 <main class="menu-container">
@@ -14,11 +23,26 @@
     <p class="subtitle">Escolha seu elemento e entre na arena.</p>
 
     <div class="auth-box">
-        <p id="authStatus" class="auth-status">Conta: nao vinculada</p>
+        <p id="authStatus" class="auth-status" aria-live="polite">Conta: não vinculada</p>
         <div class="auth-actions">
-            <button type="button" id="googleLoginBtn" class="oauth-btn google">Vincular Google</button>
-            <button type="button" id="facebookLoginBtn" class="oauth-btn facebook">Vincular Facebook</button>
-            <button type="button" id="logoutBtn" class="oauth-btn logout">Desvincular</button>
+            <button type="button" id="googleLoginBtn" class="oauth-btn google">Entrar com Google</button>
+            <button type="button" id="facebookLoginBtn" class="oauth-btn facebook">Entrar com Facebook</button>
+            <button type="button" id="logoutBtn" class="oauth-btn logout">Sair</button>
+        </div>
+        <form id="emailAuthForm" class="email-auth-form">
+            <label class="field-label" for="authEmail">E-mail</label>
+            <input type="email" id="authEmail" placeholder="voce@exemplo.com" autocomplete="email" required>
+            <label class="field-label" for="authPassword">Senha</label>
+            <input type="password" id="authPassword" placeholder="Mínimo de 6 caracteres" autocomplete="current-password" minlength="6" required>
+            <div class="email-auth-actions">
+                <button type="submit" id="emailLoginBtn">Entrar com e-mail</button>
+                <button type="button" id="emailRegisterBtn">Criar conta</button>
+            </div>
+        </form>
+        <p class="auth-help">Ao criar uma conta, você receberá um e-mail para confirmar seu endereço antes de entrar na arena.</p>
+        <div class="verification-actions">
+            <button type="button" id="resendVerificationBtn" hidden>Reenviar confirmação</button>
+            <button type="button" id="refreshVerificationBtn" hidden>Já confirmei meu e-mail</button>
         </div>
     </div>
 
@@ -26,9 +50,9 @@
     <input type="text" id="nickname" placeholder="Digite seu nickname" maxlength="16" autocomplete="off">
 
     <h2>Escolha seu elemento</h2>
-    <div class="elements" role="group" aria-label="Selecao de elemento">
+    <div class="elements" role="group" aria-label="Seleção de elemento">
         <button type="button" class="element-btn is-selected" data-element="fire">Fogo</button>
-        <button type="button" class="element-btn" data-element="water">Agua</button>
+        <button type="button" class="element-btn" data-element="water">Água</button>
         <button type="button" class="element-btn" data-element="earth">Terra</button>
     </div>
 
