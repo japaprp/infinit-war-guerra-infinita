@@ -125,33 +125,17 @@ function splitTopLevel(input, delimiter = ",") {
   const parts = [];
   let current = "";
   let depth = 0;
-  const walked = walkSql(input, (segment) => {
-    for (const ch of segment) {
-      if (ch === "(") depth++;
-      if (ch === ")") depth = Math.max(0, depth - 1);
-      if (ch === delimiter && depth === 0) {
-        parts.push(current.trim());
-        current = "";
-      } else {
-        current += ch;
-      }
-    }
-    return "";
-  });
-  // walkSql removes quoted/comment text from the callback output; use a direct scan instead.
-  // The direct scanner below is intentionally used to preserve the exact original SQL fragments.
-  void walked;
-  current = "";
-  depth = 0;
   let quote = "";
   let lineComment = false;
   let blockComment = false;
+
   for (let i = 0; i < input.length; i++) {
     const ch = input[i];
     const next = input[i + 1];
+
     if (lineComment) {
       current += ch;
-      if (ch === "\n") lineComment = false;
+      if (ch === "\\n") lineComment = false;
       continue;
     }
     if (blockComment) {
@@ -165,13 +149,15 @@ function splitTopLevel(input, delimiter = ",") {
     }
     if (quote) {
       current += ch;
-      if (ch === "\\" && i + 1 < input.length) current += input[++i];
-      else if (ch === quote) {
+      if (ch === "\\\\" && i + 1 < input.length) {
+        current += input[++i];
+      } else if (ch === quote) {
         if (next === quote) current += input[++i];
         else quote = "";
       }
       continue;
     }
+
     if (ch === "'" || ch === '"') {
       quote = ch;
       current += ch;
@@ -179,10 +165,10 @@ function splitTopLevel(input, delimiter = ",") {
       blockComment = true;
       current += ch + next;
       i++;
-    } else if ((ch === "-" && next === "-" && (i + 2 >= input.length || /\s/.test(input[i + 2]))) || ch === "#") {
+    } else if ((ch === "-" && next === "-" && (i + 2 >= input.length || /\\s/.test(input[i + 2]))) || ch === "#") {
       lineComment = true;
       current += ch;
-      if (next === "-" && ch === "-") {
+      if (ch === "-" && next === "-") {
         current += next;
         i++;
       }
@@ -199,6 +185,7 @@ function splitTopLevel(input, delimiter = ",") {
       current += ch;
     }
   }
+
   if (current.trim()) parts.push(current.trim());
   return parts;
 }
