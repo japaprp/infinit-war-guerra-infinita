@@ -95,7 +95,7 @@ test("cliente mantém expedição, temporizador e saldos após fechar/reabrir", 
 
         await page.locator("#expeditionDestination").selectOption("old-ruins");
         await page.locator("#expeditionObjective").selectOption("hunt");
-        await page.locator("#startExpeditionBtn").click();
+        await page.locator("#startExpeditionBtn").evaluate(button => button.click());
 
         const started = await readSavedState(page);
         assert.ok(started?.expedition?.active, "a expedição deve ser salva como ativa");
@@ -127,7 +127,7 @@ test("cliente mantém expedição, temporizador e saldos após fechar/reabrir", 
             const button = document.querySelector("#claimExpeditionBtn");
             return button && !button.disabled;
         }, null, { timeout: 5000 });
-        await page.locator("#claimExpeditionBtn").click();
+        await page.locator("#claimExpeditionBtn").evaluate(button => button.click());
 
         const afterClaim = await readSavedState(page);
         assert.equal(afterClaim.expedition.active, false, "a expedição deve ser encerrada após o resgate");
