@@ -1803,58 +1803,58 @@ async function pullStateFromBackend() {
     }
 
     if (remote?.state?.resources) {
-                // A economia principal ainda contém ganhos/gastos legados apenas no cliente.
-                // Não sobrescrever esses saldos com zeros de um snapshot remoto parcial; energia
-                // da expedição é autoritativa no backend e continua sendo sincronizada.
-                state.resources = {
-                    ...state.resources,
-                    ...(remote.state.resources || {}),
-                    gold: state.resources.gold,
-                    silver: state.resources.silver,
-                    food: state.resources.food,
-                    energy: Number.isFinite(remote.state.resources.energy) ? remote.state.resources.energy : state.resources.energy
-                };
-                state.genericShards = { ...state.genericShards, ...(remote.state.genericShards || {}) };
-                state.inventory = {
-                    equipment: Array.isArray(remote.state.inventory?.equipment) ? remote.state.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : state.inventory.equipment,
-                    chests: Array.isArray(remote.state.inventory?.chests) ? remote.state.inventory.chests.slice(0, 100) : state.inventory.chests
-                };
-                state.selectedHeroId = remote.state.selectedHeroId || state.selectedHeroId;
-                state.activeHeroTab = remote.state.activeHeroTab || state.activeHeroTab;
-                state.activeSquadSlot = Number.isFinite(remote.state.activeSquadSlot) ? remote.state.activeSquadSlot : state.activeSquadSlot;
-                state.totalPuzzles = Number.isFinite(remote.state.totalPuzzles) ? remote.state.totalPuzzles : state.totalPuzzles;
-                state.nextUnlockAt = Number.isFinite(remote.state.nextUnlockAt) ? remote.state.nextUnlockAt : state.nextUnlockAt;
-                state.squad = Array.isArray(remote.state.squad) ? remote.state.squad.slice(0, 5) : state.squad;
-                state.mission = { ...state.mission, ...(remote.state.mission || {}) };
-                state.events = { ...state.events, ...(remote.state.events || {}) };
-                state.buildings = { ...state.buildings, ...(remote.state.buildings || {}) };
-                state.verticalSlice = { ...state.verticalSlice, ...(remote.state.verticalSlice || {}) };
-                if (remote.state.expedition && typeof remote.state.expedition === "object") {
-                    const localExpedition = state.expedition || {};
-                    const remoteExpedition = remote.state.expedition;
-                    state.expedition = {
-                        ...localExpedition,
-                        ...remoteExpedition,
-                        // The backend snapshot can omit client-facing completion metadata while
-                        // older gameplay state is being migrated. Merge it monotonically so a
-                        // reload cannot erase a confirmed local receipt/completion.
-                        claimedIds: [...new Set([
-                            ...(Array.isArray(localExpedition.claimedIds) ? localExpedition.claimedIds : []),
-                            ...(Array.isArray(remoteExpedition.claimedIds) ? remoteExpedition.claimedIds : [])
-                        ])].slice(-200),
-                        appliedReceiptIds: [...new Set([
-                            ...(Array.isArray(localExpedition.appliedReceiptIds) ? localExpedition.appliedReceiptIds : []),
-                            ...(Array.isArray(remoteExpedition.appliedReceiptIds) ? remoteExpedition.appliedReceiptIds : [])
-                        ])].slice(-500),
-                        completedCount: Math.max(
-                            Number.isFinite(localExpedition.completedCount) ? localExpedition.completedCount : 0,
-                            Number.isFinite(remoteExpedition.completedCount) ? remoteExpedition.completedCount : 0
-                        ),
-                        rewardClaimed: Boolean(localExpedition.rewardClaimed || remoteExpedition.rewardClaimed)
-                    };
-                }
-                state.buildQueue = Array.isArray(remote.state.buildQueue) ? remote.state.buildQueue.slice(0, 2) : state.buildQueue;
-                state.heroes = { ...state.heroes, ...(remote.state.heroes || {}) };
+        // A economia principal ainda contém ganhos/gastos legados apenas no cliente.
+        // Não sobrescrever esses saldos com zeros de um snapshot remoto parcial; energia
+        // da expedição é autoritativa no backend e continua sendo sincronizada.
+        state.resources = {
+            ...state.resources,
+            ...(remote.state.resources || {}),
+            gold: state.resources.gold,
+            silver: state.resources.silver,
+            food: state.resources.food,
+            energy: Number.isFinite(remote.state.resources.energy) ? remote.state.resources.energy : state.resources.energy
+        };
+        state.genericShards = { ...state.genericShards, ...(remote.state.genericShards || {}) };
+        state.inventory = {
+            equipment: Array.isArray(remote.state.inventory?.equipment) ? remote.state.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : state.inventory.equipment,
+            chests: Array.isArray(remote.state.inventory?.chests) ? remote.state.inventory.chests.slice(0, 100) : state.inventory.chests
+        };
+        state.selectedHeroId = remote.state.selectedHeroId || state.selectedHeroId;
+        state.activeHeroTab = remote.state.activeHeroTab || state.activeHeroTab;
+        state.activeSquadSlot = Number.isFinite(remote.state.activeSquadSlot) ? remote.state.activeSquadSlot : state.activeSquadSlot;
+        state.totalPuzzles = Number.isFinite(remote.state.totalPuzzles) ? remote.state.totalPuzzles : state.totalPuzzles;
+        state.nextUnlockAt = Number.isFinite(remote.state.nextUnlockAt) ? remote.state.nextUnlockAt : state.nextUnlockAt;
+        state.squad = Array.isArray(remote.state.squad) ? remote.state.squad.slice(0, 5) : state.squad;
+        state.mission = { ...state.mission, ...(remote.state.mission || {}) };
+        state.events = { ...state.events, ...(remote.state.events || {}) };
+        state.buildings = { ...state.buildings, ...(remote.state.buildings || {}) };
+        state.verticalSlice = { ...state.verticalSlice, ...(remote.state.verticalSlice || {}) };
+        if (remote.state.expedition && typeof remote.state.expedition === "object") {
+            const localExpedition = state.expedition || {};
+            const remoteExpedition = remote.state.expedition;
+            state.expedition = {
+                ...localExpedition,
+                ...remoteExpedition,
+                // The backend snapshot can omit client-facing completion metadata while
+                // older gameplay state is being migrated. Merge it monotonically so a
+                // reload cannot erase a confirmed local receipt/completion.
+                claimedIds: [...new Set([
+                    ...(Array.isArray(localExpedition.claimedIds) ? localExpedition.claimedIds : []),
+                    ...(Array.isArray(remoteExpedition.claimedIds) ? remoteExpedition.claimedIds : [])
+                ])].slice(-200),
+                appliedReceiptIds: [...new Set([
+                    ...(Array.isArray(localExpedition.appliedReceiptIds) ? localExpedition.appliedReceiptIds : []),
+                    ...(Array.isArray(remoteExpedition.appliedReceiptIds) ? remoteExpedition.appliedReceiptIds : [])
+                ])].slice(-500),
+                completedCount: Math.max(
+                    Number.isFinite(localExpedition.completedCount) ? localExpedition.completedCount : 0,
+                    Number.isFinite(remoteExpedition.completedCount) ? remoteExpedition.completedCount : 0
+                ),
+                rewardClaimed: Boolean(localExpedition.rewardClaimed || remoteExpedition.rewardClaimed)
+            };
+        }
+        state.buildQueue = Array.isArray(remote.state.buildQueue) ? remote.state.buildQueue.slice(0, 2) : state.buildQueue;
+        state.heroes = { ...state.heroes, ...(remote.state.heroes || {}) };
     }
 
     if (remote?.economy && Number.isFinite(remote.economy.gems)) {
