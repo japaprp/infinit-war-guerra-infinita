@@ -111,7 +111,11 @@ function normalizeDbShape(parsed) {
     return {
         users: parsed?.users || {},
         receipts: parsed?.receipts || {},
-        alliances: parsed?.alliances || {}
+        alliances: parsed?.alliances || {},
+        // Cross-player map operations are stored in app_state until dedicated SQL
+        // tables and transactional repository methods are introduced.
+        rallies: parsed?.rallies || {},
+        battles: parsed?.battles || {}
     };
 }
 
@@ -298,7 +302,8 @@ function buildUserFromRow(row) {
             heroes: [],
             buildings: [],
             alliances: v1Meta?.alliances && typeof v1Meta.alliances === "object" ? v1Meta.alliances : defaults.alliances,
-            pass: v1Meta?.pass && typeof v1Meta.pass === "object" ? v1Meta.pass : defaults.pass
+            pass: v1Meta?.pass && typeof v1Meta.pass === "object" ? v1Meta.pass : defaults.pass,
+            gameData: v1Meta?.gameData && typeof v1Meta.gameData === "object" ? v1Meta.gameData : {}
         }
     };
 }
@@ -672,7 +677,10 @@ async function syncNormalizedTables(db) {
                         energyRegenPerMinute: safeNumber(resources.energyRegenPerMinute, defaults.resources.energyRegenPerMinute)
                     },
                     alliances: user?.v1?.alliances || { allianceId: "", name: "", tag: "" },
-                    pass: user?.v1?.pass || { seasonId: "season_1", claimed: {} }
+                    pass: user?.v1?.pass || { seasonId: "season_1", claimed: {} },
+                    // Keep authoritative game-specific state (chests, vehicle presets,
+                    // hunts, and per-player battle history) across normalized SQL reads.
+                    gameData: user?.v1?.gameData || {}
                 },
                 createdAt: safeNumber(user?.createdAt, Date.now()),
                 updatedAt: safeNumber(user?.updatedAt, Date.now())
@@ -825,6 +833,16 @@ export async function readDb() {
             }
             if (Object.keys(fromNormalized.alliances || {}).length === 0) {
                 fromNormalized.alliances = fromAppState.alliances || {};
+            }
+            // Preserve global map state stored in app_state while player profiles and
+            // economy continue to be hydrated from normalized SQL tables.
+            fromNormalized.rallies = fromAppState.rallies || {};
+            fromNormalized.battles = fromAppState.battles || {};
+            for (const [externalId, savedUser] of Object.entries(fromAppState.users || {})) {
+                const normalizedUser = fromNormalized.users[externalId];
+                if (!normalizedUser || !savedUser?.v1?.gameData) continue;
+                normalizedUser.v1 ||= {};
+                normalizedUser.v1.gameData = savedUser.v1.gameData;
             }
             return normalizeDbShape(fromNormalized);
         }
