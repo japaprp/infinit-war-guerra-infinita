@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { convertDdl, translateSql, wrapClient } from "../src/repositories/postgresCompat.js";
+import { releaseAdvisoryWriteLock } from "../src/repositories/dbRepository.js";
 
 test("translates MySQL parameter placeholders to PostgreSQL placeholders", () => {
     assert.equal(translateSql("SELECT * FROM users WHERE external_id = ?"), "SELECT * FROM users WHERE external_id = $1");
@@ -49,4 +50,54 @@ test("discards a PostgreSQL client when release receives an error", async () => 
     connection.release(connectionError);
 
     assert.equal(releasedWith, connectionError);
+});
+
+
+test("discards the PostgreSQL session when advisory unlock fails", async () => {
+    const unlockError = new Error("simulated advisory unlock failure");
+    let releasedWith;
+    const connection = {
+        async query() {
+            throw unlockError;
+        },
+        release(error) {
+            releasedWith = error;
+        }
+    };
+
+    await assert.rejects(releaseAdvisoryWriteLock(connection), unlockError);
+    assert.equal(releasedWith, unlockError);
+});
+
+test("discards the PostgreSQL session if advisory unlock returns false", async () => {
+    let releasedWith;
+    const connection = {
+        async query() {
+            return [[{ pg_advisory_unlock: false }], []];
+        },
+        release(error) {
+            releasedWith = error;
+        }
+    };
+
+    await assert.rejects(releaseAdvisoryWriteLock(connection), /not confirmed as released/);
+    assert.match(releasedWith.message, /not confirmed as released/);
+});
+
+test("releases the PostgreSQL session normally after confirmed advisory unlock", async () => {
+    let releaseCalls = 0;
+    let releasedWith;
+    const connection = {
+        async query() {
+            return [[{ pg_advisory_unlock: true }], []];
+        },
+        release(error) {
+            releaseCalls += 1;
+            releasedWith = error;
+        }
+    };
+
+    await releaseAdvisoryWriteLock(connection);
+    assert.equal(releaseCalls, 1);
+    assert.equal(releasedWith, undefined);
 });
