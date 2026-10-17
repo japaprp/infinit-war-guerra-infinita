@@ -24,6 +24,14 @@ test("active vehicle preset is saved, validated on load, and used by hero stat c
         "vehicle attack bonuses must feed the ATK calculation");
     assert.match(source, /const troops = Math\.floor\([\s\S]*?chipPct\("hpPct"\)/,
         "vehicle health bonuses must feed the unit/health calculation");
+    assert.match(source, /function getChipBonusPct\(definition, level\)/,
+        "chip level scaling must be derived from catalog balance values");
+    assert.match(source, /levelStepPct:\s*9\.6/,
+        "the current prototype step must live in catalog data, not the combat formula");
+    assert.match(source, /getResonanceReadiness\(state\.vehicleChipLoadouts, activePreset\)/,
+        "the UI must expose resonance readiness without applying an unverified formula");
+    assert.match(source, /data-resonance-ready="\$\{resonanceStatus\.ready\}"/,
+        "resonance readiness must be inspectable and deterministic");
     assert.ok(html.indexOf('src="engine/vehicle-chip-combat.js"') < html.indexOf('src="engine/game.js"'),
         "the combat helper must load before the game engine");
 });

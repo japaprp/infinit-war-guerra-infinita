@@ -174,3 +174,107 @@ test("cliente mantém expedição, temporizador e saldos após fechar/reabrir", 
         await new Promise(resolveClose => server.close(resolveClose));
     }
 });
+
+
+test("vehicle chip presets persist and only the active preset affects combat", { timeout: 150_000 }, async () => {
+    const server = createStaticServer();
+    await new Promise((resolveListen, reject) => {
+        server.once("error", reject);
+        server.listen(0, "127.0.0.1", resolveListen);
+    });
+    const baseUrl = `http://127.0.0.1:${server.address().port}`;
+    let browser;
+    let context;
+    const pageErrors = [];
+
+    try {
+        browser = await chromium.launch({ headless: true });
+        context = await browser.newContext();
+        await context.addInitScript(() => {
+            localStorage.setItem("playerNick", "Chip Preset Test");
+            localStorage.setItem("playerElement", "fire");
+            localStorage.setItem("iwar_auth_session", JSON.stringify({ uid: "chip-preset-test-user" }));
+        });
+        let page = await context.newPage();
+        page.on("pageerror", error => pageErrors.push(error.message));
+        await page.goto(`${baseUrl}/game.html`, { waitUntil: "load" });
+        await page.waitForFunction(() => !document.querySelector("#loadingScreen")
+            || document.querySelector("#loadingScreen").classList.contains("is-hidden"), null, { timeout: 15000 });
+        await page.waitForFunction(() => Boolean(localStorage.getItem("iwar_village_state_v1")), null, { timeout: 5000 });
+
+        const payload = await readSavedState(page);
+        assert.ok(payload, "the initial local save must exist");
+        payload.inventory.chips = [
+            { id: "chip-attack-a", typeId: "assault-module", level: 1, name: "Módulo de Assalto", role: "Guerreiro", rarityLabel: "Épico" },
+            { id: "chip-hp-b", typeId: "gravity-barrier", level: 2, name: "Barreira Gravitacional", role: "Guerreiro", rarityLabel: "Épico" },
+            { id: "chip-attack-c", typeId: "recon-array", level: 1, name: "Matriz de Reconhecimento", role: "Batedor", rarityLabel: "Raro" },
+            { id: "chip-hp-d", typeId: "supply-core", level: 1, name: "Núcleo de Suprimentos", role: "Suporte", rarityLabel: "Raro" }
+        ];
+        payload.vehicleChipLoadouts = {
+            I: { assault: "chip-attack-a", vanguard: "chip-hp-b", suppression: "chip-attack-c", gravity: "chip-hp-d" },
+            II: { assault: "chip-attack-c", vanguard: "chip-attack-c", suppression: null, gravity: null },
+            III: { assault: null, vanguard: null, suppression: null, gravity: null },
+            IV: { assault: null, vanguard: null, suppression: null, gravity: null }
+        };
+        payload.activeVehicleChipPreset = "I";
+        await page.evaluate((nextPayload) => {
+            const key = "iwar_village_state_v1";
+            const envelope = JSON.parse(localStorage.getItem(key));
+            const raw = JSON.stringify(nextPayload);
+            let hash = 2166136261;
+            for (let i = 0; i < raw.length; i += 1) {
+                hash ^= raw.charCodeAt(i);
+                hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+            }
+            envelope.payload = nextPayload;
+            envelope.checksum = (hash >>> 0).toString(16);
+            localStorage.setItem(key, JSON.stringify(envelope));
+        }, payload);
+
+        await page.reload({ waitUntil: "load" });
+        await page.waitForFunction(() => !document.querySelector("#loadingScreen")
+            || document.querySelector("#loadingScreen").classList.contains("is-hidden"), null, { timeout: 15000 });
+        await page.locator('button[data-tab-id="modulos"]').evaluate((button) => button.click());
+
+        const stateI = await readSavedState(page);
+        assert.equal(stateI.activeVehicleChipPreset, "I");
+        assert.equal(stateI.inventory.chips.length, 4);
+        assert.equal(stateI.vehicleChipLoadouts.I.suppression, "chip-attack-c");
+        assert.equal(stateI.vehicleChipLoadouts.II.vanguard, null, "duplicate references in one preset must be normalized");
+        const resonanceSection = page.locator('[data-resonance-ready="true"]');
+        assert.equal(await resonanceSection.getAttribute("data-resonance-active"), "false");
+        assert.match(await resonanceSection.innerText(), /sem bônus até a regra original ser definida e validada/i);
+
+        const readCalculatedAttack = async () => page.locator("#heroTabContent").evaluate((element) => {
+            const match = element.innerText.match(/ATQ calculado:\s*([\d.]+)/);
+            if (!match) throw new Error("Calculated ATK label was not rendered");
+            return Number(match[1].replace(/\./g, ""));
+        });
+        const attackPresetI = await readCalculatedAttack();
+        await page.locator('button[data-action="select-chip-preset"][data-preset="II"]').evaluate((button) => button.click());
+        const stateII = await readSavedState(page);
+        assert.equal(stateII.activeVehicleChipPreset, "II");
+        assert.equal(stateII.vehicleChipLoadouts.II.assault, "chip-attack-c");
+        assert.equal(await page.locator('[data-resonance-ready="false"]').count(), 1);
+        const attackPresetII = await readCalculatedAttack();
+        assert.ok(attackPresetI > attackPresetII, "switching the active preset must change combat ATK");
+
+        await page.close();
+        page = await context.newPage();
+        page.on("pageerror", error => pageErrors.push(error.message));
+        await page.goto(`${baseUrl}/game.html`, { waitUntil: "load" });
+        await page.waitForFunction(() => !document.querySelector("#loadingScreen")
+            || document.querySelector("#loadingScreen").classList.contains("is-hidden"), null, { timeout: 15000 });
+        await page.locator('button[data-tab-id="modulos"]').evaluate((button) => button.click());
+
+        const reopened = await readSavedState(page);
+        assert.equal(reopened.activeVehicleChipPreset, "II", "the selected preset must survive a full browser reload");
+        assert.equal(reopened.vehicleChipLoadouts.I.assault, "chip-attack-a");
+        assert.equal(reopened.vehicleChipLoadouts.II.assault, "chip-attack-c");
+        assert.equal(await readCalculatedAttack(), attackPresetII, "combat stats must use the saved active preset after reload");
+        assert.deepEqual(pageErrors, [], "the chip preset UI must not throw JavaScript errors");
+    } finally {
+        if (browser) await browser.close();
+        await new Promise(resolveClose => server.close(resolveClose));
+    }
+});
