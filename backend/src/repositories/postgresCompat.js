@@ -12,7 +12,7 @@ const conflictColumns = {
     alliances: "alliance_uid"
 };
 
-function translateSql(input) {
+export function translateSql(input) {
     let sql = String(input);
     sql = sql.replace(/ENGINE\s*=\s*InnoDB/gi, "");
     sql = sql.replace(/\bBIGINT\s+UNSIGNED\b/gi, "BIGINT");
@@ -43,7 +43,7 @@ function translateSql(input) {
     return sql.replace(/;\s*$/, "");
 }
 
-function convertDdl(sql) {
+export function convertDdl(sql) {
     let translated = translateSql(sql);
     translated = translated.replace(/\bJSON\b/gi, "JSONB");
     translated = translated.replace(/\bJSON_OBJECT\([^)]*\)/gi, "'{}'::jsonb");
