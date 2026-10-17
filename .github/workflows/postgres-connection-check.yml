@@ -1,6 +1,14 @@
 name: PostgreSQL connection check
 
 on:
+  push:
+    branches:
+      - integration/postgres-auth-isolated
+    paths:
+      - ".github/workflows/postgres-connection-check.yml"
+      - "backend/scripts/check-postgres-connection.mjs"
+      - "backend/package.json"
+      - "backend/package-lock.json"
   workflow_dispatch:
 
 permissions:
