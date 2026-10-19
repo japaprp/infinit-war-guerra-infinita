@@ -251,9 +251,17 @@ function secureConnectionString(connectionString) {
 }
 
 function buildPostgresPool(env, max) {
+  const parsedUrl = new URL(secureConnectionString(env.DATABASE_URL));
+  const isLoopback = ["localhost", "127.0.0.1", "::1"].includes(parsedUrl.hostname);
+  // The integration suite uses a disposable local PostgreSQL service without TLS.
+  // Never disable certificate validation for hosted or non-test connections.
+  const ssl = String(env.NODE_ENV || "").toLowerCase() === "test" && isLoopback
+    ? false
+    : { rejectUnauthorized: true };
+
   return new pg.Pool({
-    connectionString: secureConnectionString(env.DATABASE_URL),
-    ssl: { rejectUnauthorized: true },
+    connectionString: parsedUrl.toString(),
+    ssl,
     max,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000
