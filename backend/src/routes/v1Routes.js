@@ -286,39 +286,44 @@ export function createV1Routes(env, runtime = {}) {
         if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
 
         ensureV1State(user);
-        const idempotencyKey = req.get("x-idempotency-key").trim();
-        const requestFingerprint = fingerprintRequestBody(req.body || {});
+        const idempotencyKey = String(req.get("x-idempotency-key") || "").trim();
         const now = Date.now();
         user.v1.marchIdempotency ||= {};
 
-        for (const [key, record] of Object.entries(user.v1.marchIdempotency)) {
-            if (!record || record.expiresAtMs <= now) delete user.v1.marchIdempotency[key];
-        }
-
-        const idempotencyRecordId = createHash("sha256").update(idempotencyKey).digest("hex");
-        const existingRecord = user.v1.marchIdempotency[idempotencyRecordId];
-        if (existingRecord) {
-            if (existingRecord.requestFingerprint !== requestFingerprint) {
-                return res.status(409).json({
-                    code: "IDEMPOTENCY_KEY_REUSED",
-                    message: "Esta chave de idempotência já foi usada com dados diferentes."
-                });
+        let idempotencyRecordId;
+        if (idempotencyKey) {
+            const requestFingerprint = fingerprintRequestBody(req.body || {});
+            for (const [key, record] of Object.entries(user.v1.marchIdempotency)) {
+                if (!record || record.expiresAtMs <= now) delete user.v1.marchIdempotency[key];
             }
-            return res.status(201).json(existingRecord.march);
+
+            idempotencyRecordId = createHash("sha256").update(idempotencyKey).digest("hex");
+            const existingRecord = user.v1.marchIdempotency[idempotencyRecordId];
+            if (existingRecord) {
+                if (existingRecord.requestFingerprint !== requestFingerprint) {
+                    return res.status(409).json({
+                        code: "IDEMPOTENCY_KEY_REUSED",
+                        message: "Esta chave de idempotência já foi usada com dados diferentes."
+                    });
+                }
+                return res.status(201).json(existingRecord.march);
+            }
         }
 
         const march = startMarch(user, req.body || {});
-        const records = user.v1.marchIdempotency;
-        const entries = Object.entries(records).sort((a, b) => a[1].expiresAtMs - b[1].expiresAtMs);
-        while (entries.length >= 100) {
-            const [oldestKey] = entries.shift();
-            delete records[oldestKey];
+        if (idempotencyRecordId) {
+            const records = user.v1.marchIdempotency;
+            const entries = Object.entries(records).sort((a, b) => a[1].expiresAtMs - b[1].expiresAtMs);
+            while (entries.length >= 100) {
+                const [oldestKey] = entries.shift();
+                delete records[oldestKey];
+            }
+            records[idempotencyRecordId] = {
+                requestFingerprint: fingerprintRequestBody(req.body || {}),
+                march,
+                expiresAtMs: now + 310000
+            };
         }
-        records[idempotencyRecordId] = {
-            requestFingerprint,
-            march,
-            expiresAtMs: now + 310000
-        };
 
         await writeDb(db);
         res.status(201).json(march);
