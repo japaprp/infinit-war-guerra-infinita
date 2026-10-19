@@ -285,6 +285,7 @@ export function createV1Routes(env, runtime = {}) {
         const user = db.users[req.user.sub];
         if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
 
+        ensureV1State(user);
         const idempotencyKey = req.get("x-idempotency-key").trim();
         const requestFingerprint = fingerprintRequestBody(req.body || {});
         const now = Date.now();
