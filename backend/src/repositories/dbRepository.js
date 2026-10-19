@@ -819,6 +819,42 @@ export function getRepositoryMode() {
     return mode;
 }
 
+export async function releaseAdvisoryWriteLock(connection) {
+    try {
+        const [rows] = await connection.query("SELECT pg_advisory_unlock(1735291, 90210)");
+        if (rows?.[0]?.pg_advisory_unlock !== true) {
+            throw new Error("PostgreSQL advisory write lock was not confirmed as released");
+        }
+    } catch (error) {
+        // Destroy a session with an uncertain lock state; never return it to the pool.
+        connection.release(error);
+        throw error;
+    }
+
+    connection.release();
+}
+
+export async function acquireRepositoryWriteLock() {
+    if (mode !== "postgres" || !dbPool) return null;
+
+    const connection = await dbPool.getConnection();
+    try {
+        // This session-level lock coordinates all instances sharing this PostgreSQL DB.
+        await connection.query("SELECT pg_advisory_lock(1735291, 90210)");
+    } catch (error) {
+        // The server may have acquired the lock even if the response was lost.
+        connection.release(error);
+        throw error;
+    }
+
+    let released = false;
+    return async () => {
+        if (released) return;
+        released = true;
+        await releaseAdvisoryWriteLock(connection);
+    };
+}
+
 export async function readDb() {
     if (!["mysql", "postgres"].includes(mode) || !dbPool) {
         return readDbFromFile();
