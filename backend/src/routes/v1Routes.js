@@ -252,10 +252,17 @@ export function createV1Routes(env, runtime = {}) {
     });
 
     const validateMarchRequest = (req, res, next) => {
-        if (!req.get("x-idempotency-key")?.trim()) {
+        const idempotencyKey = req.get("x-idempotency-key")?.trim();
+        if (!idempotencyKey) {
             return res.status(400).json({
                 code: "BAD_REQUEST",
                 message: "X-Idempotency-Key is required"
+            });
+        }
+        if (idempotencyKey.length > 200) {
+            return res.status(400).json({
+                code: "INVALID_IDEMPOTENCY_KEY",
+                message: "A chave de idempotência deve conter de 1 a 200 caracteres."
             });
         }
 
