@@ -61,6 +61,13 @@ test("PostgreSQL preserves marches, serializes writes, and survives client disco
             target: { x: 3, y: 4 },
             units: { infantry: 10 }
         });
+        marchUser.v1.marchIdempotency = {
+            persisted_retry_key: {
+                requestFingerprint: "test-fingerprint",
+                march: expectedMarch,
+                expiresAtMs: Date.now() + 300000
+            }
+        };
         await writeDb(dbBeforeMarch);
         await closeRepository();
         await initializeRepository(env);
@@ -69,6 +76,15 @@ test("PostgreSQL preserves marches, serializes writes, and survives client disco
             dbAfterRestart.users[marchUserId]?.v1?.marches,
             [expectedMarch],
             "marches must survive a PostgreSQL repository restart and normalized-table read"
+        );
+        assert.deepEqual(
+            dbAfterRestart.users[marchUserId]?.v1?.marchIdempotency?.persisted_retry_key,
+            {
+                requestFingerprint: "test-fingerprint",
+                march: expectedMarch,
+                expiresAtMs: dbAfterRestart.users[marchUserId].v1.marchIdempotency.persisted_retry_key.expiresAtMs
+            },
+            "march idempotency records must survive a PostgreSQL repository restart"
         );
 
         await middleware(
