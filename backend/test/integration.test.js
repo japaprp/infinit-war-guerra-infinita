@@ -466,6 +466,14 @@ test("world march is persisted and restored after backend restart", async () => 
         });
         assert.equal(missingKey.status, 400, "march creation must reject requests without an idempotency key");
 
+        const oversizedKey = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            headers: { "x-idempotency-key": "x".repeat(201) },
+            body: marchPayload
+        });
+        assert.equal(oversizedKey.status, 400);
+        assert.equal(oversizedKey.body.code, "INVALID_IDEMPOTENCY_KEY");
+
         const marchHeaders = { "x-idempotency-key": "it-march-start-001" };
         const invalidStart = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
             token,
