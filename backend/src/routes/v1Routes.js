@@ -252,6 +252,13 @@ export function createV1Routes(env, runtime = {}) {
     });
 
     router.post("/world/marches/start", userLock, idempotency, async (req, res) => {
+        if (!req.get("x-idempotency-key")) {
+            return res.status(400).json({
+                code: "BAD_REQUEST",
+                message: "X-Idempotency-Key is required"
+            });
+        }
+
         const db = await readDb();
         const user = db.users[req.user.sub];
         if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
