@@ -235,7 +235,7 @@ function wrapClient(client) {
     beginTransaction: () => client.query("BEGIN"),
     commit: () => client.query("COMMIT"),
     rollback: () => client.query("ROLLBACK"),
-    release: () => client.release()
+    release: (error) => client.release(error)
   };
 }
 
@@ -250,14 +250,26 @@ function secureConnectionString(connectionString) {
   return parsed.toString();
 }
 
-export function createPostgresPool(env) {
-  const pool = new pg.Pool({
-    connectionString: secureConnectionString(env.DATABASE_URL),
-    ssl: { rejectUnauthorized: true },
-    max: 8,
+function buildPostgresPool(env, max) {
+  const parsedUrl = new URL(secureConnectionString(env.DATABASE_URL));
+  const isLoopback = ["localhost", "127.0.0.1", "::1"].includes(parsedUrl.hostname);
+  // The integration suite uses a disposable local PostgreSQL service without TLS.
+  // Never disable certificate validation for hosted or non-test connections.
+  const ssl = String(env.NODE_ENV || "").toLowerCase() === "test" && isLoopback
+    ? false
+    : { rejectUnauthorized: true };
+
+  return new pg.Pool({
+    connectionString: parsedUrl.toString(),
+    ssl,
+    max,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000
   });
+}
+
+export function createPostgresPool(env) {
+  const pool = buildPostgresPool(env, 8);
 
   return {
     driver: "postgres",
@@ -265,6 +277,16 @@ export function createPostgresPool(env) {
       const result = await pool.query(translatePostgresQuery(sql), params);
       return [result.rows, result.fields];
     },
+    getConnection: async () => wrapClient(await pool.connect()),
+    end: () => pool.end()
+  };
+}
+
+// Advisory-lock waiters use a separate pool so they cannot consume every
+// application connection while waiting and deadlock the lock owner.
+export function createPostgresLockPool(env) {
+  const pool = buildPostgresPool(env, 4);
+  return {
     getConnection: async () => wrapClient(await pool.connect()),
     end: () => pool.end()
   };

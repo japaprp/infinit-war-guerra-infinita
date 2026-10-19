@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import mysql from "mysql2/promise";
-import { createPostgresPool } from "../postgresCompat.js";
+import { createPostgresLockPool, createPostgresPool } from "../postgresCompat.js";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -10,6 +10,7 @@ const DB_PATH = process.env.IWAR_DB_PATH || path.join(__dirname, "..", "..", "da
 
 let mode = "json";
 let dbPool = null;
+let postgresLockPool = null;
 let strictPersistentMode = false;
 
 function safeNumber(value, fallback = 0) {
@@ -789,6 +790,7 @@ export async function initializeRepository(env) {
     strictPersistentMode = String(env.NODE_ENV || "development").toLowerCase() === "production";
     mode = "json";
     dbPool = null;
+    postgresLockPool = null;
 
     if (!["mysql", "postgres"].includes(env.DATA_DRIVER)) {
         if (strictPersistentMode) throw new Error("Production requires DATA_DRIVER=mysql or postgres; JSON-file persistence is not durable on ephemeral hosts.");
@@ -800,6 +802,11 @@ export async function initializeRepository(env) {
             host: env.MYSQL_HOST, port: env.MYSQL_PORT, user: env.MYSQL_USER, password: env.MYSQL_PASSWORD, database: env.MYSQL_DATABASE,
             ...(env.MYSQL_SSL ? { ssl: { rejectUnauthorized: true } } : {}), waitForConnections: true, connectionLimit: 8, queueLimit: 0
         });
+        if (env.DATA_DRIVER === "postgres") {
+            postgresLockPool = createPostgresLockPool(env);
+            const lockConnection = await postgresLockPool.getConnection();
+            lockConnection.release();
+        }
 
         await ensureSqlSchema();
         await migrateAppStateToNormalizedIfNeeded();
@@ -809,7 +816,14 @@ export async function initializeRepository(env) {
         console.log("[repo] DATA_DRIVER=" + env.DATA_DRIVER + " ativo.");
     } catch (error) {
         mode = "json";
+        const pool = dbPool;
+        const lockPool = postgresLockPool;
         dbPool = null;
+        postgresLockPool = null;
+        await Promise.all([
+            pool?.end?.().catch(() => {}),
+            lockPool?.end?.().catch(() => {})
+        ]);
         if (strictPersistentMode) throw new Error(`Production database initialization failed; refusing JSON fallback: ${error.message}`);
         console.warn(`[repo] Falha ao conectar banco SQL (${error.message}). Fallback para JSON local.`);
     }
@@ -817,6 +831,54 @@ export async function initializeRepository(env) {
 
 export function getRepositoryMode() {
     return mode;
+}
+
+export async function closeRepository() {
+    const pool = dbPool;
+    const lockPool = postgresLockPool;
+    dbPool = null;
+    postgresLockPool = null;
+    mode = "json";
+    await Promise.all([
+        pool?.end?.().catch(() => {}),
+        lockPool?.end?.().catch(() => {})
+    ]);
+}
+
+export async function releaseAdvisoryWriteLock(connection) {
+    try {
+        const [rows] = await connection.query("SELECT pg_advisory_unlock(1735291, 90210)");
+        if (rows?.[0]?.pg_advisory_unlock !== true) {
+            throw new Error("PostgreSQL advisory write lock was not confirmed as released");
+        }
+    } catch (error) {
+        // Destroy a session with an uncertain lock state; never return it to the pool.
+        connection.release(error);
+        throw error;
+    }
+
+    connection.release();
+}
+
+export async function acquireRepositoryWriteLock() {
+    if (mode !== "postgres" || !postgresLockPool) return null;
+
+    const connection = await postgresLockPool.getConnection();
+    try {
+        // This session-level lock coordinates all instances sharing this PostgreSQL DB.
+        await connection.query("SELECT pg_advisory_lock(1735291, 90210)");
+    } catch (error) {
+        // The server may have acquired the lock even if the response was lost.
+        connection.release(error);
+        throw error;
+    }
+
+    let released = false;
+    return async () => {
+        if (released) return;
+        released = true;
+        await releaseAdvisoryWriteLock(connection);
+    };
 }
 
 export async function readDb() {
