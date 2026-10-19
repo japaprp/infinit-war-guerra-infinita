@@ -512,15 +512,33 @@ test("world march is persisted and restored after backend restart", async () => 
         await server.stop();
     }
 
+    clearIdempotencyMemoryForTests();
     server = await bootServer({ redisEnabled: false });
     try {
         const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
             body: { platform: "guest", externalId: "it_march_persistence" }
         });
         assert.equal(login.status, 200);
+        const tokenAfterRestart = login.body.accessToken;
+
+        const conflictingAfterRestart = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token: tokenAfterRestart,
+            headers: marchHeaders,
+            body: { ...marchPayload, target: { x: 99, y: 100 } }
+        });
+        assert.equal(conflictingAfterRestart.status, 409);
+        assert.equal(conflictingAfterRestart.body.code, "IDEMPOTENCY_KEY_REUSED");
+
+        const retryAfterRestart = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token: tokenAfterRestart,
+            headers: marchHeaders,
+            body: marchPayload
+        });
+        assert.equal(retryAfterRestart.status, 201);
+        assert.equal(retryAfterRestart.body.marchId, marchId, "durable idempotency must replay the original march after restart");
 
         const restored = await api(server.baseUrl, "GET", "/v1/world/marches", {
-            token: login.body.accessToken
+            token: tokenAfterRestart
         });
         assert.equal(restored.status, 200);
         const march = restored.body.marches.find((item) => item.marchId === marchId);
