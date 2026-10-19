@@ -1,5 +1,5 @@
 ﻿import { Router } from "express";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { readDb, writeDb } from "../repositories/dbRepository.js";
 import { createSessionToken } from "../services/tokenService.js";
 import { verifyFirebaseIdToken } from "../services/firebaseTokenService.js";
