@@ -250,14 +250,18 @@ function secureConnectionString(connectionString) {
   return parsed.toString();
 }
 
-export function createPostgresPool(env) {
-  const pool = new pg.Pool({
+function buildPostgresPool(env, max) {
+  return new pg.Pool({
     connectionString: secureConnectionString(env.DATABASE_URL),
     ssl: { rejectUnauthorized: true },
-    max: 8,
+    max,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000
   });
+}
+
+export function createPostgresPool(env) {
+  const pool = buildPostgresPool(env, 8);
 
   return {
     driver: "postgres",
@@ -265,6 +269,16 @@ export function createPostgresPool(env) {
       const result = await pool.query(translatePostgresQuery(sql), params);
       return [result.rows, result.fields];
     },
+    getConnection: async () => wrapClient(await pool.connect()),
+    end: () => pool.end()
+  };
+}
+
+// Advisory-lock waiters use a separate pool so they cannot consume every
+// application connection while waiting and deadlock the lock owner.
+export function createPostgresLockPool(env) {
+  const pool = buildPostgresPool(env, 4);
+  return {
     getConnection: async () => wrapClient(await pool.connect()),
     end: () => pool.end()
   };
