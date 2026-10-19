@@ -448,6 +448,11 @@ test("world march is persisted and restored after backend restart", async () => 
     let server = await bootServer({ redisEnabled: false });
     let token;
     let marchId;
+    const marchPayload = {
+        origin: { x: 1, y: 2 },
+        target: { x: 8, y: 9 },
+        units: { infantry: 10 }
+    };
 
     try {
         const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
@@ -455,12 +460,6 @@ test("world march is persisted and restored after backend restart", async () => 
         });
         assert.equal(login.status, 200);
         token = login.body.accessToken;
-
-        const marchPayload = {
-            origin: { x: 1, y: 2 },
-            target: { x: 8, y: 9 },
-            units: { infantry: 10 }
-        };
         const missingKey = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
             token,
             body: marchPayload
