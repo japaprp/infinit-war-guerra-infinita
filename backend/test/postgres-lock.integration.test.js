@@ -8,7 +8,7 @@ import {
   initializeRepository,
   readDb
 } from "../src/repositories/dbRepository.js";
-import { createStateWriteLockMiddleware } from "../src/middlewares/userLockMiddleware.js";
+import { createStateWriteLockMiddleware, createUserLockMiddleware } from "../src/middlewares/userLockMiddleware.js";
 
 function mockResponse() {
   const listeners = new Map();
@@ -66,15 +66,23 @@ test("real PostgreSQL repository read and advisory lock serialize concurrent wri
     assert.equal(getRepositoryMode(), "postgres", "a read failure must not silently switch to JSON fallback");
 
     const middleware = createStateWriteLockMiddleware();
+    const userMiddleware = createUserLockMiddleware();
     const firstResponse = mockResponse();
+    const firstRequest = { method: "POST", user: { sub: "integration-user" } };
     let firstNextCalls = 0;
-    await middleware({ method: "POST" }, firstResponse, () => { firstNextCalls++; });
+    await middleware(firstRequest, firstResponse, () => { firstNextCalls++; });
     assert.equal(firstNextCalls, 1);
+
+    let firstRouteCalls = 0;
+    await userMiddleware(firstRequest, firstResponse, () => { firstRouteCalls++; });
+    assert.equal(firstRouteCalls, 1,
+      "route-level user lock must reuse the app-level PostgreSQL lock instead of deadlocking");
 
     let secondNextCalls = 0;
     const secondResponse = mockResponse();
+    const secondRequestData = { method: "POST", user: { sub: "integration-user-2" } };
     const secondRequest = middleware(
-      { method: "POST" },
+      secondRequestData,
       secondResponse,
       () => { secondNextCalls++; }
     );
@@ -87,6 +95,10 @@ test("real PostgreSQL repository read and advisory lock serialize concurrent wri
     await secondRequest;
     assert.equal(secondNextCalls, 1,
       "second mutation must enter only after PostgreSQL advisory lock is released");
+    let secondRouteCalls = 0;
+    await userMiddleware(secondRequestData, secondResponse, () => { secondRouteCalls++; });
+    assert.equal(secondRouteCalls, 1,
+      "a later route-level user lock must reuse its request's app-level lock");
     secondResponse.end();
     await new Promise((resolve) => setImmediate(resolve));
   } finally {
