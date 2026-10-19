@@ -252,10 +252,28 @@ export function createV1Routes(env, runtime = {}) {
     });
 
     router.post("/world/marches/start", userLock, idempotency, async (req, res) => {
-        if (!req.get("x-idempotency-key")) {
+        if (!req.get("x-idempotency-key")?.trim()) {
             return res.status(400).json({
                 code: "BAD_REQUEST",
                 message: "X-Idempotency-Key is required"
+            });
+        }
+
+        const { origin, target, units } = req.body || {};
+        const isCoordinate = (value) =>
+            value && typeof value === "object" &&
+            Number.isInteger(value.x) && Number.isInteger(value.y);
+        const validUnits = units && typeof units === "object" && !Array.isArray(units) &&
+            Object.keys(units).length > 0 &&
+            Object.entries(units).every(([unit, count]) =>
+                unit.trim().length > 0 && Number.isSafeInteger(count) && count >= 0
+            ) &&
+            Object.values(units).some((count) => count > 0);
+
+        if (!isCoordinate(origin) || !isCoordinate(target) || !validUnits) {
+            return res.status(400).json({
+                code: "INVALID_MARCH",
+                message: "origin e target devem conter coordenadas inteiras; units deve conter pelo menos uma unidade com quantidade positiva."
             });
         }
 
