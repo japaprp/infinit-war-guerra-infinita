@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { convertDdl, translateSql } from "../src/repositories/postgresCompat.js";
+import { convertDdl, translateSql, wrapClient } from "../src/repositories/postgresCompat.js";
+import { releaseAdvisoryWriteLock } from "../src/repositories/dbRepository.js";
 
 test("translates MySQL parameter placeholders to PostgreSQL placeholders", () => {
     assert.equal(translateSql("SELECT * FROM users WHERE external_id = ?"), "SELECT * FROM users WHERE external_id = $1");
@@ -29,4 +30,74 @@ test("does not translate question marks inside SQL strings, identifiers, comment
         translateSql(sql),
         "SELECT $1, '?' AS literal, \"?\" AS quoted_identifier, `?` AS mysql_identifier -- ? ignored\n/* ? ignored */ WHERE note = $tag$?$tag$ AND id = $2"
     );
+});
+
+
+test("discards a PostgreSQL client when release receives an error", async () => {
+    const connectionError = new Error("simulated connection failure");
+    let releasedWith;
+    const client = {
+        async query() {
+            throw connectionError;
+        },
+        release(error) {
+            releasedWith = error;
+        }
+    };
+
+    const connection = wrapClient(client);
+    await assert.rejects(connection.query("SELECT pg_advisory_unlock(1735291, 90210)"), connectionError);
+    connection.release(connectionError);
+
+    assert.equal(releasedWith, connectionError);
+});
+
+
+test("discards the PostgreSQL session when advisory unlock fails", async () => {
+    const unlockError = new Error("simulated advisory unlock failure");
+    let releasedWith;
+    const connection = {
+        async query() {
+            throw unlockError;
+        },
+        release(error) {
+            releasedWith = error;
+        }
+    };
+
+    await assert.rejects(releaseAdvisoryWriteLock(connection), unlockError);
+    assert.equal(releasedWith, unlockError);
+});
+
+test("discards the PostgreSQL session if advisory unlock returns false", async () => {
+    let releasedWith;
+    const connection = {
+        async query() {
+            return [[{ pg_advisory_unlock: false }], []];
+        },
+        release(error) {
+            releasedWith = error;
+        }
+    };
+
+    await assert.rejects(releaseAdvisoryWriteLock(connection), /not confirmed as released/);
+    assert.match(releasedWith.message, /not confirmed as released/);
+});
+
+test("releases the PostgreSQL session normally after confirmed advisory unlock", async () => {
+    let releaseCalls = 0;
+    let releasedWith;
+    const connection = {
+        async query() {
+            return [[{ pg_advisory_unlock: true }], []];
+        },
+        release(error) {
+            releaseCalls += 1;
+            releasedWith = error;
+        }
+    };
+
+    await releaseAdvisoryWriteLock(connection);
+    assert.equal(releaseCalls, 1);
+    assert.equal(releasedWith, undefined);
 });

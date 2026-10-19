@@ -9,6 +9,7 @@ const DB_PATH = process.env.IWAR_DB_PATH || path.join(__dirname, "..", "..", "da
 
 let mode = "json";
 let postgresPool = null;
+let postgresLockPool = null;
 let strictPersistentMode = false;
 
 function safeNumber(value, fallback = 0) {
@@ -773,6 +774,7 @@ export async function initializeRepository(env) {
     strictPersistentMode = String(env.NODE_ENV || "development").toLowerCase() === "production";
     mode = "json";
     postgresPool = null;
+    postgresLockPool = null;
 
     if (env.DATA_DRIVER !== "postgres") {
         if (strictPersistentMode) throw new Error("Production requires DATA_DRIVER=postgres; JSON-file persistence is not durable on ephemeral hosts.");
@@ -780,7 +782,7 @@ export async function initializeRepository(env) {
     }
 
     try {
-        postgresPool = postgres.createPool({
+        const poolConfig = {
             DATABASE_URL: env.DATABASE_URL,
             MYSQL_HOST: env.MYSQL_HOST,
             MYSQL_PORT: env.MYSQL_PORT,
@@ -788,7 +790,11 @@ export async function initializeRepository(env) {
             MYSQL_PASSWORD: env.MYSQL_PASSWORD,
             MYSQL_DATABASE: env.MYSQL_DATABASE,
             MYSQL_SSL: env.MYSQL_SSL
-        });
+        };
+        postgresPool = postgres.createPool(poolConfig);
+        // A one-connection pool queues local lock waiters without exhausting the
+        // application query pool while another request holds the advisory lock.
+        postgresLockPool = postgres.createPool({ ...poolConfig, POOL_MAX: 1 });
 
         await ensureSqlSchema();
         await migrateAppStateToNormalizedIfNeeded();
@@ -798,7 +804,14 @@ export async function initializeRepository(env) {
         console.log("[repo] DATA_DRIVER=postgres ativo.");
     } catch (error) {
         mode = "json";
+        const pool = postgresPool;
+        const lockPool = postgresLockPool;
         postgresPool = null;
+        postgresLockPool = null;
+        await Promise.all([
+            pool?.end().catch(() => {}),
+            lockPool?.end().catch(() => {})
+        ]);
         if (strictPersistentMode) throw new Error(`Production PostgreSQL initialization failed; refusing JSON fallback: ${error.message}`);
         console.warn(`[repo] Falha ao conectar PostgreSQL (${error.message}). Fallback para JSON local.`);
     }
@@ -808,13 +821,53 @@ export function getRepositoryMode() {
     return mode;
 }
 
-export async function closeRepository() {
-    if (postgresPool) {
-        const pool = postgresPool;
-        postgresPool = null;
-        await pool.end();
+export async function releaseAdvisoryWriteLock(connection) {
+    try {
+        const [rows] = await connection.query("SELECT pg_advisory_unlock(1735291, 90210)");
+        if (rows?.[0]?.pg_advisory_unlock !== true) {
+            throw new Error("PostgreSQL advisory write lock was not confirmed as released");
+        }
+    } catch (error) {
+        // A failed unlock must destroy the session; closing it releases session-level locks.
+        connection.release(error);
+        throw error;
     }
+
+    connection.release();
+}
+
+export async function acquireRepositoryWriteLock() {
+    if (mode !== "postgres" || !postgresPool) return null;
+
+    const connection = await postgresLockPool.getConnection();
+    try {
+        // This lock is shared by every backend instance using the same PostgreSQL database.
+        // It must cover read -> mutate -> write, because writeDb persists a full-state snapshot.
+        await connection.query("SELECT pg_advisory_lock(1735291, 90210)");
+    } catch (error) {
+        // The server may have acquired the lock even if the response was lost.
+        // Discard this session rather than returning a possibly locked connection to the pool.
+        connection.release(error);
+        throw error;
+    }
+
+    let released = false;
+    return async () => {
+        if (released) return;
+        released = true;
+
+        await releaseAdvisoryWriteLock(connection);
+    };
+}
+
+export async function closeRepository() {
+    const pool = postgresPool;
+    const lockPool = postgresLockPool;
+    postgresPool = null;
+    postgresLockPool = null;
     mode = "json";
+    if (pool) await pool.end();
+    if (lockPool) await lockPool.end();
 }
 
 export async function readDb() {

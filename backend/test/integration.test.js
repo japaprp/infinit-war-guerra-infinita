@@ -441,3 +441,119 @@ test("authenticated players cannot read or mutate another player's state", async
         await server.stop();
     }
 });
+
+
+test("world march is persisted and restored after backend restart", async () => {
+    await fs.rm(dbPath, { force: true });
+    let server = await bootServer({ redisEnabled: false });
+    let token;
+    let marchId;
+    const marchPayload = {
+        origin: { x: 1, y: 2 },
+        target: { x: 8, y: 9 },
+        units: { infantry: 10 }
+    };
+
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_march_persistence" }
+        });
+        assert.equal(login.status, 200);
+        token = login.body.accessToken;
+        const missingKey = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            body: marchPayload
+        });
+        assert.equal(missingKey.status, 400, "march creation must reject requests without an idempotency key");
+
+        const oversizedKey = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            headers: { "x-idempotency-key": "x".repeat(201) },
+            body: marchPayload
+        });
+        assert.equal(oversizedKey.status, 400);
+        assert.equal(oversizedKey.body.code, "INVALID_IDEMPOTENCY_KEY");
+
+        const marchHeaders = { "x-idempotency-key": "it-march-start-001" };
+        const invalidStart = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            headers: marchHeaders,
+            body: { ...marchPayload, units: { infantry: -1 } }
+        });
+        assert.equal(invalidStart.status, 400);
+        assert.equal(invalidStart.body.code, "INVALID_MARCH");
+
+        const start = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            headers: marchHeaders,
+            body: marchPayload
+        });
+        assert.equal(start.status, 201);
+        assert.ok(start.body.marchId);
+        assert.equal(start.body.status, "IN_TRANSIT");
+        marchId = start.body.marchId;
+
+        const retry = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            headers: marchHeaders,
+            body: marchPayload
+        });
+        assert.equal(retry.status, 201);
+        assert.equal(retry.body.marchId, marchId, "retrying the same idempotency key must not create another march");
+
+        const conflictingReuse = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            headers: marchHeaders,
+            body: {
+                ...marchPayload,
+                target: { x: 99, y: 100 }
+            }
+        });
+        assert.equal(conflictingReuse.status, 409, "reusing a key with different march data must be rejected");
+        assert.equal(conflictingReuse.body.code, "IDEMPOTENCY_KEY_REUSED");
+
+        const listed = await api(server.baseUrl, "GET", "/v1/world/marches", { token });
+        assert.equal(listed.status, 200);
+        assert.ok(listed.body.marches.some((march) => march.marchId === marchId));
+    } finally {
+        await server.stop();
+    }
+
+    clearIdempotencyMemoryForTests();
+    server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_march_persistence" }
+        });
+        assert.equal(login.status, 200);
+        const tokenAfterRestart = login.body.accessToken;
+        const marchHeadersAfterRestart = { "x-idempotency-key": "it-march-start-001" };
+
+        const conflictingAfterRestart = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token: tokenAfterRestart,
+            headers: marchHeadersAfterRestart,
+            body: { ...marchPayload, target: { x: 99, y: 100 } }
+        });
+        assert.equal(conflictingAfterRestart.status, 409);
+        assert.equal(conflictingAfterRestart.body.code, "IDEMPOTENCY_KEY_REUSED");
+
+        const retryAfterRestart = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token: tokenAfterRestart,
+            headers: marchHeadersAfterRestart,
+            body: marchPayload
+        });
+        assert.equal(retryAfterRestart.status, 201);
+        assert.equal(retryAfterRestart.body.marchId, marchId, "durable idempotency must replay the original march after restart");
+
+        const restored = await api(server.baseUrl, "GET", "/v1/world/marches", {
+            token: tokenAfterRestart
+        });
+        assert.equal(restored.status, 200);
+        const march = restored.body.marches.find((item) => item.marchId === marchId);
+        assert.ok(march, "march should remain available after restart");
+        assert.deepEqual(march.units, { infantry: 10 });
+        assert.deepEqual(march.target, { x: 8, y: 9 });
+    } finally {
+        await server.stop();
+    }
+});

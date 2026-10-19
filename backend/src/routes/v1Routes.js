@@ -1,5 +1,5 @@
 ﻿import { Router } from "express";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { readDb, writeDb } from "../repositories/dbRepository.js";
 import { createSessionToken } from "../services/tokenService.js";
 import { verifyFirebaseIdToken } from "../services/firebaseTokenService.js";
@@ -16,6 +16,7 @@ import {
     speedUpBuild,
     queryWorldTiles,
     startMarch,
+    listMarches,
     createRally,
     createAlliance,
     searchAlliances,
@@ -30,7 +31,8 @@ import {
 } from "../services/v1StubService.js";
 import { createAuthMiddleware } from "../middlewares/authMiddleware.js";
 import { createUserLockMiddleware } from "../middlewares/userLockMiddleware.js";
-import { createIdempotencyMiddleware } from "../middlewares/idempotencyMiddleware.js";
+import { wrapAsyncRouteHandlers } from "../middlewares/asyncRoute.js";
+import { createIdempotencyMiddleware, fingerprintRequestBody } from "../middlewares/idempotencyMiddleware.js";
 
 function asError(res, result) {
     if (!result || !result.error) return false;
@@ -39,12 +41,12 @@ function asError(res, result) {
 }
 
 export function createV1Routes(env, runtime = {}) {
-    const router = Router();
+    const router = wrapAsyncRouteHandlers(Router());
     const authMiddleware = createAuthMiddleware(env.JWT_SECRET);
     const userLock = createUserLockMiddleware({ redisClient: runtime.redisClient, ttlSec: 8 });
     const idempotency = createIdempotencyMiddleware({ redisClient: runtime.redisClient, ttlSec: 300 });
 
-    router.post("/auth/login", async (req, res) => {
+    router.post("/auth/login", userLock, async (req, res) => {
         const { provider, idToken, platform, externalId } = req.body || {};
         const requestedProvider = provider || platform || "guest";
         let identity;
@@ -100,7 +102,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(getPlayerMe(req.user.sub, user));
     });
 
-    router.post("/player/sync", async (req, res) => {
+    router.post("/player/sync", userLock, async (req, res) => {
         const db = await readDb();
         const user = db.users[req.user.sub];
         if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
@@ -204,7 +206,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(result);
     });
 
-    router.post("/buildings/complete", idempotency, userLock, async (req, res) => {
+    router.post("/buildings/complete", userLock, idempotency, async (req, res) => {
         const { taskId } = req.body || {};
         const db = await readDb();
         const user = db.users[req.user.sub];
@@ -241,12 +243,92 @@ export function createV1Routes(env, runtime = {}) {
         res.json(queryWorldTiles(user, x, y, radius));
     });
 
-    router.post("/world/marches/start", userLock, async (req, res) => {
+    router.get("/world/marches", async (req, res) => {
         const db = await readDb();
         const user = db.users[req.user.sub];
         if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
 
-        res.json(startMarch(user, req.body || {}));
+        res.json(listMarches(user));
+    });
+
+    const validateMarchRequest = (req, res, next) => {
+        const idempotencyKey = req.get("x-idempotency-key")?.trim();
+        if (!idempotencyKey) {
+            return res.status(400).json({
+                code: "BAD_REQUEST",
+                message: "X-Idempotency-Key is required"
+            });
+        }
+        if (idempotencyKey.length > 200) {
+            return res.status(400).json({
+                code: "INVALID_IDEMPOTENCY_KEY",
+                message: "A chave de idempotência deve conter de 1 a 200 caracteres."
+            });
+        }
+
+        const { origin, target, units } = req.body || {};
+        const isCoordinate = (value) =>
+            value && typeof value === "object" &&
+            Number.isInteger(value.x) && Number.isInteger(value.y);
+        const validUnits = units && typeof units === "object" && !Array.isArray(units) &&
+            Object.keys(units).length > 0 &&
+            Object.entries(units).every(([unit, count]) =>
+                unit.trim().length > 0 && Number.isSafeInteger(count) && count >= 0
+            ) &&
+            Object.values(units).some((count) => count > 0);
+
+        if (!isCoordinate(origin) || !isCoordinate(target) || !validUnits) {
+            return res.status(400).json({
+                code: "INVALID_MARCH",
+                message: "origin e target devem conter coordenadas inteiras; units deve conter pelo menos uma unidade com quantidade positiva."
+            });
+        }
+
+        return next();
+    };
+
+    router.post("/world/marches/start", validateMarchRequest, userLock, idempotency, async (req, res) => {
+        const db = await readDb();
+        const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+
+        ensureV1State(user);
+        const idempotencyKey = req.get("x-idempotency-key").trim();
+        const requestFingerprint = fingerprintRequestBody(req.body || {});
+        const now = Date.now();
+        user.v1.marchIdempotency ||= {};
+
+        for (const [key, record] of Object.entries(user.v1.marchIdempotency)) {
+            if (!record || record.expiresAtMs <= now) delete user.v1.marchIdempotency[key];
+        }
+
+        const idempotencyRecordId = createHash("sha256").update(idempotencyKey).digest("hex");
+        const existingRecord = user.v1.marchIdempotency[idempotencyRecordId];
+        if (existingRecord) {
+            if (existingRecord.requestFingerprint !== requestFingerprint) {
+                return res.status(409).json({
+                    code: "IDEMPOTENCY_KEY_REUSED",
+                    message: "Esta chave de idempotência já foi usada com dados diferentes."
+                });
+            }
+            return res.status(201).json(existingRecord.march);
+        }
+
+        const march = startMarch(user, req.body || {});
+        const records = user.v1.marchIdempotency;
+        const entries = Object.entries(records).sort((a, b) => a[1].expiresAtMs - b[1].expiresAtMs);
+        while (entries.length >= 100) {
+            const [oldestKey] = entries.shift();
+            delete records[oldestKey];
+        }
+        records[idempotencyRecordId] = {
+            requestFingerprint,
+            march,
+            expiresAtMs: now + 310000
+        };
+
+        await writeDb(db);
+        res.status(201).json(march);
     });
 
     router.post("/world/rallies", userLock, async (req, res) => {
@@ -294,7 +376,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(getPowerRanking(db, page, pageSize));
     });
 
-    router.post("/shop/purchase", idempotency, userLock, async (req, res) => {
+    router.post("/shop/purchase", userLock, idempotency, async (req, res) => {
         const { sku, quantity, idempotencyKey } = req.body || {};
         if (!sku || !idempotencyKey) {
             return res.status(400).json({ code: "BAD_REQUEST", message: "sku and idempotencyKey are required" });
@@ -311,7 +393,7 @@ export function createV1Routes(env, runtime = {}) {
         res.json(result);
     });
 
-    router.post("/pass/claim", idempotency, userLock, async (req, res) => {
+    router.post("/pass/claim", userLock, idempotency, async (req, res) => {
         const { seasonId, tier, premiumTrack } = req.body || {};
         const db = await readDb();
         const user = db.users[req.user.sub];

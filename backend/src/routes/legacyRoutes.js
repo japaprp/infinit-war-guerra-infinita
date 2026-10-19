@@ -7,10 +7,11 @@ import { createMockReceipt, consumeMockReceipt } from "../services/shopService.j
 import { ensureUser, getUserId, validateLegacyStateShape } from "../services/userService.js";
 import { createAuthMiddleware } from "../middlewares/authMiddleware.js";
 import { createUserLockMiddleware } from "../middlewares/userLockMiddleware.js";
+import { wrapAsyncRouteHandlers } from "../middlewares/asyncRoute.js";
 import { createIdempotencyMiddleware } from "../middlewares/idempotencyMiddleware.js";
 
 export function createLegacyRoutes(env, runtime = {}) {
-    const router = Router();
+    const router = wrapAsyncRouteHandlers(Router());
     const authMiddleware = createAuthMiddleware(env.JWT_SECRET);
     const userLock = createUserLockMiddleware({ redisClient: runtime.redisClient, ttlSec: 6 });
     const idempotency = createIdempotencyMiddleware({ redisClient: runtime.redisClient, ttlSec: 300 });
@@ -25,7 +26,7 @@ export function createLegacyRoutes(env, runtime = {}) {
         });
     });
 
-    router.post("/auth/session", async (req, res) => {
+    router.post("/auth/session", userLock, async (req, res) => {
         const { provider, providerUid, idToken } = req.body || {};
         if (!provider) return res.status(400).json({ error: "provider is required" });
 
@@ -127,7 +128,7 @@ export function createLegacyRoutes(env, runtime = {}) {
         return res.json(receipt);
     });
 
-    router.post("/shop/purchase", authMiddleware, idempotency, userLock, async (req, res) => {
+    router.post("/shop/purchase", authMiddleware, userLock, idempotency, async (req, res) => {
         const { receiptId, signature } = req.body || {};
 
         if (!receiptId || !signature) {
