@@ -260,10 +260,37 @@ paths:
                     items:
                       $ref: '#/components/schemas/WorldTile'
 
+  /v1/world/marches:
+    get:
+      tags: [World]
+      summary: Lista as marchas persistidas do jogador autenticado
+      responses:
+        '200':
+          description: Lista de marchas
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [marches]
+                properties:
+                  marches:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StartMarchResponse'
+
   /v1/world/marches/start:
     post:
       tags: [World]
-      summary: Inicia marcha (coleta/ataque/reforco)
+      summary: Inicia uma marcha (coleta, ataque ou reforço)
+      parameters:
+        - in: header
+          name: X-Idempotency-Key
+          required: true
+          description: Reutilize a mesma chave apenas para repetir exatamente a mesma operação.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
       requestBody:
         required: true
         content:
@@ -271,12 +298,18 @@ paths:
             schema:
               $ref: '#/components/schemas/StartMarchRequest'
       responses:
-        '200':
-          description: Marcha criada
+        '201':
+          description: Marcha criada ou resposta original reproduzida em uma repetição idempotente
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/StartMarchResponse'
+        '400':
+          description: Chave ausente ou dados da marcha inválidos
+        '409':
+          description: Chave de idempotência reutilizada com dados diferentes
+        '503':
+          description: Persistência ou validação de idempotência indisponível
 
   /v1/world/rallies:
     post:
@@ -656,23 +689,49 @@ components:
 
     StartMarchRequest:
       type: object
-      required: [targetX, targetY, marchType, squad]
+      required: [origin, target, units]
       properties:
-        targetX: { type: integer }
-        targetY: { type: integer }
-        marchType: { type: string, enum: [GATHER, ATTACK, REINFORCE] }
-        squad:
-          type: array
-          items:
-            type: object
-            properties:
-              heroId: { type: string }
-              units: { type: integer }
+        origin:
+          type: object
+          required: [x, y]
+          properties:
+            x: { type: integer }
+            y: { type: integer }
+        target:
+          type: object
+          required: [x, y]
+          properties:
+            x: { type: integer }
+            y: { type: integer }
+        units:
+          type: object
+          minProperties: 1
+          description: Deve incluir ao menos um tipo de unidade com quantidade positiva.
+          additionalProperties:
+            type: integer
+            minimum: 0
 
     StartMarchResponse:
       type: object
+      required: [marchId, status, origin, target, units, departAtMs, arriveAtMs]
       properties:
         marchId: { type: string }
+        status: { type: string, enum: [IN_TRANSIT] }
+        origin:
+          type: object
+          properties:
+            x: { type: integer }
+            y: { type: integer }
+        target:
+          type: object
+          properties:
+            x: { type: integer }
+            y: { type: integer }
+        units:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0
         departAtMs: { type: integer, format: int64 }
         arriveAtMs: { type: integer, format: int64 }
 
