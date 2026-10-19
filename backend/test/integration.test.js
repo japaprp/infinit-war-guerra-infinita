@@ -520,10 +520,11 @@ test("world march is persisted and restored after backend restart", async () => 
         });
         assert.equal(login.status, 200);
         const tokenAfterRestart = login.body.accessToken;
+        const marchHeadersAfterRestart = { "x-idempotency-key": "it-march-start-001" };
 
         const conflictingAfterRestart = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
             token: tokenAfterRestart,
-            headers: marchHeaders,
+            headers: marchHeadersAfterRestart,
             body: { ...marchPayload, target: { x: 99, y: 100 } }
         });
         assert.equal(conflictingAfterRestart.status, 409);
@@ -531,7 +532,7 @@ test("world march is persisted and restored after backend restart", async () => 
 
         const retryAfterRestart = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
             token: tokenAfterRestart,
-            headers: marchHeaders,
+            headers: marchHeadersAfterRestart,
             body: marchPayload
         });
         assert.equal(retryAfterRestart.status, 201);
