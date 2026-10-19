@@ -468,6 +468,14 @@ test("world march is persisted and restored after backend restart", async () => 
         assert.equal(missingKey.status, 400, "march creation must reject requests without an idempotency key");
 
         const marchHeaders = { "x-idempotency-key": "it-march-start-001" };
+        const invalidStart = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            headers: marchHeaders,
+            body: { ...marchPayload, units: { infantry: -1 } }
+        });
+        assert.equal(invalidStart.status, 400);
+        assert.equal(invalidStart.body.code, "INVALID_MARCH");
+
         const start = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
             token,
             headers: marchHeaders,
