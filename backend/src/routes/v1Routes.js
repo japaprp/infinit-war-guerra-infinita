@@ -287,12 +287,12 @@ export function createV1Routes(env, runtime = {}) {
 
         ensureV1State(user);
         const idempotencyKey = String(req.get("x-idempotency-key") || "").trim();
+        const requestFingerprint = fingerprintRequestBody(req.body || {});
         const now = Date.now();
         user.v1.marchIdempotency ||= {};
 
         let idempotencyRecordId;
         if (idempotencyKey) {
-            const requestFingerprint = fingerprintRequestBody(req.body || {});
             for (const [key, record] of Object.entries(user.v1.marchIdempotency)) {
                 if (!record || record.expiresAtMs <= now) delete user.v1.marchIdempotency[key];
             }
