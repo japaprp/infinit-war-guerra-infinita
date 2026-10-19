@@ -486,6 +486,17 @@ test("world march is persisted and restored after backend restart", async () => 
         assert.equal(retry.status, 201);
         assert.equal(retry.body.marchId, marchId, "retrying the same idempotency key must not create another march");
 
+        const conflictingReuse = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            headers: marchHeaders,
+            body: {
+                ...marchPayload,
+                target: { x: 99, y: 100 }
+            }
+        });
+        assert.equal(conflictingReuse.status, 409, "reusing a key with different march data must be rejected");
+        assert.equal(conflictingReuse.body.code, "IDEMPOTENCY_KEY_REUSED");
+
         const listed = await api(server.baseUrl, "GET", "/v1/world/marches", { token });
         assert.equal(listed.status, 200);
         assert.ok(listed.body.marches.some((march) => march.marchId === marchId));
