@@ -32,7 +32,7 @@ function stableSerialize(value) {
     return JSON.stringify(value ?? null);
 }
 
-function fingerprintRequestBody(body) {
+export function fingerprintRequestBody(body) {
     return createHash("sha256").update(stableSerialize(body ?? null)).digest("hex");
 }
 
