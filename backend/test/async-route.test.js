@@ -189,3 +189,35 @@ test("same-process idempotency fallback protects retries when Redis writes fail"
         });
     }
 });
+
+
+test("invalid idempotency key lengths are rejected before a mutation runs", async () => {
+    const app = express();
+    const router = wrapAsyncRouteHandlers(Router());
+    const idempotency = createIdempotencyMiddleware();
+    let mutationCount = 0;
+
+    router.post("/mutation", idempotency, async (_req, res) => {
+        mutationCount += 1;
+        res.json({ ok: true });
+    });
+    app.use(router);
+
+    const server = await new Promise((resolve) => {
+        const instance = app.listen(0, () => resolve(instance));
+    });
+
+    try {
+        const response = await fetch(`http://127.0.0.1:${server.address().port}/mutation`, {
+            method: "POST",
+            headers: { "x-idempotency-key": "k".repeat(201) }
+        });
+        assert.equal(response.status, 400);
+        assert.equal((await response.json()).code, "INVALID_IDEMPOTENCY_KEY");
+        assert.equal(mutationCount, 0, "invalid idempotency keys must not reach the mutation handler");
+    } finally {
+        await new Promise((resolve, reject) => {
+            server.close((error) => error ? reject(error) : resolve());
+        });
+    }
+});
