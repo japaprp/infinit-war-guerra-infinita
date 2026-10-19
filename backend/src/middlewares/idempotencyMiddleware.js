@@ -42,9 +42,17 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
             return next();
         }
 
-        const idempotencyKey = req.headers["x-idempotency-key"];
-        if (!idempotencyKey) {
+        const rawIdempotencyKey = req.headers["x-idempotency-key"];
+        if (rawIdempotencyKey === undefined) {
             return next();
+        }
+
+        const idempotencyKey = String(rawIdempotencyKey).trim();
+        if (!idempotencyKey || idempotencyKey.length > 200) {
+            return res.status(400).json({
+                code: "INVALID_IDEMPOTENCY_KEY",
+                message: "A chave de idempotência deve conter de 1 a 200 caracteres."
+            });
         }
 
         const userKey = req.user?.sub || req.ip || "anonymous";
