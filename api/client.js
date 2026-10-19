@@ -110,14 +110,19 @@
         request("POST", "/v1/buildings/complete", { taskId }, undefined, idempotencyKey ? { "X-Idempotency-Key": idempotencyKey } : {});
     const queryTilesV1 = async ({ x, y, radius }) => request("GET", `/v1/world/tiles?x=${x}&y=${y}&radius=${radius}`);
     const listMarchesV1 = async () => request("GET", "/v1/world/marches");
-    const startMarchV1 = async ({ origin, target, units = {}, idempotencyKey }) =>
-        request(
+    const startMarchV1 = async ({ origin, target, units = {}, idempotencyKey }) => {
+        if (typeof idempotencyKey !== "string" || !idempotencyKey.trim()) {
+            throw new Error("An idempotency key is required to start a march.");
+        }
+
+        return request(
             "POST",
             "/v1/world/marches/start",
             { origin, target, units },
             undefined,
-            idempotencyKey ? { "X-Idempotency-Key": idempotencyKey } : {}
+            { "X-Idempotency-Key": idempotencyKey.trim() }
         );
+    };
     const purchaseSkuV1 = async ({ sku, quantity = 1, idempotencyKey }) =>
         request(
             "POST",
