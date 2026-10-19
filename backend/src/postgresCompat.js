@@ -235,7 +235,7 @@ function wrapClient(client) {
     beginTransaction: () => client.query("BEGIN"),
     commit: () => client.query("COMMIT"),
     rollback: () => client.query("ROLLBACK"),
-    release: () => client.release()
+    release: (error) => client.release(error)
   };
 }
 
