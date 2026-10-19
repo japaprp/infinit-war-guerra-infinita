@@ -97,6 +97,11 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
         // PostgreSQL writes mutate a shared snapshot, so per-user locks are not
         // sufficient. Use the repository-wide advisory lock in persistent mode.
         if (getRepositoryMode() === "postgres") {
+            // The app-level state lock already serializes every mutation in PostgreSQL.
+            // Acquiring a second session-level advisory lock here would wait on the
+            // same lock held by this request and deadlock before the route handler.
+            if (req.repositoryWriteLockHeld) return next();
+
             let releaseRepositoryLock;
             try {
                 releaseRepositoryLock = await acquireRepositoryWriteLock();
@@ -150,7 +155,14 @@ export function createStateWriteLockMiddleware({ redisClient, ttlSec = 30 } = {}
                     message: "O bloqueio de persistência não está disponível."
                 });
             }
-            finishResponseWithRelease(res, releaseRepositoryLock);
+            req.repositoryWriteLockHeld = true;
+            finishResponseWithRelease(res, async () => {
+                try {
+                    await releaseRepositoryLock();
+                } finally {
+                    delete req.repositoryWriteLockHeld;
+                }
+            });
             return next();
         }
 
