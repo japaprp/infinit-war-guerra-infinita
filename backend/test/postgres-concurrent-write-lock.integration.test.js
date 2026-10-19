@@ -77,15 +77,10 @@ test("PostgreSQL preserves marches, serializes writes, and survives client disco
             [expectedMarch],
             "marches must survive a PostgreSQL repository restart and normalized-table read"
         );
-        assert.deepEqual(
-            dbAfterRestart.users[marchUserId]?.v1?.marchIdempotency?.persisted_retry_key,
-            {
-                requestFingerprint: "test-fingerprint",
-                march: expectedMarch,
-                expiresAtMs: dbAfterRestart.users[marchUserId].v1.marchIdempotency.persisted_retry_key.expiresAtMs
-            },
-            "march idempotency records must survive a PostgreSQL repository restart"
-        );
+        const persistedIdempotency = dbAfterRestart.users[marchUserId]?.v1?.marchIdempotency?.persisted_retry_key;
+        assert.equal(persistedIdempotency?.requestFingerprint, "test-fingerprint");
+        assert.deepEqual(persistedIdempotency?.march, expectedMarch);
+        assert.ok(persistedIdempotency?.expiresAtMs > Date.now(), "the persisted retry record must remain valid after restart");
 
         await middleware(
             { method: "POST", user: { sub: "guest:concurrency_a" } },
