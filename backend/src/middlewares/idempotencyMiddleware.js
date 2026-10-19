@@ -1,4 +1,6 @@
-﻿const memoryEntries = new Map();
+﻿import { createHash } from "node:crypto";
+
+const memoryEntries = new Map();
 
 // Test hook to emulate a fresh Node.js process between integration-test server boots.
 export function clearIdempotencyMemoryForTests() {
@@ -22,6 +24,18 @@ function setInMemory(key, value, ttlSec) {
     });
 }
 
+function stableSerialize(value) {
+    if (Array.isArray(value)) return `[${value.map(stableSerialize).join(",")}]`;
+    if (value && typeof value === "object") {
+        return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`).join(",")}}`;
+    }
+    return JSON.stringify(value ?? null);
+}
+
+function fingerprintRequestBody(body) {
+    return createHash("sha256").update(stableSerialize(body ?? null)).digest("hex");
+}
+
 export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) {
     return async (req, res, next) => {
         if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
@@ -35,6 +49,7 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
 
         const userKey = req.user?.sub || req.ip || "anonymous";
         const key = `idemp:${userKey}:${req.method}:${req.path}:${idempotencyKey}`;
+        const requestFingerprint = fingerprintRequestBody(req.body);
 
         try {
             let cached = null;
@@ -46,6 +61,12 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
             }
 
             if (cached) {
+                if (cached.requestFingerprint && cached.requestFingerprint !== requestFingerprint) {
+                    return res.status(409).json({
+                        code: "IDEMPOTENCY_KEY_REUSED",
+                        message: "Esta chave de idempotência já foi usada com dados diferentes."
+                    });
+                }
                 return res.status(cached.status).json(cached.body);
             }
 
@@ -57,7 +78,8 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
 
                 const payload = {
                     status: res.statusCode || 200,
-                    body
+                    body,
+                    requestFingerprint
                 };
 
                 // Transient server failures must remain retryable; caching a 5xx
