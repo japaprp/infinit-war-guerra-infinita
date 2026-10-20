@@ -196,10 +196,29 @@
     <small class="accessory-footnote">Custos e bônus são valores originais de protótipo. Sincronia de Núcleo permanece desativada.</small>
 </section>
 
+
+<section id="strategyScreen" class="strategy-screen" data-mode="world" hidden aria-label="Mapa estratégico">
+  <header class="strategy-top">
+    <div class="strategy-brand"><span class="strategy-mark">IW</span><div><strong id="strategyTitle">Mapa do Mundo</strong><small id="strategySubtitle">Territórios · recursos · ameaças</small></div></div>
+    <div class="strategy-resources"><span>⚡ <b id="worldPowerValue">0</b></span><span>🪵 <b id="worldWoodValue">0</b></span><span>💎 <b id="worldGemsValue">0</b></span></div>
+  </header>
+  <canvas id="strategyCanvas" aria-label="Mapa interativo. Arraste para mover e toque nos locais para selecionar."></canvas>
+  <div class="strategy-map-tools"><button id="strategyWorldBtn" class="active" type="button">Mundo</button><button id="strategyBaseBtn" type="button">Abrigo</button></div>
+  <aside class="strategy-selection-card"><p id="strategySelection">Toque em uma base, recurso ou ameaça. Arraste para explorar o mapa.</p><button id="strategyActionBtn" type="button">Preparar marcha</button></aside>
+  <div class="strategy-event-chip"><span class="strategy-pulse"></span><span>Alerta de território</span><b>ATIVO</b></div>
+  <div class="strategy-chat-strip"><span>ALIANÇA</span><span>Interface de chat em preparação</span><span>•••</span></div>
+  <nav class="strategy-bottom-nav" aria-label="Navegação do mapa">
+    <button id="strategyHeroesBtn" type="button"><span>♙</span>Heróis</button>
+    <button type="button" class="strategy-nav-chat" disabled><span>☰</span>Chat</button>
+    <button id="strategyArenaBtn" type="button"><span>⚔</span>Arena</button>
+  </nav>
+  <p id="strategyNotice" class="strategy-notice" aria-live="polite">Protótipo visual: ações de marcha e construção ainda não alteram dados do servidor.</p>
+</section>
+
 <nav class="bottom-nav">
     <button class="nav-btn" id="toggleHeroes">Heroi</button>
-    <button class="nav-btn center">Construir</button>
-    <button class="nav-btn">Mundo</button>
+    <button class="nav-btn center" id="openShelterBtn">Abrigo</button>
+    <button class="nav-btn" id="openWorldMapBtn">Mundo</button>
 </nav>
 
 <section class="hero-panel" id="heroPanel" aria-hidden="true">
@@ -254,5 +273,6 @@
 <script src="engine/vehicle-chip-combat.js"></script>
 <script src="engine/vehicle-accessories.js"></script>
 <script src="engine/game.js"></script>
+<script src="engine/world-map.js"></script>
 </body>
 </html>
