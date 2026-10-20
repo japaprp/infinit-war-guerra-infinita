@@ -1,0 +1,8 @@
+{
+  "appId": "com.infinitwar.guerrainfinita",
+  "appName": "Guerra Infinita",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
