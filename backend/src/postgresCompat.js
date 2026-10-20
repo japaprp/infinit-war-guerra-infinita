@@ -1,4 +1,5 @@
 import pg from "pg";
+import { existsSync, readFileSync } from "node:fs";
 
 const CONFLICT_COLUMNS = Object.freeze({
   app_state: "id",
@@ -247,13 +248,18 @@ function secureConnectionString(connectionString) {
   // pg's connection-string SSL options can override the explicit SSL object.
   parsed.searchParams.delete("sslmode");
   parsed.searchParams.delete("ssl");
+  parsed.searchParams.delete("sslrootcert");
+  parsed.searchParams.delete("sslcert");
+  parsed.searchParams.delete("sslkey");
   return parsed.toString();
 }
 
 export function createPostgresPool(env) {
+  const caPath = env.POSTGRES_CA_CERT_PATH || "/etc/secrets/guerra-infinita-root.crt";
+  const ca = existsSync(caPath) ? readFileSync(caPath, "utf8") : undefined;
   const pool = new pg.Pool({
     connectionString: secureConnectionString(env.DATABASE_URL),
-    ssl: { rejectUnauthorized: true },
+    ssl: { rejectUnauthorized: true, ...(ca ? { ca } : {}) },
     max: 8,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000
