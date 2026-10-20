@@ -200,7 +200,7 @@
 <section id="strategyScreen" class="strategy-screen" data-mode="world" hidden aria-label="Mapa estratégico">
   <header class="strategy-top">
     <div class="strategy-brand"><span class="strategy-mark">IW</span><div><strong id="strategyTitle">Mapa do Mundo</strong><small id="strategySubtitle">Territórios · recursos · ameaças</small></div></div>
-    <div class="strategy-resources"><span>⚡ <b id="strategyPower">Poder</b></span><span>🪵 <b>Madeira</b></span><span>💎 <b>Gemas</b></span></div>
+    <div class="strategy-resources"><span>⚡ <b id="worldPowerValue">0</b></span><span>🪵 <b id="worldWoodValue">0</b></span><span>💎 <b id="worldGemsValue">0</b></span></div>
   </header>
   <canvas id="strategyCanvas" aria-label="Mapa interativo. Arraste para mover e toque nos locais para selecionar."></canvas>
   <div class="strategy-map-tools"><button id="strategyWorldBtn" class="active" type="button">Mundo</button><button id="strategyBaseBtn" type="button">Abrigo</button></div>
@@ -217,8 +217,8 @@
 
 <nav class="bottom-nav">
     <button class="nav-btn" id="toggleHeroes">Heroi</button>
-    <button class="nav-btn center">Construir</button>
-    <button class="nav-btn">Mundo</button>
+    <button class="nav-btn center" id="openShelterBtn">Abrigo</button>
+    <button class="nav-btn" id="openWorldMapBtn">Mundo</button>
 </nav>
 
 <section class="hero-panel" id="heroPanel" aria-hidden="true">
