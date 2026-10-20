@@ -13,7 +13,7 @@ export const env = {
     MYSQL_PORT: Number(process.env.MYSQL_PORT || 3306),
     MYSQL_DATABASE: process.env.MYSQL_DATABASE || "infinitwar",
     MYSQL_USER: process.env.MYSQL_USER || "root",
-    MYSQL_PASSWORD: process.env.MYSQL_PASSWORD || "",
+    MYSQL_PASSWORD: process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD || "",
     MYSQL_SSL: String(process.env.MYSQL_SSL || "false").toLowerCase() === "true",
     CORS_ORIGINS: process.env.CORS_ORIGINS || "",
     FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || "",
