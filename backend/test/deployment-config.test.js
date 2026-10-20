@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import vm from "node:vm";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { validateRuntimeConfig } from "../src/config/env.js";
 
@@ -15,6 +16,22 @@ function loadConfig(hostname, configuredApiUrl = "", metaApiUrl = "") {
     vm.runInNewContext(read("api/config.js"), { window, document });
     return window;
 }
+
+
+test("MYSQL_PASSWORD accepts the existing DB_PASSWORD alias", () => {
+    const result = spawnSync(process.execPath, [
+        "--input-type=module",
+        "-e",
+        'import { env } from "./src/config/env.js"; process.stdout.write(env.MYSQL_PASSWORD === "alias-test" ? "PASS" : "FAIL")'
+    ], {
+        cwd: path.resolve(root, "backend"),
+        encoding: "utf8",
+        env: { ...process.env, MYSQL_PASSWORD: "", DB_PASSWORD: "alias-test" }
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout, "PASS");
+});
 
 test("local development uses localhost only on a local hostname", () => {
     assert.equal(loadConfig("localhost").IWAR_API_BASE_URL, "http://localhost:4000");
