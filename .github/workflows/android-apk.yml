@@ -9,6 +9,7 @@ on:
       - 'capacitor.config.json'
       - 'scripts/prepare-android-web.mjs'
       - 'scripts/guest-bootstrap.js'
+      - 'scripts/validate-hero-assets.mjs'
       - 'index.html'
       - 'game.html'
       - 'main.js'
@@ -37,6 +38,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Validate recruitable hero asset
+        run: node scripts/validate-hero-assets.mjs
 
       - name: Install Capacitor tooling
         run: npm install --no-save --package-lock=false --no-audit --no-fund --omit=dev @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
