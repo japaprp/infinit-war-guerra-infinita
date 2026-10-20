@@ -1354,3 +1354,178 @@ canvas {
     .accessory-item { grid-template-columns: 1fr; }
     .accessory-actions { flex-direction: row; }
 }
+
+
+/* Mobile-first direct-touch navigation: tap the world to move, without a virtual joystick. */
+canvas {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+    #stateHint {
+        display: none;
+    }
+
+    .interaction-hint {
+        left: 50%;
+        right: auto;
+        bottom: 88px;
+        max-width: calc(100vw - 20px);
+        transform: translateX(-50%);
+        justify-content: center;
+        text-align: center;
+        font-size: 11px;
+    }
+
+    .interaction-hint strong,
+    .interaction-hint span {
+        display: none;
+    }
+
+    .interaction-hint::before {
+        content: "Toque no terreno para mover · toque em recursos ou inimigos para interagir";
+    }
+
+    .top-bar {
+        left: 8px;
+        right: 8px;
+        top: 6px;
+        gap: 6px;
+        align-items: flex-start;
+    }
+
+    .top-player {
+        gap: 6px;
+        padding: 6px;
+        border-radius: 10px;
+    }
+
+    .top-player strong {
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+    }
+
+    .avatar-badge {
+        width: 30px;
+        height: 30px;
+    }
+
+    .resource-row {
+        justify-content: flex-end;
+        gap: 4px;
+        max-width: 66vw;
+    }
+
+    .resource {
+        padding: 5px 6px;
+        border-radius: 7px;
+        font-size: 10px;
+    }
+
+    #hud {
+        top: 54px;
+        left: 8px;
+        min-width: 128px;
+        width: 38vw;
+        padding: 5px;
+    }
+
+    .left-rail {
+        left: 7px;
+        top: 142px;
+        gap: 5px;
+    }
+
+    .right-rail {
+        right: 7px;
+        top: 142px;
+        gap: 5px;
+    }
+
+    .rail-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        font-size: 14px;
+    }
+
+    .rail-btn small {
+        display: block;
+        font-size: 8px;
+    }
+
+    .mission-toast {
+        left: 8px;
+        bottom: 150px;
+        max-width: calc(100vw - 16px);
+        padding: 7px 9px;
+        font-size: 11px;
+    }
+
+    .bottom-nav {
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        gap: 6px;
+    }
+
+    .nav-btn {
+        height: 46px;
+        border-radius: 12px;
+        font-size: 16px;
+    }
+
+    .minimap-panel {
+        top: 56px;
+        right: 7px;
+        width: min(124px, 32vw);
+        padding: 5px;
+    }
+
+    .minimap-panel header {
+        font-size: 10px;
+    }
+
+    .quick-actions {
+        bottom: 62px;
+        right: 8px;
+        width: min(148px, 42vw);
+    }
+
+    .quick-actions button {
+        min-height: 32px;
+        padding: 5px 7px;
+        font-size: 10px;
+    }
+
+    .system-feed {
+        left: 8px;
+        bottom: 204px;
+        max-width: calc(100vw - 16px);
+    }
+
+    .vertical-slice-panel {
+        top: 108px;
+        left: 8px;
+        width: min(250px, calc(100vw - 16px));
+        max-height: 45vh;
+        overflow-y: auto;
+    }
+
+    .hero-panel {
+        max-height: 84dvh;
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+
+    .shop-panel,
+    .vehicle-accessories-panel,
+    .expedition-panel {
+        max-height: 76dvh;
+        overflow-y: auto;
+    }
+}
