@@ -12,6 +12,11 @@
   const baseBtn = document.getElementById("strategyBaseBtn");
   const arenaBtn = document.getElementById("strategyArenaBtn");
   const heroesBtn = document.getElementById("strategyHeroesBtn");
+  const openWorldMapBtn = document.getElementById("openWorldMapBtn");
+  const openShelterBtn = document.getElementById("openShelterBtn");
+  const worldPower = document.getElementById("worldPowerValue");
+  const worldWood = document.getElementById("worldWoodValue");
+  const worldGems = document.getElementById("worldGemsValue");
   const view = { mode: "world", zoom: 1, panX: 0, panY: 0, dpr: 1, width: 0, height: 0, drag: null, moved: false, selected: null, lastFrame: 0 };
   const sites = [
     { id:"home", type:"base", name:"Seu Abrigo", tag:"Você · Nv. 1", x:9, y:9, color:"#e5a64c" },
@@ -126,6 +131,10 @@
   }
   function draw(now=0) {
     if(!view.width||!view.height)return;
+    const sourcePower=document.getElementById("powerValue"), sourceWood=document.getElementById("woodValue"), sourceGems=document.getElementById("gemValue");
+    if(worldPower&&sourcePower)worldPower.textContent=sourcePower.textContent;
+    if(worldWood&&sourceWood)worldWood.textContent=sourceWood.textContent;
+    if(worldGems&&sourceGems)worldGems.textContent=sourceGems.textContent;
     ctx.setTransform(view.dpr,0,0,view.dpr,0,0);hitTargets=[];
     if(view.mode==="world")drawWorld(now);else drawBase();
   }
@@ -137,7 +146,7 @@
     selection.textContent=mode==="world"?"Toque em uma base, recurso ou ameaça. Arraste para explorar o mapa.":"Toque em um edifício para selecionar.";
     action.textContent=mode==="world"?"Preparar marcha":"Ver detalhes";
     worldBtn.classList.toggle("active",mode==="world");baseBtn.classList.toggle("active",mode==="base");
-    draw(performance.now());
+    resize();
   }
   function show(mode) { setMode(mode); }
   function hide() { screen.hidden=true; view.mode="world"; }
@@ -152,6 +161,8 @@
   canvas.addEventListener("pointercancel",()=>{view.drag=null;});
   canvas.addEventListener("wheel",e=>{e.preventDefault();view.zoom=Math.max(.65,Math.min(1.8,view.zoom*(e.deltaY<0?1.08:.92)));draw(performance.now());},{passive:false});
   worldBtn.addEventListener("click",()=>show("world"));baseBtn.addEventListener("click",()=>show("base"));arenaBtn.addEventListener("click",hide);
+  if(openWorldMapBtn)openWorldMapBtn.addEventListener("click",()=>show("world"));
+  if(openShelterBtn)openShelterBtn.addEventListener("click",()=>show("base"));
   heroesBtn.addEventListener("click",()=>{notice.textContent="Painel de heróis: use o botão Herói da arena após retornar. Integração com esta tela será feita em uma etapa própria.";});
   action.addEventListener("click",()=>{if(!view.selected){notice.textContent="Selecione primeiro um ponto no mapa.";return;}notice.textContent=view.mode==="world"?"Destino selecionado: "+(view.selected.name||"local")+". A marcha visual é demonstrativa; ainda não envia tropas ao servidor.":"Edifício selecionado: "+view.selected.name+". Melhorias e custos serão conectados numa próxima etapa.";});
   function frame(now){if(!screen.hidden&&view.mode==="world"){draw(now);view.lastFrame=now;}requestAnimationFrame(frame);}
