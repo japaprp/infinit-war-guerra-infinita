@@ -1529,3 +1529,38 @@ canvas {
         overflow-y: auto;
     }
 }
+
+
+/* Android-first strategic world/base map shell */
+.strategy-screen[hidden] { display:none !important; }
+.strategy-screen { position:fixed; inset:0; z-index:70; overflow:hidden; background:#10261f; color:#f5f5e9; font-family:system-ui,"Segoe UI",sans-serif; touch-action:pan-x pan-y; }
+#strategyCanvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
+.strategy-top { position:absolute; z-index:2; top:0; left:0; right:0; padding: max(10px,env(safe-area-inset-top)) 12px 10px; display:flex; justify-content:space-between; align-items:center; gap:8px; background:linear-gradient(180deg,#0b1715ed,#0b1715a8,transparent); pointer-events:none; }
+.strategy-brand { display:flex; align-items:center; gap:9px; min-width:0; }
+.strategy-mark { display:grid; place-items:center; width:38px; height:38px; flex-shrink:0; border-radius:11px; background:linear-gradient(145deg,#f5c76c,#a96831); color:#251a0d; font-weight:900; border:1px solid #ffedb0; }
+.strategy-brand strong,.strategy-brand small { display:block; }
+.strategy-brand strong { font-size:14px; letter-spacing:.02em; }
+.strategy-brand small { color:#c4d8ca; font-size:10px; margin-top:2px; }
+.strategy-resources { display:flex; gap:5px; justify-content:flex-end; flex-wrap:wrap; max-width:54%; }
+.strategy-resources span { border:1px solid #ffffff35; border-radius:8px; padding:6px 7px; background:#0a1714dc; font-size:10px; white-space:nowrap; }
+.strategy-resources b { color:#f2d38a; }
+.strategy-map-tools { position:absolute; z-index:3; top:calc(env(safe-area-inset-top) + 60px); right:10px; display:grid; gap:6px; }
+.strategy-map-tools button,.strategy-selection-card button { border:1px solid #ffffff55; border-radius:10px; padding:9px 12px; background:#142b25eF; color:#f4f8e9; font-weight:700; font-size:12px; min-height:40px; }
+.strategy-map-tools button.active { background:linear-gradient(180deg,#eac46f,#ad783b); color:#251a0d; border-color:#ffdfa0; }
+.strategy-selection-card { position:absolute; z-index:3; left:10px; right:10px; bottom:calc(112px + env(safe-area-inset-bottom)); display:flex; align-items:center; gap:10px; padding:10px; border:1px solid #d6c08c55; border-radius:14px; background:#0b1916eF; box-shadow:0 10px 28px #0005; }
+.strategy-selection-card p { flex:1; margin:0; color:#e6eee1; font-size:12px; line-height:1.35; }
+.strategy-selection-card button { background:linear-gradient(180deg,#73cbb5,#327e70); white-space:nowrap; }
+.strategy-event-chip { position:absolute; z-index:2; top:calc(env(safe-area-inset-top) + 112px); left:10px; display:flex; align-items:center; gap:6px; padding:7px 9px; border-radius:9px; background:#18251fd9; border:1px solid #ffffff26; font-size:10px; }
+.strategy-event-chip b { color:#f1c36d; font-size:9px; }
+.strategy-pulse { width:7px; height:7px; border-radius:50%; background:#f06b60; box-shadow:0 0 0 4px #f06b6030; }
+.strategy-chat-strip { position:absolute; z-index:2; left:10px; right:10px; bottom:calc(70px + env(safe-area-inset-bottom)); display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:10px; background:#0b1715d9; border:1px solid #ffffff20; font-size:10px; color:#b8cabe; }
+.strategy-chat-strip span:first-child { color:#f2d38a; font-weight:800; }
+.strategy-chat-strip span:nth-child(2) { flex:1; }
+.strategy-bottom-nav { position:absolute; z-index:4; left:0; right:0; bottom:0; padding:7px 10px max(8px,env(safe-area-inset-bottom)); display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; background:linear-gradient(0deg,#081411f5,#081411df); border-top:1px solid #ffffff20; }
+.strategy-bottom-nav button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:49px; border:1px solid #ffffff20; border-radius:11px; background:#182923; color:#e8f1e6; font-size:10px; font-weight:700; }
+.strategy-bottom-nav button span { font-size:17px; line-height:1; }
+.strategy-bottom-nav button:disabled { opacity:.7; }
+.strategy-bottom-nav button#strategyReturnBtn { background:linear-gradient(180deg,#e6be68,#a86c32); color:#251a0d; }
+.strategy-notice { position:absolute; z-index:5; top:calc(env(safe-area-inset-top) + 156px); left:10px; right:10px; margin:0; font-size:10px; color:#d0dfd0; text-shadow:0 1px 3px #000; pointer-events:none; }
+@media(min-width:700px) { .strategy-selection-card { left:18px; right:auto; bottom:100px; width:min(450px,calc(100vw - 36px)); } .strategy-chat-strip { left:18px; right:18px; } .strategy-top { padding-left:18px; padding-right:18px; } .strategy-map-tools { right:18px; } .strategy-resources span { font-size:12px; } }
+@media(max-width:380px) { .strategy-brand small { max-width:140px; } .strategy-resources { max-width:49%; gap:3px; } .strategy-resources span { padding:5px; font-size:9px; } .strategy-selection-card { gap:6px; padding:8px; } .strategy-selection-card p { font-size:11px; } .strategy-selection-card button { padding:8px; font-size:11px; } }
