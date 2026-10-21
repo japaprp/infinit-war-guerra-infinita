@@ -29,8 +29,7 @@ try {
 
 // pg prioritizes SSL parameters in the URI over the explicit SSL object; remove
 // them so the configured CA and certificate validation cannot be bypassed.
-parsed.searchParams.delete("sslmode");
-parsed.searchParams.delete("ssl");
+for (const key of ["sslmode", "ssl", "sslcert", "sslkey", "sslrootcert"]) parsed.searchParams.delete(key);
 const pool = new pg.Pool({
     connectionString: parsed.toString(),
     ssl,
