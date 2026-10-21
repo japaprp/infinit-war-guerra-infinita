@@ -53,7 +53,7 @@ test("per-user mutation lock rejects overlapping writes and releases after respo
 });
 
 
-test("per-user mutation lock is released when the client disconnects before response finish", async () => {
+test("per-user mutation lock stays held after disconnect until the handler completes", async () => {
   const middleware = createUserLockMiddleware({ ttlSec: 6 });
   const request = { method: "POST", user: { sub: "guest:disconnect-lock-test" } };
   let nextCalls = 0;
@@ -68,6 +68,14 @@ test("per-user mutation lock is released when the client disconnects before resp
 
   disconnectedResponse.close();
 
+  const stillBlocked = mockResponse();
+  await middleware(request, stillBlocked, () => { nextCalls++; });
+  assert.equal(stillBlocked.statusCode, 429);
+  assert.equal(stillBlocked.body.code, "LOCKED");
+
+  // Simulate the handler finishing its awaited write and attempting its response.
+  disconnectedResponse.json({ committed: true });
+  await new Promise((resolve) => setImmediate(resolve));
   const retryResponse = mockResponse();
   await middleware(request, retryResponse, () => { nextCalls++; });
   assert.equal(nextCalls, 2);
@@ -75,7 +83,7 @@ test("per-user mutation lock is released when the client disconnects before resp
 });
 
 
-test("shared database write lock rejects overlap and releases after client disconnect", async () => {
+test("shared database write lock remains held after disconnect until the write handler completes", async () => {
   const middleware = createStateWriteLockMiddleware({ ttlSec: 6 });
   const request = { method: "POST", user: { sub: "guest:shared-lock-test" } };
   let nextCalls = 0;
@@ -91,6 +99,14 @@ test("shared database write lock rejects overlap and releases after client disco
 
   firstResponse.close();
 
+  const stillBlocked = mockResponse();
+  await middleware({ ...request, user: { sub: "guest:other-user" } }, stillBlocked, () => { nextCalls++; });
+  assert.equal(stillBlocked.statusCode, 429);
+  assert.equal(stillBlocked.body.code, "STATE_WRITE_LOCKED");
+
+  // Simulate completion of the database write after the client has gone away.
+  firstResponse.json({ committed: true });
+  await new Promise((resolve) => setImmediate(resolve));
   const retryResponse = mockResponse();
   await middleware(request, retryResponse, () => { nextCalls++; });
   assert.equal(nextCalls, 2);
