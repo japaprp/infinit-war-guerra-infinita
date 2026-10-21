@@ -34,6 +34,10 @@ O repositório é **público**. As capturas podem conter nome de jogador, ID, al
 
 A primeira leitura visual foi registrada em `index.md`. Valores exatos de custos, probabilidades e bônus ainda precisam de transcrição estruturada e, quando possível, de testes controlados. Nenhuma hipótese é tratada como fato sem evidência.
 
+## Auditoria de guias públicos
+
+- [bluestacks-guide-audit.md](./bluestacks-guide-audit.md): primeira matriz de sistemas extraída dos guias BlueStacks, com distinção entre o que o artigo documenta, o que ainda precisa ser confirmado e os requisitos de implementação/teste para Guerra Infinita.
+
 ## Relatórios comparativos adicionados
 
 - [industrial-source-comparison.md](./industrial-source-comparison.md): comparação da calculadora comunitária dws505 com outras fontes de custos industriais, incluindo divergências por construção/tier.
