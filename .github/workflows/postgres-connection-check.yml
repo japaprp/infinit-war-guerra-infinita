@@ -1,0 +1,54 @@
+name: PostgreSQL Connection Check
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/postgres-connection-validation
+    paths:
+      - "backend/**"
+      - ".github/workflows/postgres-connection-check.yml"
+
+jobs:
+  postgres-connection-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install dependencies from lockfile
+        run: npm ci
+      - name: Run PostgreSQL TLS and fail-closed tests
+        run: npm run test:postgres
+      - name: Run existing backend integration tests
+        run: npm run test:integration
+      - name: Validate real Supabase PostgreSQL connection
+        env:
+          GAME_SUPABASE_DATABASE_URL: ${{ secrets.GAME_SUPABASE_DATABASE_URL }}
+          GAME_SUPABASE_CA_CERT: ${{ secrets.GAME_SUPABASE_CA_CERT }}
+        run: node scripts/check-postgres-connection.mjs
+
+      - name: Validate isolated PostgreSQL read/write, revision conflicts, and fresh TLS connection
+        env:
+          GAME_SUPABASE_DATABASE_URL: ${{ secrets.GAME_SUPABASE_DATABASE_URL }}
+          GAME_SUPABASE_CA_CERT: ${{ secrets.GAME_SUPABASE_CA_CERT }}
+        run: node scripts/check-postgres-persistence.mjs

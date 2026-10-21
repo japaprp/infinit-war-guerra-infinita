@@ -1453,7 +1453,67 @@ async function pullStateFromBackend() {
     }
 }
 
+function bindMobileControls() {
+    const controls = document.getElementById("mobileControls");
+    if (!controls) return;
+
+    const releaseControl = (button) => {
+        const key = button?.dataset?.key;
+        if (!key) return;
+        if (key !== "e" && key !== "f") {
+            keys[key] = false;
+            pressed[key] = false;
+        }
+        button.classList.remove("is-pressed");
+    };
+
+    controls.querySelectorAll("[data-key]").forEach((button) => {
+        const key = button.dataset.key;
+        button.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            if (button.setPointerCapture) {
+                try { button.setPointerCapture(event.pointerId); } catch {}
+            }
+            button.classList.add("is-pressed");
+            if (key === "e") {
+                const node = getNearestAvailableNode(85);
+                if (node) collectResourceNode(node);
+                return;
+            }
+            if (key === "f") {
+                const monster = getNearestMonster(95);
+                if (monster) fightMonster(monster);
+                return;
+            }
+            keys[key] = true;
+            pressed[key] = true;
+        });
+        button.addEventListener("pointerup", (event) => {
+            event.preventDefault();
+            releaseControl(button);
+        });
+        button.addEventListener("pointercancel", () => releaseControl(button));
+        button.addEventListener("lostpointercapture", () => releaseControl(button));
+        button.addEventListener("contextmenu", (event) => event.preventDefault());
+    });
+
+    controls.querySelectorAll("[data-action='heal']").forEach((button) => {
+        button.addEventListener("click", (event) => {
+            event.preventDefault();
+            useQuickHeal();
+        });
+    });
+
+    window.addEventListener("blur", () => {
+        controls.querySelectorAll("[data-key]").forEach(releaseControl);
+    });
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) controls.querySelectorAll("[data-key]").forEach(releaseControl);
+    });
+}
+
 function bindUiActions() {
+    bindMobileControls();
     ui.heroRoster.addEventListener("click", (event) => {
         const assignButton = event.target.closest("[data-action='assign-hero']");
         if (assignButton) {

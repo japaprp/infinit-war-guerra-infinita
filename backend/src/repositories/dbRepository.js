@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
 import mysql from "mysql2/promise";
+import pg from "pg";
+import { createPostgresTlsOptions } from "../config/postgresTls.js";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -9,6 +11,9 @@ const DB_PATH = process.env.IWAR_DB_PATH || path.join(__dirname, "..", "..", "da
 
 let mode = "json";
 let mysqlPool = null;
+let postgresPool = null;
+let postgresWriteQueue = Promise.resolve();
+const POSTGRES_REVISION = Symbol("iwarPostgresRevision");
 
 function safeNumber(value, fallback = 0) {
     const numeric = Number(value);
@@ -787,6 +792,49 @@ async function migrateReceiptsFromAppStateIfNeeded() {
 export async function initializeRepository(env) {
     mode = "json";
     mysqlPool = null;
+    postgresPool = null;
+    postgresWriteQueue = Promise.resolve();
+
+    if (env.DATA_DRIVER === "postgres" || env.DATA_DRIVER === "supabase") {
+        mode = "postgres-error";
+        const rawUrl = String(env.GAME_SUPABASE_DATABASE_URL || "").trim();
+        if (!rawUrl) throw new Error("DATA_DRIVER=postgres exige GAME_SUPABASE_DATABASE_URL.");
+        let url;
+        try { url = new URL(rawUrl); } catch { throw new Error("GAME_SUPABASE_DATABASE_URL não é uma URL válida."); }
+        if (!["postgres:", "postgresql:"].includes(url.protocol) || !url.hostname) {
+            throw new Error("GAME_SUPABASE_DATABASE_URL precisa usar postgres:// ou postgresql://.");
+        }
+        const ssl = createPostgresTlsOptions(env.GAME_SUPABASE_CA_CERT);
+        for (const key of ["sslmode", "ssl", "sslcert", "sslkey", "sslrootcert"]) url.searchParams.delete(key);
+        postgresPool = new pg.Pool({
+            connectionString: url.toString(),
+            ssl,
+            max: 8,
+            connectionTimeoutMillis: 10000,
+            idleTimeoutMillis: 30000,
+            application_name: "infinit-war-backend"
+        });
+        try {
+            await postgresPool.query("CREATE TABLE IF NOT EXISTS app_state (id SMALLINT PRIMARY KEY CHECK (id = 1), payload JSONB NOT NULL, revision BIGINT NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
+            await postgresPool.query("ALTER TABLE app_state ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0");
+            // Bootstrap from the existing local snapshot if the PostgreSQL row is absent.
+            // This avoids silently replacing existing JSON game state with an empty structure.
+            const localSnapshot = normalizeDbShape(readDbFromFile());
+            await postgresPool.query(
+                "INSERT INTO app_state (id, payload, revision) VALUES (1, $1::jsonb, 0) ON CONFLICT (id) DO NOTHING",
+                [JSON.stringify(localSnapshot)]
+            );
+            await postgresPool.query("SELECT 1");
+            mode = "postgres";
+            console.log("[repo] DATA_DRIVER=postgres ativo; TLS e consulta inicial validados.");
+        } catch (error) {
+            await postgresPool.end().catch(() => {});
+            postgresPool = null;
+            mode = "postgres-error";
+            throw new Error("Falha ao inicializar PostgreSQL; fallback para JSON bloqueado (" + String(error?.code || "erro") + ").");
+        }
+        return;
+    }
 
     if (env.DATA_DRIVER !== "mysql") return;
 
@@ -820,6 +868,15 @@ export function getRepositoryMode() {
 }
 
 export async function readDb() {
+    if (mode === "postgres") {
+        if (!postgresPool) throw new Error("Repositório PostgreSQL não está conectado.");
+        const result = await postgresPool.query("SELECT payload, revision FROM app_state WHERE id = 1");
+        if (!result.rows.length) throw new Error("Estado do jogo ausente no PostgreSQL.");
+        const snapshot = normalizeDbShape(result.rows[0].payload);
+        Object.defineProperty(snapshot, POSTGRES_REVISION, { value: Number(result.rows[0].revision), writable: true });
+        return snapshot;
+    }
+    if (mode === "postgres-error") throw new Error("PostgreSQL solicitado, mas a inicialização falhou; JSON não será usado.");
     if (mode !== "mysql" || !mysqlPool) {
         return readDbFromFile();
     }
@@ -848,6 +905,26 @@ export async function readDb() {
 export async function writeDb(db) {
     const normalized = normalizeDbShape(db);
 
+    if (mode === "postgres") {
+        if (!postgresPool) throw new Error("Repositório PostgreSQL não está conectado.");
+        const expectedRevision = db?.[POSTGRES_REVISION];
+        if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) {
+            throw new Error("Gravação PostgreSQL recusada: snapshot sem revisão de origem; leia o estado atual antes de gravar.");
+        }
+        const snapshot = JSON.stringify(normalized);
+        const operation = postgresWriteQueue.then(() => postgresPool.query(
+            "UPDATE app_state SET payload = $1::jsonb, revision = revision + 1, updated_at = NOW() WHERE id = 1 AND revision = $2 RETURNING revision",
+            [snapshot, expectedRevision]
+        ));
+        postgresWriteQueue = operation.catch(() => {});
+        const result = await operation;
+        if (!result.rows.length) {
+            throw new Error("Conflito de concorrência PostgreSQL: o estado foi alterado por outra operação; releia antes de tentar novamente.");
+        }
+        Object.defineProperty(db, POSTGRES_REVISION, { value: Number(result.rows[0].revision), writable: true });
+        return;
+    }
+    if (mode === "postgres-error") throw new Error("PostgreSQL solicitado, mas a inicialização falhou; gravação em JSON bloqueada.");
     if (mode !== "mysql" || !mysqlPool) {
         writeDbToFile(normalized);
         return;

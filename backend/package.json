@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "infinit-war-backend",
   "version": "1.0.0",
   "private": true,
@@ -9,7 +9,9 @@
     "dev:grpc": "node src/grpc/server.js",
     "migrate:mysql": "node src/scripts/migrate.js",
     "test:integration": "node --test test/integration.test.js",
-    "test:postgres-tls": "node --test test/postgres-tls.test.js"
+    "test:postgres-tls": "node --test test/postgres-tls.test.js",
+    "test:postgres-connection": "node --test test/postgres-connection-check.test.js",
+    "test:postgres": "node --test test/postgres-tls.test.js test/postgres-connection-check.test.js test/postgres-repository-config.test.js test/postgres-env-default.test.js test/postgres-persistence-check.test.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.11.3",
@@ -19,6 +21,7 @@
     "express": "^4.19.2",
     "ioredis": "^5.4.2",
     "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.11.5"
+    "mysql2": "^3.11.5",
+    "pg": "^8.23.1"
   }
 }
