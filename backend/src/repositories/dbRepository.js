@@ -791,6 +791,43 @@ async function migrateReceiptsFromAppStateIfNeeded() {
 export async function initializeRepository(env) {
     mode = "json";
     mysqlPool = null;
+    postgresPool = null;
+    postgresWriteQueue = Promise.resolve();
+
+    if (env.DATA_DRIVER === "postgres" || env.DATA_DRIVER === "supabase") {
+        mode = "postgres-error";
+        const rawUrl = String(env.GAME_SUPABASE_DATABASE_URL || "").trim();
+        if (!rawUrl) throw new Error("DATA_DRIVER=postgres exige GAME_SUPABASE_DATABASE_URL.");
+        let url;
+        try { url = new URL(rawUrl); } catch { throw new Error("GAME_SUPABASE_DATABASE_URL não é uma URL válida."); }
+        if (!["postgres:", "postgresql:"].includes(url.protocol) || !url.hostname) {
+            throw new Error("GAME_SUPABASE_DATABASE_URL precisa usar postgres:// ou postgresql://.");
+        }
+        const ssl = createPostgresTlsOptions(env.GAME_SUPABASE_CA_CERT);
+        url.searchParams.delete("sslmode");
+        url.searchParams.delete("ssl");
+        postgresPool = new pg.Pool({
+            connectionString: url.toString(),
+            ssl,
+            max: 8,
+            connectionTimeoutMillis: 10000,
+            idleTimeoutMillis: 30000,
+            application_name: "infinit-war-backend"
+        });
+        try {
+            await postgresPool.query("CREATE TABLE IF NOT EXISTS app_state (id SMALLINT PRIMARY KEY CHECK (id = 1), payload JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
+            await postgresPool.query("INSERT INTO app_state (id, payload) VALUES (1, $1::jsonb) ON CONFLICT (id) DO NOTHING", [JSON.stringify(normalizeDbShape(null))]);
+            await postgresPool.query("SELECT 1");
+            mode = "postgres";
+            console.log("[repo] DATA_DRIVER=postgres ativo; TLS e consulta inicial validados.");
+        } catch (error) {
+            await postgresPool.end().catch(() => {});
+            postgresPool = null;
+            mode = "postgres-error";
+            throw new Error("Falha ao inicializar PostgreSQL; fallback para JSON bloqueado (" + String(error?.code || "erro") + ").");
+        }
+        return;
+    }
 
     if (env.DATA_DRIVER !== "mysql") return;
 
