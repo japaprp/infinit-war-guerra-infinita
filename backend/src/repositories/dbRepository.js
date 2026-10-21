@@ -804,8 +804,7 @@ export async function initializeRepository(env) {
             throw new Error("GAME_SUPABASE_DATABASE_URL precisa usar postgres:// ou postgresql://.");
         }
         const ssl = createPostgresTlsOptions(env.GAME_SUPABASE_CA_CERT);
-        url.searchParams.delete("sslmode");
-        url.searchParams.delete("ssl");
+        for (const key of ["sslmode", "ssl", "sslcert", "sslkey", "sslrootcert"]) url.searchParams.delete(key);
         postgresPool = new pg.Pool({
             connectionString: url.toString(),
             ssl,
