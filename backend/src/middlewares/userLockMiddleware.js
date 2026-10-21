@@ -36,7 +36,7 @@ const RENEW_IF_OWNER = `
     return 0
 `;
 
-function startLockLease({ redisClient, lockKey, owner, ttlSec }) {
+function startLockLease({ redisClient, lockKey, owner, ttlSec, renewIntervalMs }) {
     const renew = async () => {
         if (redisClient) {
             await redisClient.eval(RENEW_IF_OWNER, 1, lockKey, owner, String(ttlSec));
@@ -50,7 +50,7 @@ function startLockLease({ redisClient, lockKey, owner, ttlSec }) {
             // Keep the lease fail-closed: do not delete a lock we can no longer verify.
             // If Redis is unavailable, its TTL remains the final recovery mechanism.
         });
-    }, Math.max(250, Math.floor((ttlSec * 1000) / 3)));
+    }, renewIntervalMs ?? Math.max(250, Math.floor((ttlSec * 1000) / 3)));
     interval.unref?.();
 
     let releasePromise = null;
@@ -93,7 +93,7 @@ function attachReleaseOnResponse(res, release) {
     // that the async handler/database mutation has stopped.
 }
 
-export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
+export function createUserLockMiddleware({ redisClient, ttlSec = 6, renewIntervalMs } = {}) {
     return async (req, res, next) => {
         if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method) || !req.user?.sub) {
             return next();
@@ -110,7 +110,7 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
                 return res.status(429).json({ code: "LOCKED", message: "Operacao em andamento para este usuario. Tente novamente." });
             }
 
-            attachReleaseOnResponse(res, startLockLease({ redisClient, lockKey, owner, ttlSec }));
+            attachReleaseOnResponse(res, startLockLease({ redisClient, lockKey, owner, ttlSec, renewIntervalMs }));
             return next();
         } catch {
             // Preserve the existing per-user behavior: this lock is an additional guard.
@@ -123,7 +123,7 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
  * Snapshot-based repository writes can otherwise overwrite each other's changes
  * when two different users mutate global app state at the same time.
  */
-export function createStateWriteLockMiddleware({ redisClient, ttlSec = 30 } = {}) {
+export function createStateWriteLockMiddleware({ redisClient, ttlSec = 30, renewIntervalMs } = {}) {
     return async (req, res, next) => {
         if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) return next();
 
@@ -141,7 +141,7 @@ export function createStateWriteLockMiddleware({ redisClient, ttlSec = 30 } = {}
                 });
             }
 
-            attachReleaseOnResponse(res, startLockLease({ redisClient, lockKey, owner, ttlSec }));
+            attachReleaseOnResponse(res, startLockLease({ redisClient, lockKey, owner, ttlSec, renewIntervalMs }));
             return next();
         } catch {
             // Fail closed for mutating requests; without a confirmed lock, don't write.
