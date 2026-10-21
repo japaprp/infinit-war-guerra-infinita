@@ -249,9 +249,9 @@ async function ensureSqlSchema() {
     }
 }
 
-async function readDbFromMySqlAppState() {
-    if (!dbPool) return normalizeDbShape(null);
-    const [rows] = await dbPool.query("SELECT payload FROM app_state WHERE id = 1 LIMIT 1");
+async function readDbFromMySqlAppState(executor = dbPool) {
+    if (!executor) return normalizeDbShape(null);
+    const [rows] = await executor.query("SELECT payload FROM app_state WHERE id = 1 LIMIT 1");
     if (!rows.length) return normalizeDbShape(null);
 
     const parsed = parseJsonField(rows[0].payload, normalizeDbShape(null));
@@ -362,10 +362,10 @@ function quotePlaceholders(size) {
     return new Array(size).fill("?").join(", ");
 }
 
-async function readDbFromNormalizedTables() {
-    if (!dbPool) return null;
+async function readDbFromNormalizedTables(executor = dbPool) {
+    if (!executor) return null;
 
-    const [userRows] = await dbPool.query(
+    const [userRows] = await executor.query(
         "SELECT id, external_id, nickname, level, vip_level, power, realm_id, profile_json, created_at, updated_at FROM users"
     );
 
@@ -380,7 +380,7 @@ async function readDbFromNormalizedTables() {
         externalBySqlUserId.set(safeNumber(row.id, 0), externalId);
     }
 
-    const [heroRows] = await dbPool.query(
+    const [heroRows] = await executor.query(
         "SELECT user_id, hero_code, rarity, level, stars, ascension, shards_owned, stats_json, skill_levels_json FROM heroes"
     );
 
@@ -390,7 +390,7 @@ async function readDbFromNormalizedTables() {
         db.users[externalId].v1.heroes.push(buildHeroFromRow(row));
     }
 
-    const [buildingRows] = await dbPool.query(
+    const [buildingRows] = await executor.query(
         "SELECT user_id, building_type, slot_code, level, state, end_at_ms, task_id FROM buildings"
     );
 
@@ -400,14 +400,14 @@ async function readDbFromNormalizedTables() {
         db.users[externalId].v1.buildings.push(buildBuildingFromRow(row));
     }
 
-    const [inventoryRows] = await dbPool.query("SELECT external_id, item_code, quantity FROM inventory");
+    const [inventoryRows] = await executor.query("SELECT external_id, item_code, quantity FROM inventory");
     for (const row of inventoryRows) {
         const user = db.users[row.external_id];
         if (!user) continue;
         user.inventory[row.item_code] = safeNumber(row.quantity, 0);
     }
 
-    const [allianceRows] = await dbPool.query(
+    const [allianceRows] = await executor.query(
         "SELECT alliance_uid, realm_id, name, tag, leader_external_id, member_count, power FROM alliances"
     );
 
@@ -423,7 +423,7 @@ async function readDbFromNormalizedTables() {
         };
     }
 
-    const [receiptRows] = await dbPool.query(
+    const [receiptRows] = await executor.query(
         "SELECT receipt_id, external_id, hero_id, pack_id, cost_gems, issued_at_ms, signature, used, used_at_ms FROM receipts"
     );
     for (const row of receiptRows) {
@@ -827,18 +827,25 @@ export async function readDb() {
         return readDbFromFile();
     }
 
+    let connection = null;
     try {
-        const fromNormalized = await readDbFromNormalizedTables();
+        connection = await dbPool.getConnection();
+        await connection.beginTransaction();
+        await connection.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+
+        const fromNormalized = await readDbFromNormalizedTables(connection);
+        const fromAppState = await readDbFromMySqlAppState(connection);
+        let result;
+
         if (fromNormalized) {
-            const fromAppState = await readDbFromMySqlAppState();
             if (Object.keys(fromNormalized.receipts || {}).length === 0) {
                 fromNormalized.receipts = fromAppState.receipts || {};
             }
             if (Object.keys(fromNormalized.alliances || {}).length === 0) {
                 fromNormalized.alliances = fromAppState.alliances || {};
             }
-            // Preserve global map state stored in app_state while player profiles and
-            // economy continue to be hydrated from normalized SQL tables.
+            // Hydrate both normalized and app_state data from the same repeatable-read
+            // snapshot so a concurrent commit cannot produce a mixed-version result.
             fromNormalized.rallies = fromAppState.rallies || {};
             fromNormalized.battles = fromAppState.battles || {};
             for (const [externalId, savedUser] of Object.entries(fromAppState.users || {})) {
@@ -847,15 +854,23 @@ export async function readDb() {
                 normalizedUser.v1 ||= {};
                 normalizedUser.v1.gameData = savedUser.v1.gameData;
             }
-            return normalizeDbShape(fromNormalized);
+            result = normalizeDbShape(fromNormalized);
+        } else {
+            result = fromAppState;
         }
 
-        return await readDbFromMySqlAppState();
+        await connection.commit();
+        return result;
     } catch (error) {
+        if (connection) {
+            try { await connection.rollback(); } catch { /* preserve the original error */ }
+        }
         if (strictPersistentMode) throw new Error(`Production database read failed; refusing JSON fallback: ${error.message}`);
         console.warn(`[repo] Erro ao ler banco SQL (${error.message}). Usando JSON local.`);
         mode = "json";
         return readDbFromFile();
+    } finally {
+        connection?.release();
     }
 }
 
