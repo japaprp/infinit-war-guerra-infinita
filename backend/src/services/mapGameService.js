@@ -67,8 +67,8 @@ function validateFormation(user, payload) {
     const heroes = user.v1.heroes || [];
     const selected = ids.map((heroId) => heroes.find((hero) => hero.heroId === heroId));
     if (selected.some((hero) => !hero)) return resultError(400, "Formation contains a hero not owned by this player");
-    const troopCount = safeInt(payload.troopCount, 0);
-    if (troopCount < 0 || troopCount > MAX_TROOPS) return resultError(400, "troopCount is outside the allowed range");
+    const troopCount = Number(payload.troopCount);
+    if (!Number.isSafeInteger(troopCount) || troopCount < 1 || troopCount > MAX_TROOPS) return resultError(400, "troopCount must be between 1 and 1,000,000");
     return { heroes: selected, troopCount };
 }
 
