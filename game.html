@@ -88,6 +88,21 @@
 
 <canvas id="gameCanvas"></canvas>
 
+<div class="mobile-controls" id="mobileControls" aria-label="Controles de toque">
+    <div class="touch-dpad" aria-label="Movimentacao">
+        <button type="button" class="touch-key touch-up" data-key="w" aria-label="Mover para cima">▲</button>
+        <button type="button" class="touch-key touch-left" data-key="a" aria-label="Mover para esquerda">◀</button>
+        <button type="button" class="touch-key touch-down" data-key="s" aria-label="Mover para baixo">▼</button>
+        <button type="button" class="touch-key touch-right" data-key="d" aria-label="Mover para direita">▶</button>
+    </div>
+    <div class="touch-actions" aria-label="Acoes">
+        <button type="button" class="touch-action touch-sprint" data-key="shift">CORRER</button>
+        <button type="button" class="touch-action" data-key="e">COLETAR</button>
+        <button type="button" class="touch-action touch-attack" data-key="f">ATACAR</button>
+        <button type="button" class="touch-action" data-action="heal">CURAR</button>
+    </div>
+</div>
+
 <section class="minimap-panel" id="minimapPanel" aria-hidden="false">
     <header>
         <strong>Mapa Tatico</strong>
