@@ -4,6 +4,7 @@ const ctx = canvas.getContext("2d");
 
 const keys = {};
 const pressed = {};
+const MAP_HUNT_OPERATION_STORAGE_KEY = "iwar_map_hunt_operation_id";
 const world = { width: 3600, height: 2400 };
 const camera = { x: 0, y: 0 };
 const STORAGE_KEY = "iwar_village_state_v1";
@@ -2447,6 +2448,7 @@ async function startMapHuntFromPanel() {
     if (!heroIds.length) return mapRallySetStatus("Selecione um herói retornado pelo servidor.");
     try {
         const operationId = mapRallyNewOperationId("hunt");
+        try { localStorage.setItem(MAP_HUNT_OPERATION_STORAGE_KEY, operationId); } catch { /* storage can be disabled */ }
         const result = await api.startMapHuntV1({
             targetId: ui.mapRallyTarget.value,
             heroIds,
@@ -2765,6 +2767,12 @@ function bindUiActions() {
     if (ui.mapRallyRefreshHeroesBtn) ui.mapRallyRefreshHeroesBtn.addEventListener("click", refreshMapRallyHeroes);
     if (ui.mapBattleHistoryRefreshBtn) ui.mapBattleHistoryRefreshBtn.addEventListener("click", refreshMapBattleHistory);
     if (ui.mapHuntStartBtn) ui.mapHuntStartBtn.addEventListener("click", startMapHuntFromPanel);
+    if (ui.mapRallyHuntOperationId) {
+        try { ui.mapRallyHuntOperationId.value = localStorage.getItem(MAP_HUNT_OPERATION_STORAGE_KEY) || ""; } catch { /* storage can be disabled */ }
+        ui.mapRallyHuntOperationId.addEventListener("input", () => {
+            try { localStorage.setItem(MAP_HUNT_OPERATION_STORAGE_KEY, ui.mapRallyHuntOperationId.value.trim()); } catch { /* storage can be disabled */ }
+        });
+    }
     if (ui.mapHuntResolveBtn) ui.mapHuntResolveBtn.addEventListener("click", resolveMapHuntFromPanel);
     if (ui.mapRallyCreateBtn) ui.mapRallyCreateBtn.addEventListener("click", createMapRallyFromPanel);
     if (ui.mapRallyJoinBtn) ui.mapRallyJoinBtn.addEventListener("click", joinMapRallyFromPanel);
@@ -3083,6 +3091,101 @@ function processInteractions() {
     pressed.f = false;
 }
 
+function bindMobileControls() {
+    const joystick = document.getElementById("mobileJoystick");
+    const thumb = document.getElementById("mobileJoystickThumb");
+    const collectButton = document.getElementById("mobileCollectBtn");
+    const attackButton = document.getElementById("mobileAttackBtn");
+    const sprintButton = document.getElementById("mobileSprintBtn");
+    if (!joystick || !thumb) return;
+
+    let activePointerId = null;
+    const clearMovement = () => {
+        for (const key of ["w", "a", "s", "d"]) keys[key] = false;
+        thumb.style.transform = "translate(-50%, -50%)";
+    };
+    const updateJoystick = (event) => {
+        const rect = joystick.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const radius = Math.max(1, Math.min(rect.width, rect.height) * 0.34);
+        const dx = event.clientX - centerX;
+        const dy = event.clientY - centerY;
+        const distance = Math.hypot(dx, dy);
+        const scale = distance > radius ? radius / distance : 1;
+        const boundedX = dx * scale;
+        const boundedY = dy * scale;
+        thumb.style.transform = `translate(calc(-50% + ${boundedX}px), calc(-50% + ${boundedY}px))`;
+        const threshold = radius * 0.24;
+        keys.a = boundedX < -threshold;
+        keys.d = boundedX > threshold;
+        keys.w = boundedY < -threshold;
+        keys.s = boundedY > threshold;
+    };
+    joystick.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        activePointerId = event.pointerId;
+        joystick.setPointerCapture?.(event.pointerId);
+        updateJoystick(event);
+    });
+    joystick.addEventListener("pointermove", (event) => {
+        if (event.pointerId === activePointerId) updateJoystick(event);
+    });
+    const endJoystick = (event) => {
+        if (activePointerId !== event.pointerId) return;
+        activePointerId = null;
+        clearMovement();
+    };
+    joystick.addEventListener("pointerup", endJoystick);
+    joystick.addEventListener("pointercancel", endJoystick);
+    joystick.addEventListener("lostpointercapture", () => {
+        activePointerId = null;
+        clearMovement();
+    });
+
+    const bindAction = (button, key) => {
+        if (!button) return;
+        button.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            pressed[key] = true;
+            button.setPointerCapture?.(event.pointerId);
+        });
+        button.addEventListener("keydown", (event) => {
+            if (event.key === " " || event.key === "Enter") {
+                event.preventDefault();
+                pressed[key] = true;
+            }
+        });
+    };
+    bindAction(collectButton, "e");
+    bindAction(attackButton, "f");
+
+    if (sprintButton) {
+        const stopSprint = () => { keys.shift = false; };
+        sprintButton.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            keys.shift = true;
+            sprintButton.setPointerCapture?.(event.pointerId);
+        });
+        sprintButton.addEventListener("pointerup", stopSprint);
+        sprintButton.addEventListener("pointercancel", stopSprint);
+        sprintButton.addEventListener("lostpointercapture", stopSprint);
+        sprintButton.addEventListener("keydown", (event) => {
+            if (event.key === " " || event.key === "Enter") {
+                event.preventDefault();
+                keys.shift = true;
+            }
+        });
+        sprintButton.addEventListener("keyup", stopSprint);
+    }
+
+    window.addEventListener("blur", () => {
+        activePointerId = null;
+        clearMovement();
+        keys.shift = false;
+    });
+}
+
 window.addEventListener("resize", resizeCanvas);
 window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
@@ -3151,7 +3254,8 @@ async function bootstrapGame() {
     setLoadingProgress(44, "Posicionando monstros...");
     await waitFrame();
 
-    bindUiActions();
+    bindMobileControls();
+        bindUiActions();
     setLoadingProgress(62, "Conectando controles...");
     await waitFrame();
 

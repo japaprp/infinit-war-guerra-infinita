@@ -90,6 +90,17 @@
 
 <canvas id="gameCanvas"></canvas>
 
+<div class="mobile-controls" id="mobileControls" aria-label="Controles por toque">
+    <div class="mobile-joystick" id="mobileJoystick" aria-label="Movimentar personagem" role="application">
+        <div class="mobile-joystick-thumb" id="mobileJoystickThumb"></div>
+    </div>
+    <div class="mobile-action-stack">
+        <button class="mobile-action-btn" id="mobileAttackBtn" type="button" aria-label="Atacar" title="Atacar">⚔</button>
+        <button class="mobile-action-btn" id="mobileCollectBtn" type="button" aria-label="Coletar recurso" title="Coletar recurso">✦</button>
+        <button class="mobile-action-btn" id="mobileSprintBtn" type="button" aria-label="Correr" title="Correr">➤</button>
+    </div>
+</div>
+
 <section class="minimap-panel" id="minimapPanel" aria-hidden="false">
     <header>
         <strong>Mapa Tatico</strong>
@@ -142,8 +153,8 @@
     <div class="expedition-field">
         <label for="mapRallyTarget">Alvo</label>
         <select id="mapRallyTarget">
-            <option value="grey-forest-stalker">Rastreador da Floresta · Nv. 1 · 15 energia</option>
-            <option value="old-ruins-brute">Bruto das Ruínas · Nv. 2 · 15 energia</option>
+            <option value="grey-forest-stalker">Rastreador da Floresta · Nv. 1 · 10 energia</option>
+            <option value="old-ruins-brute">Bruto das Ruínas · Nv. 2 · 10 energia</option>
         </select>
     </div>
     <fieldset class="expedition-field" id="mapRallyHeroField">
@@ -161,7 +172,7 @@
         <button id="mapHuntResolveBtn" type="button">Resolver combate / resgatar</button>
     </div>
     <hr>
-    <label class="expedition-field" for="mapRallyTroops">Tropas para a incursão
+    <label class="expedition-field" for="mapRallyTroops">Tropas para caçada/incursão
         <input id="mapRallyTroops" type="number" min="1" max="1000000" step="1" value="100">
     </label>
     <div class="slice-actions">

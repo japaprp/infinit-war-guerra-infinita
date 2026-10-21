@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - integration/postgres-auth-isolated
+      - fix/mobile-hunt-persistence-audit
+    paths:
+      - ".github/workflows/postgres-connection-check.yml"
+      - "backend/scripts/check-postgres-connection.mjs"
+      - "backend/package.json"
+      - "backend/package-lock.json"
+  pull_request:
+    branches:
+      - integration/postgres-auth-isolated
     paths:
       - ".github/workflows/postgres-connection-check.yml"
       - "backend/scripts/check-postgres-connection.mjs"
@@ -19,10 +28,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Checkout isolated integration branch
+      - name: Checkout commit under test
         uses: actions/checkout@v4
         with:
-          ref: integration/postgres-auth-isolated
+          ref: ${{ github.sha }}
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -40,3 +49,4 @@ jobs:
         working-directory: backend
         env:
           GAME_SUPABASE_DATABASE_URL: ${{ secrets.GAME_SUPABASE_DATABASE_URL }}
+          GAME_SUPABASE_CA_CERT: ${{ secrets.GAME_SUPABASE_CA_CERT }}
