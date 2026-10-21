@@ -861,6 +861,13 @@ export function getRepositoryMode() {
 }
 
 export async function readDb() {
+    if (mode === "postgres") {
+        if (!postgresPool) throw new Error("Repositório PostgreSQL não está conectado.");
+        const result = await postgresPool.query("SELECT payload FROM app_state WHERE id = 1");
+        if (!result.rows.length) throw new Error("Estado do jogo ausente no PostgreSQL.");
+        return normalizeDbShape(result.rows[0].payload);
+    }
+    if (mode === "postgres-error") throw new Error("PostgreSQL solicitado, mas a inicialização falhou; JSON não será usado.");
     if (mode !== "mysql" || !mysqlPool) {
         return readDbFromFile();
     }
