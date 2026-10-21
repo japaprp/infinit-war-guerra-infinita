@@ -11,7 +11,7 @@
     "test:integration": "node --test test/integration.test.js",
     "test:postgres-tls": "node --test test/postgres-tls.test.js",
     "test:postgres-connection": "node --test test/postgres-connection-check.test.js",
-    "test:postgres": "node --test test/postgres-tls.test.js test/postgres-connection-check.test.js test/postgres-repository-config.test.js test/postgres-env-default.test.js"
+    "test:postgres": "node --test test/postgres-tls.test.js test/postgres-connection-check.test.js test/postgres-repository-config.test.js test/postgres-env-default.test.js test/postgres-persistence-check.test.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.11.3",
