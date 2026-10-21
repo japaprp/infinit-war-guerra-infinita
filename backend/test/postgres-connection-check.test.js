@@ -8,7 +8,11 @@ const backendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".
 const scriptPath = path.join(backendDir, "scripts", "check-postgres-connection.mjs");
 
 function run(envOverrides) {
-    const env = { ...process.env, ...envOverrides };
+    const env = { ...process.env };
+    for (const [key, value] of Object.entries(envOverrides)) {
+        if (value === undefined) delete env[key];
+        else env[key] = value;
+    }
     return spawnSync(process.execPath, [scriptPath], {
         cwd: backendDir,
         env,
