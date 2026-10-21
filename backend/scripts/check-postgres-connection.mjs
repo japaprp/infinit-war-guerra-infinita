@@ -1,8 +1,14 @@
 import { Pool } from "pg";
 
 const connectionString = process.env.GAME_SUPABASE_DATABASE_URL;
+const caCertificate = process.env.GAME_SUPABASE_CA_CERT;
+
 if (!connectionString) {
     console.error("PG_CONNECTION_CHECK_FAILED: required repository secret GAME_SUPABASE_DATABASE_URL is not configured; no connection values are printed.");
+    process.exit(1);
+}
+if (!caCertificate?.includes("-----BEGIN CERTIFICATE-----")) {
+    console.error("PG_CONNECTION_CHECK_FAILED: required repository secret GAME_SUPABASE_CA_CERT must contain the Supabase root CA PEM certificate; no connection values are printed.");
     process.exit(1);
 }
 
@@ -10,7 +16,7 @@ let parsed;
 try {
     parsed = new URL(connectionString);
 } catch {
-    console.error("PG_CONNECTION_CHECK_FAILED: configured secret is not a valid URL.");
+    console.error("PG_CONNECTION_CHECK_FAILED: configured database secret is not a valid URL.");
     process.exit(1);
 }
 
@@ -19,9 +25,15 @@ if (!["postgres:", "postgresql:"].includes(parsed.protocol) || !parsed.hostname)
     process.exit(1);
 }
 
+// pg's connection-string SSL options can override the explicit SSL object.
+// Keep the URL credentials/host but force certificate verification through the supplied CA.
+for (const option of ["sslmode", "ssl", "sslrootcert", "sslcert", "sslkey"]) {
+    parsed.searchParams.delete(option);
+}
+
 const pool = new Pool({
-    connectionString,
-    ssl: { rejectUnauthorized: true },
+    connectionString: parsed.toString(),
+    ssl: { rejectUnauthorized: true, ca: caCertificate },
     connectionTimeoutMillis: 8000,
     max: 1,
     application_name: "iwar-readonly-connection-check"
