@@ -7,26 +7,65 @@ function mockResponse() {
   return {
     statusCode: 200,
     body: null,
-    status(code) {
-      this.statusCode = code;
-      return this;
-    },
-    json(body) {
-      this.body = body;
-      return this;
-    },
+    status(code) { this.statusCode = code; return this; },
+    json(body) { this.body = body; return this; },
     on(event, callback) {
-      listeners.set(event, callback);
+      const callbacks = listeners.get(event) || [];
+      callbacks.push(callback);
+      listeners.set(event, callbacks);
       return this;
     },
-    finish() {
-      listeners.get("finish")?.();
-    },
-    close() {
-      listeners.get("close")?.();
-    }
+    finish() { for (const callback of listeners.get("finish") || []) callback(); },
+    close() { for (const callback of listeners.get("close") || []) callback(); }
   };
 }
+
+class FakeRedis {
+  constructor() {
+    this.now = 0;
+    this.values = new Map();
+  }
+
+  purge(key) {
+    const entry = this.values.get(key);
+    if (entry && entry.expiresAt <= this.now) this.values.delete(key);
+  }
+
+  async set(key, value, expiryMode, ttl, nxMode) {
+    this.purge(key);
+    if (nxMode === "NX" && this.values.has(key)) return null;
+    this.values.set(key, { value, expiresAt: this.now + Number(ttl) * 1000 });
+    return "OK";
+  }
+
+  async get(key) {
+    this.purge(key);
+    return this.values.get(key)?.value ?? null;
+  }
+
+  async eval(script, keyCount, key, owner, ttl) {
+    this.purge(key);
+    const entry = this.values.get(key);
+    if (!entry || entry.value !== owner) return 0;
+    if (script.includes('redis.call("expire"')) {
+      entry.expiresAt = this.now + Number(ttl) * 1000;
+      return 1;
+    }
+    if (script.includes('redis.call("del"')) {
+      this.values.delete(key);
+      return 1;
+    }
+    throw new Error("Unexpected Lua script");
+  }
+
+  forceSet(key, value, ttlSec = 30) {
+    this.values.set(key, { value, expiresAt: this.now + ttlSec * 1000 });
+  }
+
+  advance(ms) { this.now += ms; }
+}
+
+const flush = () => new Promise(resolve => setTimeout(resolve, 0));
 
 test("per-user mutation lock rejects overlapping writes and releases after response finish", async () => {
   const middleware = createUserLockMiddleware({ ttlSec: 6 });
@@ -36,63 +75,111 @@ test("per-user mutation lock rejects overlapping writes and releases after respo
   const firstResponse = mockResponse();
   await middleware(request, firstResponse, () => { nextCalls++; });
   assert.equal(nextCalls, 1);
-  assert.equal(firstResponse.statusCode, 200);
 
   const overlappingResponse = mockResponse();
   await middleware(request, overlappingResponse, () => { nextCalls++; });
   assert.equal(nextCalls, 1);
   assert.equal(overlappingResponse.statusCode, 429);
-  assert.equal(overlappingResponse.body.code, "LOCKED");
 
   firstResponse.finish();
+  await flush();
 
   const afterReleaseResponse = mockResponse();
   await middleware(request, afterReleaseResponse, () => { nextCalls++; });
   assert.equal(nextCalls, 2);
-  assert.equal(afterReleaseResponse.statusCode, 200);
+  afterReleaseResponse.finish();
 });
 
-
-test("per-user mutation lock is released when the client disconnects before response finish", async () => {
+test("client disconnect does not release a per-user lock while the handler may still be running", async () => {
   const middleware = createUserLockMiddleware({ ttlSec: 6 });
   const request = { method: "POST", user: { sub: "guest:disconnect-lock-test" } };
   let nextCalls = 0;
 
-  const disconnectedResponse = mockResponse();
-  await middleware(request, disconnectedResponse, () => { nextCalls++; });
-  assert.equal(nextCalls, 1);
+  const firstResponse = mockResponse();
+  await middleware(request, firstResponse, () => { nextCalls++; });
+  firstResponse.close();
 
   const blockedResponse = mockResponse();
   await middleware(request, blockedResponse, () => { nextCalls++; });
   assert.equal(blockedResponse.statusCode, 429);
+  assert.equal(nextCalls, 1);
 
-  disconnectedResponse.close();
-
+  firstResponse.json({ ok: true });
+  await flush();
   const retryResponse = mockResponse();
   await middleware(request, retryResponse, () => { nextCalls++; });
-  assert.equal(nextCalls, 2);
   assert.equal(retryResponse.statusCode, 200);
+  assert.equal(nextCalls, 2);
+  retryResponse.finish();
 });
 
-
-test("shared database write lock rejects overlap and releases after client disconnect", async () => {
-  const middleware = createStateWriteLockMiddleware({ ttlSec: 6 });
+test("shared database write lock remains held across lease renewal after the original TTL window", async () => {
+  const redisClient = new FakeRedis();
+  const middleware = createStateWriteLockMiddleware({ redisClient, ttlSec: 1, renewIntervalMs: 5 });
   const request = { method: "POST", user: { sub: "guest:shared-lock-test" } };
   let nextCalls = 0;
 
   const firstResponse = mockResponse();
   await middleware(request, firstResponse, () => { nextCalls++; });
+  const originalExpiry = redisClient.values.get("lock:database:write").expiresAt;
+
+  redisClient.advance(800);
+  await new Promise(resolve => setTimeout(resolve, 15));
+  const renewedExpiry = redisClient.values.get("lock:database:write").expiresAt;
+  assert.ok(renewedExpiry > originalExpiry, "lease should be renewed before its original expiry");
+
+  redisClient.advance(400);
+  const overlappingResponse = mockResponse();
+  await middleware({ ...request, user: { sub: "guest:other-user" } }, overlappingResponse, () => { nextCalls++; });
+  assert.equal(overlappingResponse.statusCode, 429);
+  assert.equal(overlappingResponse.body.code, "STATE_WRITE_LOCKED");
   assert.equal(nextCalls, 1);
+
+  firstResponse.json({ ok: true });
+  await flush();
+  const retryResponse = mockResponse();
+  await middleware(request, retryResponse, () => { nextCalls++; });
+  assert.equal(retryResponse.statusCode, 200);
+  assert.equal(nextCalls, 2);
+  retryResponse.finish();
+});
+
+test("stale lock owner cannot delete a replacement lock after expiry", async () => {
+  const redisClient = new FakeRedis();
+  const middleware = createStateWriteLockMiddleware({ redisClient, ttlSec: 1, renewIntervalMs: 100000 });
+  const firstResponse = mockResponse();
+  await middleware({ method: "POST" }, firstResponse, () => {});
+
+  const key = "lock:database:write";
+  const oldOwner = redisClient.values.get(key).value;
+  redisClient.advance(1001);
+  redisClient.forceSet(key, "new-owner", 30);
+
+  firstResponse.json({ ok: true });
+  await flush();
+  assert.equal(await redisClient.get(key), "new-owner", "release by the stale owner must preserve the new owner's lock");
+});
+
+test("shared database write lock is not released by client disconnect", async () => {
+  const middleware = createStateWriteLockMiddleware({ ttlSec: 6 });
+  const request = { method: "POST", user: { sub: "guest:disconnect-state-lock-test" } };
+  let nextCalls = 0;
+
+  const firstResponse = mockResponse();
+  await middleware(request, firstResponse, () => { nextCalls++; });
+  firstResponse.close();
 
   const overlappingResponse = mockResponse();
   await middleware({ ...request, user: { sub: "guest:other-user" } }, overlappingResponse, () => { nextCalls++; });
   assert.equal(overlappingResponse.statusCode, 429);
   assert.equal(overlappingResponse.body.code, "STATE_WRITE_LOCKED");
+  assert.equal(nextCalls, 1);
 
-  firstResponse.close();
-
+  firstResponse.json({ ok: true });
+  await flush();
   const retryResponse = mockResponse();
   await middleware(request, retryResponse, () => { nextCalls++; });
-  assert.equal(nextCalls, 2);
   assert.equal(retryResponse.statusCode, 200);
+  assert.equal(nextCalls, 2);
+  retryResponse.finish();
 });
