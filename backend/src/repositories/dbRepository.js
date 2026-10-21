@@ -901,9 +901,6 @@ export async function writeDb(db) {
             await writeDbToMySqlAppState(normalized, connection);
         });
     } catch (error) {
-        if (connection) {
-            try { await connection.rollback(); } catch { /* preserve the original error */ }
-        }
         if (strictPersistentMode) throw new Error(`Production database write failed; refusing JSON fallback: ${error.message}`);
         console.warn(`[repo] Erro ao gravar banco SQL (${error.message}). Gravando em JSON local.`);
         mode = "json";
