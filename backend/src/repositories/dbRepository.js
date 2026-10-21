@@ -815,7 +815,13 @@ export async function initializeRepository(env) {
         });
         try {
             await postgresPool.query("CREATE TABLE IF NOT EXISTS app_state (id SMALLINT PRIMARY KEY CHECK (id = 1), payload JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
-            await postgresPool.query("INSERT INTO app_state (id, payload) VALUES (1, $1::jsonb) ON CONFLICT (id) DO NOTHING", [JSON.stringify(normalizeDbShape(null))]);
+            // Bootstrap from the existing local snapshot if the PostgreSQL row is absent.
+            // This avoids silently replacing existing JSON game state with an empty structure.
+            const localSnapshot = normalizeDbShape(readDbFromFile());
+            await postgresPool.query(
+                "INSERT INTO app_state (id, payload) VALUES (1, $1::jsonb) ON CONFLICT (id) DO NOTHING",
+                [JSON.stringify(localSnapshot)]
+            );
             await postgresPool.query("SELECT 1");
             mode = "postgres";
             console.log("[repo] DATA_DRIVER=postgres ativo; TLS e consulta inicial validados.");
