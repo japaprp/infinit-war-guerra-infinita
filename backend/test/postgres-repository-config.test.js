@@ -29,6 +29,6 @@ test("failed PostgreSQL initialization blocks reads and writes instead of fallin
     );
     assert.equal(getRepositoryMode(), "postgres-error");
     await assert.rejects(readDb(), /JSON não será usado/);
-    await assert.rejects(writeDb({ users: {}, receipts: {}, alliances: {} }), /gravação em JSON foi bloqueada/);
+    await assert.rejects(writeDb({ users: {}, receipts: {}, alliances: {} }), /gravação em JSON bloqueada/);
     assert.equal(getRepositoryMode(), "postgres-error");
 });
