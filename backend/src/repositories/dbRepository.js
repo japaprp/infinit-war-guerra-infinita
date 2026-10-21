@@ -896,6 +896,18 @@ export async function readDb() {
 export async function writeDb(db) {
     const normalized = normalizeDbShape(db);
 
+    if (mode === "postgres") {
+        if (!postgresPool) throw new Error("Repositório PostgreSQL não está conectado.");
+        const snapshot = JSON.stringify(normalized);
+        const operation = postgresWriteQueue.then(() => postgresPool.query(
+            "INSERT INTO app_state (id, payload, updated_at) VALUES (1, $1::jsonb, NOW()) ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW()",
+            [snapshot]
+        ));
+        postgresWriteQueue = operation.catch(() => {});
+        await operation;
+        return;
+    }
+    if (mode === "postgres-error") throw new Error("PostgreSQL solicitado, mas a inicialização falhou; gravação em JSON bloqueada.");
     if (mode !== "mysql" || !mysqlPool) {
         writeDbToFile(normalized);
         return;
