@@ -2,8 +2,8 @@ import { Pool } from "pg";
 
 const connectionString = process.env.GAME_SUPABASE_DATABASE_URL;
 if (!connectionString) {
-    console.log("PG_CONNECTION_CHECK_SKIPPED: configure repository secret GAME_SUPABASE_DATABASE_URL; no connection values are printed.");
-    process.exit(0);
+    console.error("PG_CONNECTION_CHECK_FAILED: required repository secret GAME_SUPABASE_DATABASE_URL is missing.");
+    process.exit(1);
 }
 
 let parsed;
