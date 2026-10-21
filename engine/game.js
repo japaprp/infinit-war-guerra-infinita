@@ -1460,8 +1460,10 @@ function bindMobileControls() {
     const releaseControl = (button) => {
         const key = button?.dataset?.key;
         if (!key) return;
-        keys[key] = false;
-        pressed[key] = false;
+        if (key !== "e" && key !== "f") {
+            keys[key] = false;
+            pressed[key] = false;
+        }
         button.classList.remove("is-pressed");
     };
 
@@ -1472,9 +1474,19 @@ function bindMobileControls() {
             if (button.setPointerCapture) {
                 try { button.setPointerCapture(event.pointerId); } catch {}
             }
+            button.classList.add("is-pressed");
+            if (key === "e") {
+                const node = getNearestAvailableNode(85);
+                if (node) collectResourceNode(node);
+                return;
+            }
+            if (key === "f") {
+                const monster = getNearestMonster(95);
+                if (monster) fightMonster(monster);
+                return;
+            }
             keys[key] = true;
             pressed[key] = true;
-            button.classList.add("is-pressed");
         });
         button.addEventListener("pointerup", (event) => {
             event.preventDefault();
