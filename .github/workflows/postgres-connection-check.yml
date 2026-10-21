@@ -27,8 +27,10 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - name: Install dependencies from lockfile
         run: npm ci
-      - name: Run local fail-closed tests
-        run: npm run test:postgres-connection
+      - name: Run PostgreSQL TLS and fail-closed tests
+        run: npm run test:postgres
+      - name: Run existing backend integration tests
+        run: npm run test:integration
       - name: Validate real Supabase PostgreSQL connection
         env:
           GAME_SUPABASE_DATABASE_URL: ${{ secrets.GAME_SUPABASE_DATABASE_URL }}
