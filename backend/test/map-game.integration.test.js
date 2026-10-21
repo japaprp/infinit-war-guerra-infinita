@@ -62,11 +62,17 @@ test.after(async () => {
     await fs.rm(tmpDir, { recursive: true, force: true });
 });
 
-test("map hunt is authenticated, time-gated, rewarded once, and appears in history", async () => {
+test("map hunt is authenticated, time-gated, recoverable after restart, and rewarded once", async () => {
     await fs.rm(dbPath, { force: true });
-    const server = await bootServer();
+    let server = await bootServer();
     try {
         const token = await login(server.baseUrl, "hunt-player");
+        const zeroTroops = await api(server.baseUrl, "POST", "/v1/world/hunts/start", {
+            token,
+            body: { targetId: "mutant-scavenger-01", heroIds: ["lucas"], troopCount: 0, operationId: "hunt-zero-troops" }
+        });
+        assert.equal(zeroTroops.status, 400);
+
         const start = await api(server.baseUrl, "POST", "/v1/world/hunts/start", {
             token,
             body: { targetId: "mutant-scavenger-01", heroIds: ["lucas"], troopCount: 100, operationId: "hunt-integration-1" }
@@ -74,6 +80,21 @@ test("map hunt is authenticated, time-gated, rewarded once, and appears in histo
         assert.equal(start.status, 200);
         assert.equal(start.body.status, "IN_PROGRESS");
         assert.equal(start.body.resources.energy, 90);
+
+        const startReplay = await api(server.baseUrl, "POST", "/v1/world/hunts/start", {
+            token,
+            body: { targetId: "mutant-scavenger-01", heroIds: ["lucas"], troopCount: 100, operationId: "hunt-integration-1" }
+        });
+        assert.equal(startReplay.status, 200);
+        assert.equal(startReplay.body.replayed, true);
+        assert.equal(startReplay.body.resources.energy, 90);
+
+        await server.stop();
+        server = await bootServer();
+        const afterRestart = await readDb();
+        const recoveredHunt = afterRestart.users["guest:hunt-player"].v1.gameData.hunts["hunt-integration-1"];
+        assert.equal(recoveredHunt.status, "IN_PROGRESS");
+        assert.equal(afterRestart.users["guest:hunt-player"].v1.resources.energy, 90);
 
         const early = await api(server.baseUrl, "POST", "/v1/world/hunts/hunt-integration-1/resolve", { token, body: {} });
         assert.equal(early.status, 409);
