@@ -38,3 +38,7 @@ jobs:
       - name: Run backend integration tests
         run: npm run test:integration
         working-directory: backend
+
+      - name: Run PostgreSQL TLS certificate tests
+        run: npm run test:postgres-tls
+        working-directory: backend
