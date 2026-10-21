@@ -19,9 +19,23 @@ if (!["postgres:", "postgresql:"].includes(parsed.protocol) || !parsed.hostname)
     process.exit(1);
 }
 
+// Trust only the CA explicitly supplied for this database. Do not disable TLS
+// verification as a workaround for SELF_SIGNED_CERT_IN_CHAIN.
+const caCertificate = process.env.GAME_SUPABASE_CA_CERT?.replace(/\\n/g, "\n").trim();
+if (!caCertificate) {
+    console.error("PG_CONNECTION_CHECK_FAILED: required repository secret GAME_SUPABASE_CA_CERT is missing.");
+    process.exit(1);
+}
+
+if (!caCertificate.includes("-----BEGIN CERTIFICATE-----") ||
+    !caCertificate.includes("-----END CERTIFICATE-----")) {
+    console.error("PG_CONNECTION_CHECK_FAILED: GAME_SUPABASE_CA_CERT is not a PEM certificate.");
+    process.exit(1);
+}
+
 const pool = new Pool({
     connectionString,
-    ssl: { rejectUnauthorized: true },
+    ssl: { ca: caCertificate, rejectUnauthorized: true },
     connectionTimeoutMillis: 8000,
     max: 1,
     application_name: "iwar-readonly-connection-check"
@@ -33,7 +47,7 @@ try {
         console.error("PG_CONNECTION_FAILED: connected, but expected schema check did not pass.");
         process.exitCode = 1;
     } else {
-        console.log("PG_CONNECTION_OK: TLS connection and read-only schema check passed.");
+        console.log("PG_CONNECTION_OK: verified TLS connection and read-only schema check passed.");
     }
 } catch (error) {
     const code = String(error?.code || "UNKNOWN").replace(/[^A-Za-z0-9_]/g, "").slice(0, 32);
