@@ -16,6 +16,7 @@ const allowlist = [
   "auth/auth.js",
   "auth/firebase-config.js",
   "engine/game.js",
+  "engine/world-map.js",
   "engine/chip-loadouts.js",
   "engine/vehicle-chip-combat.js",
   "engine/vehicle-accessories.js",
