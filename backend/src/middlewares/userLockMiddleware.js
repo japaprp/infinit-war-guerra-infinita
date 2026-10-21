@@ -76,14 +76,14 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6 } = {}) {
                 return res;
             };
 
-            // "finish" covers normal responses; "close" releases the lock when
-            // the client disconnects before the response completes. release() is
-            // owner-checked and therefore safe if both events fire.
+            // Do not release on "close": the client can disconnect while the
+            // handler is still writing state. The lock is released when the
+            // handler reaches res.json (after its awaited write) or on normal finish;
+            // TTL remains the fallback if the handler never completes.
             const releaseLock = () => {
                 release().catch(() => {});
             };
             res.on("finish", releaseLock);
-            res.on("close", releaseLock);
 
             return next();
         } catch {
@@ -148,9 +148,11 @@ export function createStateWriteLockMiddleware({ redisClient, ttlSec = 30 } = {}
                 });
                 return res;
             };
+            // A disconnected client does not mean the state write has stopped.
+            // Keep the lock until res.json is reached after the awaited write, or
+            // until a normal response finishes. TTL handles abandoned handlers.
             const releaseLock = () => { release().catch(() => {}); };
             res.on("finish", releaseLock);
-            res.on("close", releaseLock);
             return next();
         } catch {
             // Fail closed for mutating requests; allowing writes without the
