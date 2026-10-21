@@ -1560,7 +1560,7 @@ canvas {
 .strategy-bottom-nav button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-height:49px; border:1px solid #ffffff20; border-radius:11px; background:#182923; color:#e8f1e6; font-size:10px; font-weight:700; }
 .strategy-bottom-nav button span { font-size:17px; line-height:1; }
 .strategy-bottom-nav button:disabled { opacity:.7; }
-.strategy-bottom-nav button#strategyArenaBtn { background:linear-gradient(180deg,#e6be68,#a86c32); color:#251a0d; }
+.strategy-bottom-nav button#strategyReturnBtn { background:linear-gradient(180deg,#e6be68,#a86c32); color:#251a0d; }
 .strategy-notice { position:absolute; z-index:5; top:calc(env(safe-area-inset-top) + 156px); left:10px; right:10px; margin:0; font-size:10px; color:#d0dfd0; text-shadow:0 1px 3px #000; pointer-events:none; }
 @media(min-width:700px) { .strategy-selection-card { left:18px; right:auto; bottom:100px; width:min(450px,calc(100vw - 36px)); } .strategy-chat-strip { left:18px; right:18px; } .strategy-top { padding-left:18px; padding-right:18px; } .strategy-map-tools { right:18px; } .strategy-resources span { font-size:12px; } }
 @media(max-width:380px) { .strategy-brand small { max-width:140px; } .strategy-resources { max-width:49%; gap:3px; } .strategy-resources span { padding:5px; font-size:9px; } .strategy-selection-card { gap:6px; padding:8px; } .strategy-selection-card p { font-size:11px; } .strategy-selection-card button { padding:8px; font-size:11px; } }
