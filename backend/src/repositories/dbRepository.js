@@ -13,6 +13,7 @@ let mode = "json";
 let mysqlPool = null;
 let postgresPool = null;
 let postgresWriteQueue = Promise.resolve();
+const POSTGRES_REVISION = Symbol("iwarPostgresRevision");
 
 function safeNumber(value, fallback = 0) {
     const numeric = Number(value);
@@ -814,12 +815,13 @@ export async function initializeRepository(env) {
             application_name: "infinit-war-backend"
         });
         try {
-            await postgresPool.query("CREATE TABLE IF NOT EXISTS app_state (id SMALLINT PRIMARY KEY CHECK (id = 1), payload JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
+            await postgresPool.query("CREATE TABLE IF NOT EXISTS app_state (id SMALLINT PRIMARY KEY CHECK (id = 1), payload JSONB NOT NULL, revision BIGINT NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
+            await postgresPool.query("ALTER TABLE app_state ADD COLUMN IF NOT EXISTS revision BIGINT NOT NULL DEFAULT 0");
             // Bootstrap from the existing local snapshot if the PostgreSQL row is absent.
             // This avoids silently replacing existing JSON game state with an empty structure.
             const localSnapshot = normalizeDbShape(readDbFromFile());
             await postgresPool.query(
-                "INSERT INTO app_state (id, payload) VALUES (1, $1::jsonb) ON CONFLICT (id) DO NOTHING",
+                "INSERT INTO app_state (id, payload, revision) VALUES (1, $1::jsonb, 0) ON CONFLICT (id) DO NOTHING",
                 [JSON.stringify(localSnapshot)]
             );
             await postgresPool.query("SELECT 1");
@@ -868,9 +870,11 @@ export function getRepositoryMode() {
 export async function readDb() {
     if (mode === "postgres") {
         if (!postgresPool) throw new Error("Repositório PostgreSQL não está conectado.");
-        const result = await postgresPool.query("SELECT payload FROM app_state WHERE id = 1");
+        const result = await postgresPool.query("SELECT payload, revision FROM app_state WHERE id = 1");
         if (!result.rows.length) throw new Error("Estado do jogo ausente no PostgreSQL.");
-        return normalizeDbShape(result.rows[0].payload);
+        const snapshot = normalizeDbShape(result.rows[0].payload);
+        Object.defineProperty(snapshot, POSTGRES_REVISION, { value: Number(result.rows[0].revision), writable: true });
+        return snapshot;
     }
     if (mode === "postgres-error") throw new Error("PostgreSQL solicitado, mas a inicialização falhou; JSON não será usado.");
     if (mode !== "mysql" || !mysqlPool) {
@@ -903,13 +907,21 @@ export async function writeDb(db) {
 
     if (mode === "postgres") {
         if (!postgresPool) throw new Error("Repositório PostgreSQL não está conectado.");
+        const expectedRevision = db?.[POSTGRES_REVISION];
+        if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) {
+            throw new Error("Gravação PostgreSQL recusada: snapshot sem revisão de origem; leia o estado atual antes de gravar.");
+        }
         const snapshot = JSON.stringify(normalized);
         const operation = postgresWriteQueue.then(() => postgresPool.query(
-            "INSERT INTO app_state (id, payload, updated_at) VALUES (1, $1::jsonb, NOW()) ON CONFLICT (id) DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW()",
-            [snapshot]
+            "UPDATE app_state SET payload = $1::jsonb, revision = revision + 1, updated_at = NOW() WHERE id = 1 AND revision = $2 RETURNING revision",
+            [snapshot, expectedRevision]
         ));
         postgresWriteQueue = operation.catch(() => {});
-        await operation;
+        const result = await operation;
+        if (!result.rows.length) {
+            throw new Error("Conflito de concorrência PostgreSQL: o estado foi alterado por outra operação; releia antes de tentar novamente.");
+        }
+        Object.defineProperty(db, POSTGRES_REVISION, { value: Number(result.rows[0].revision), writable: true });
         return;
     }
     if (mode === "postgres-error") throw new Error("PostgreSQL solicitado, mas a inicialização falhou; gravação em JSON bloqueada.");
