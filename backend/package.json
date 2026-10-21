@@ -8,9 +8,9 @@
     "start": "node src/index.js",
     "dev:grpc": "node src/grpc/server.js",
     "migrate:mysql": "node src/scripts/migrate.js",
-    "test:integration": "node --test test/integration.test.js test/auth-verification.integration.test.js",
+    "test:integration": "node --test test/integration.test.js test/auth-verification.integration.test.js test/concurrency.test.js test/map-game.integration.test.js",
     "test:config": "node --test test/deployment-config.test.js",
-    "test:deploy": "node --test test/deployment-config.test.js test/deployment-artifacts.test.js test/firebase-token.test.js"
+    "test:deploy": "node --test test/deployment-config.test.js test/deployment-artifacts.test.js test/firebase-token.test.js test/postgres-compat.test.js test/repository-postgres.test.js test/postgres-connection-check.test.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.11.3",
@@ -20,6 +20,10 @@
     "express": "^4.19.2",
     "ioredis": "^5.4.2",
     "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.11.5"
+    "mysql2": "^3.11.5",
+    "pg": "^8.23.1"
+  },
+  "overrides": {
+    "qs": "^6.16.1"
   }
 }

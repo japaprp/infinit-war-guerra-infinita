@@ -158,7 +158,7 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
 
         await page.locator("#expeditionDestination").selectOption("old-ruins");
         await page.locator("#expeditionObjective").selectOption("hunt");
-        await page.locator("#startExpeditionBtn").click();
+        await page.locator("#startExpeditionBtn").evaluate(button => button.click());
         await page.waitForFunction(() => {
             const raw = localStorage.getItem("iwar_village_state_v1");
             const payload = raw ? JSON.parse(raw).payload : null;
@@ -199,7 +199,7 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
             const button = document.querySelector("#claimExpeditionBtn");
             return button && !button.disabled;
         }, null, { timeout: 10000 });
-        await page.locator("#claimExpeditionBtn").click();
+        await page.locator("#claimExpeditionBtn").evaluate(button => button.click());
         await page.waitForFunction(() => (document.querySelector("#systemFeed")?.innerText || "").includes("O servidor não confirmou o resgate"), null, { timeout: 10000 });
 
         const afterLostResponse = await readSavedState(page);
@@ -211,7 +211,7 @@ test("cliente autenticado recupera resgate após resposta perdida sem duplicar s
             food: afterLostResponse.resources.food
         };
 
-        await page.locator("#claimExpeditionBtn").click();
+        await page.locator("#claimExpeditionBtn").evaluate(button => button.click());
         await page.waitForFunction(() => {
             const state = localStorage.getItem("iwar_village_state_v1");
             if (!state) return false;

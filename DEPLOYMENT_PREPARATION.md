@@ -1,59 +1,57 @@
-# Deployment preparation
+# Deployment preparation — validation only
 
-This repository is prepared for a hosted API, but it is **not deploy-ready until the actual frontend and API origins are confirmed**.
+This branch is an isolated integration and test branch. It is **not approved for merge or deployment**. The original authentication branch remains unchanged, the existing Render API service remains on `fix/firebase-id-token-validation`, and no Render configuration or Supabase schema/data was changed during this stage.
 
-## Frontend API URL
+## Current validation status
+
+- Backend configuration/deployment tests: passed.
+- Backend integration tests: passed, including authentication, map hunts, alliance rallies, chest idempotency, vehicle loadouts, and lock release after client disconnect.
+- Public frontend package and real-browser persistence/backend-recovery workflow: passed.
+- Static contract scan: 34 frontend API request definitions checked, with no unmatched method/path pairs in the integrated backend.
+- Real Node.js `pg` pool connection to Supabase: **not yet verified**. A read-only SQL query through the Supabase connector succeeded, but that does not prove the deployed API's connection URL, credentials, TLS settings, or driver configuration work.
+
+## Frontend API URL and CORS
 
 - Local development on `localhost` or `127.0.0.1` defaults to `http://localhost:4000`.
-- Hosted environments intentionally have no implicit API URL. The `index.html` and `game.html` pages now expose `<meta name="iwar-api-base-url" content="">`; once the backend URL is known, set that value to the confirmed HTTPS API origin on both pages. `api/config.js` reads this metadata while preserving the local-only localhost default.
+- The known API service origin is `https://infinit-war-api.onrender.com`. The root pages and staged public copies use that exact origin in `iwar-api-base-url` and their `connect-src` policy.
+- The API origin is not the frontend origin. The public frontend has not been published, so its final origin is still unknown. Do not configure production `CORS_ORIGINS` until the actual frontend origin is confirmed.
+- `api/config.js` rejects insecure hosted endpoints, URL paths, and remote localhost fallbacks while preserving localhost HTTP only for local development.
 - Do not commit secrets or invent a production URL.
-- `index.html` has a Content Security Policy. Once the actual API hostname is confirmed, add that exact HTTPS origin to `connect-src`; do not use a broad wildcard.
 
-## Backend environment
+## Public frontend package
 
-Required for a hosted instance:
-- `NODE_ENV=production`
-- `PORT` (provided by the host)
-- `FIREBASE_PROJECT_ID`: exact Firebase project ID; required in production for server-side ID-token verification
-- `CORS_ORIGINS`: comma-separated, exact frontend origins, including scheme and port where applicable
-- `DATA_DRIVER=mysql`
-- `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`
-- Strong, unique `JWT_SECRET` and `RECEIPT_SECRET` values, configured in the hosting dashboard rather than committed to Git
+The static-site publish root must be `frontend/public/` only, never the repository root. The allowlist and source-parity test verifies the public HTML, CSS, and JavaScript files, plus their local dependencies.
 
-## Authentication security
+The static site template in `render-frontend.yaml` has **not** been applied and no frontend service has been created. Do not apply it until the integration branch is reviewed and publication is explicitly authorized.
 
-The legacy and v1 login routes now verify non-guest Firebase ID tokens against Google Secure Token signing certificates, including signature, issuer, audience/project, subject, and time claims. User ID, provider, email, and display name are derived from verified claims rather than trusted client fields. Production requires `FIREBASE_PROJECT_ID`. Production guest identities are generated server-side; client-supplied guest IDs are retained only for development/test compatibility. Firebase configuration and the real project ID must be confirmed before login can be validated. Do not deploy until the security tests and full CI pass.
+## PostgreSQL / Supabase status
 
-The API currently supports MySQL via `mysql2`. The JSON-file driver is suitable for local development only on hosts with ephemeral filesystems; it must not be used for persistent hosted gameplay. In production, startup now fails if MySQL cannot initialize, and reads/writes refuse to fall back to a local JSON file. Configure `MYSQL_SSL=true` when the database provider requires TLS.
+The dedicated Supabase project `guerra-infinita-db` (region `sa-east-1`, ref `gfjquedlehkxonjwaoec`) is active and healthy. The read-only database check confirmed:
 
-## Frontend hosting boundary
+- Migration `initial_game_schema` is registered.
+- The eight expected tables (`app_state`, `users`, `heroes`, `buildings`, `inventory`, `receipts`, `alliances`, `battles`) exist and currently contain zero rows.
+- Row-level security is enabled on those tables. The current policy query returned no explicit policies, so access must remain server-side through a trusted database role; never expose database credentials or use the browser to connect directly.
 
-The current browser client files (`index.html`, `game.html`, JavaScript, CSS, and assets) are stored at the repository root alongside backend code and internal project files. Do **not** publish the repository root as a static site (`staticPublishPath: .`): that risks exposing backend source and development artifacts as public web files. Before adding a static-site service, move or copy only the required browser assets into a dedicated public directory, update and test relative paths, and verify the published file manifest contains no backend code, tests, environment examples, or internal docs. This isolation is intentionally not done in the deployment-preparation branch because it is a separate, potentially breaking packaging change.
+The isolated integration branch supports `DATA_DRIVER=postgres` with `DATABASE_URL`. The schema is already present, but the application has not yet completed a real Node.js `pg` pool connection or a write/read/restart test against this project. Do not treat the successful connector `SELECT 1` as proof that the API's private connection works.
 
-## Render API blueprint
+A manual, read-only Node.js connection workflow is available at `.github/workflows/postgres-connection-check.yml`. It reads the repository secret `GAME_SUPABASE_DATABASE_URL`, runs `SELECT 1` plus a schema-presence check, and never prints the URL or connection error details. If the secret is absent or malformed, the check exits with failure; it does not report a successful skip. To run it, add the database URL directly in GitHub **Settings → Secrets and variables → Actions** under that secret name, then open **Actions → PostgreSQL connection check → Run workflow** and select `integration/postgres-auth-isolated`. Do not paste the URL into chat or commit it.
 
-`render.yaml` is a free-plan API service template. It does not create a service by itself. If used later, Render will ask for the database connection values and the exact frontend origin; the API cannot pass production startup validation until these are supplied. The template enables MySQL TLS. Render's free web service may sleep when idle, so the first request can be delayed.
+## Render environment
 
-## Health and validation
+The existing Render API service has not been modified. The last previously observed deployment issue involved `MYSQL_PASSWORD` and `CORS_ORIGINS`; that earlier status was not revalidated during this stage. The available read-only Render connector does not expose environment-variable names, so this branch has not confirmed the current variable inventory and has not read or printed any values.
 
-The backend exposes `GET /health`. After the service is deployed, validate:
-1. `GET /health` returns `ok: true` and reports the repository mode.
-2. The deployed process reports `repository=mysql`.
-3. Frontend login and `GET /v1/expeditions/status` work from the real hosted origin.
-4. Start and claim an expedition, retry the same claim idempotency key, then reload and confirm the reward is applied once.
-5. Verify disallowed browser origins cannot read API responses.
+The currently configured production branch still follows the existing MySQL deployment path. For that branch, the required settings include `DATA_DRIVER=mysql`, `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `FIREBASE_PROJECT_ID`, `JWT_SECRET`, `RECEIPT_SECRET`, and exact `CORS_ORIGINS`. The isolated PostgreSQL path instead requires `DATA_DRIVER=postgres` and `DATABASE_URL`, plus the same authentication secrets and exact CORS origins. These are expected variable names, not confirmation that they are currently configured.
 
-## Explicit blockers
+## Deployment boundaries
 
-No hosting service, database, DNS record, production secret, or deployment was created or changed by this preparation. A GitHub Actions workflow was added to run configuration and backend integration tests on relevant pushes and pull requests. The public frontend origin and API URL are still unknown, and PR #14's expedition routes must be reviewed and integrated before the production branch can serve those routes.
+- Do not merge PR #31 until the real Node.js-to-PostgreSQL connection and persistence checks are complete.
+- Do not deploy the static frontend or change the Render service's branch, environment, or build settings.
+- Do not apply additional migrations or create services as part of this validation step.
+- Keep `Perifa-Pro` and `EventosRP` separate; their databases and configuration must not be reused for this game.
 
+## Remaining blockers before publication
 
-## Free database provider decision
-
-Do not create a database until the existing Aiven account inventory is confirmed. Aiven's current free MySQL tier allows only one free service of each service type per organization, with 1 CPU, 1 GB RAM, 1 GB disk, up to 76 connections, and possible power-off after prolonged inactivity. The account inventory tool could not be queried during this preparation, so availability is unknown. Never reuse the EventosRP database for this game.
-
-If the existing Aiven free MySQL service is already allocated, TiDB Cloud Starter is a candidate to evaluate because it supports the MySQL protocol and its free quota currently includes 5 GiB row storage and 50 million request units per month for eligible instances. Reaching the free quota can block new connections until quota reset. Before choosing TiDB, run the backend integration and schema-migration tests against a real TiDB instance; MySQL protocol compatibility alone does not prove every SQL feature used by this repository will behave identically.
-
-Provider references:
-- Aiven free MySQL tier: https://aiven.io/docs/products/mysql/concepts/mysql-free-tier
-- TiDB Cloud Starter tier and quotas: https://docs.pingcap.com/tidbcloud/select-cluster-tier/
+1. Configure `GAME_SUPABASE_DATABASE_URL` securely and run the manual read-only Node.js connection workflow.
+2. Decide on an explicitly authorized, non-persistent strategy for PostgreSQL write/read/restart and concurrent-write tests; do not write to the live game tables during this validation stage.
+3. Confirm the final hosted frontend origin and inspect Render variable names without exposing values.
+4. Re-run the full checks on the final candidate commit and present the results before requesting publication authorization.
