@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/postgres-connection-check.yml"
       - "backend/scripts/check-postgres-connection.mjs"
+      - "backend/test/postgres-connection-check.test.js"
       - "backend/package.json"
       - "backend/package-lock.json"
   workflow_dispatch:
@@ -35,8 +36,12 @@ jobs:
       - name: Check script syntax
         run: node --check scripts/check-postgres-connection.mjs
         working-directory: backend
+      - name: Run PostgreSQL connection-check unit tests
+        run: node --test test/postgres-connection-check.test.js
+        working-directory: backend
       - name: Run read-only PostgreSQL connection check
         run: node scripts/check-postgres-connection.mjs
         working-directory: backend
         env:
           GAME_SUPABASE_DATABASE_URL: ${{ secrets.GAME_SUPABASE_DATABASE_URL }}
+          GAME_SUPABASE_CA_CERT: ${{ secrets.GAME_SUPABASE_CA_CERT }}
