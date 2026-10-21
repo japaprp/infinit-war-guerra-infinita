@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
 import mysql from "mysql2/promise";
+import pg from "pg";
+import { createPostgresTlsOptions } from "../config/postgresTls.js";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -9,6 +11,8 @@ const DB_PATH = process.env.IWAR_DB_PATH || path.join(__dirname, "..", "..", "da
 
 let mode = "json";
 let mysqlPool = null;
+let postgresPool = null;
+let postgresWriteQueue = Promise.resolve();
 
 function safeNumber(value, fallback = 0) {
     const numeric = Number(value);
