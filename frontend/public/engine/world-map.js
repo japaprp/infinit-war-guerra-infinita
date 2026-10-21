@@ -10,7 +10,7 @@
   const notice = document.getElementById("strategyNotice");
   const worldBtn = document.getElementById("strategyWorldBtn");
   const baseBtn = document.getElementById("strategyBaseBtn");
-  const arenaBtn = document.getElementById("strategyArenaBtn");
+  const returnBtn = document.getElementById("strategyReturnBtn");
   const heroesBtn = document.getElementById("strategyHeroesBtn");
   const openWorldMapBtn = document.getElementById("openWorldMapBtn");
   const openShelterBtn = document.getElementById("openShelterBtn");
@@ -34,7 +34,8 @@
     {id:"workshop",name:"Oficina",x:2.1,y:1.15,w:1.4,h:1.35,color:"#b88b62",desc:"Construções e equipamentos."},
     {id:"farm",name:"Estação de Suprimentos",x:-2.1,y:-1.45,w:1.35,h:1.2,color:"#83b778",desc:"Produção de recursos."},
     {id:"radar",name:"Radar",x:2.15,y:-1.5,w:1.2,h:1.2,color:"#71c4c2",desc:"Exploração e alertas."},
-    {id:"hospital",name:"Enfermaria",x:0,y:2.65,w:1.4,h:1.3,color:"#d17d79",desc:"Recuperação e suporte."}
+    {id:"hospital",name:"Enfermaria",x:0,y:2.65,w:1.4,h:1.3,color:"#d17d79",desc:"Recuperação e suporte."},
+    {id:"shelter-house",name:"Casinha do Abrigo",x:0,y:4.25,w:1.25,h:1.15,color:"#e5b765",desc:"Toque aqui para entrar na Arena de Combate."}
   ];
   let hitTargets = [];
   function resize() {
@@ -111,6 +112,15 @@
   }
   function drawBuilding(b) {
     const p=project(b.x,b.y);const s=p.scale;const w=b.w*18*s,h=b.h*15*s;
+    if(b.id==="shelter-house"){
+      hitTargets.push({x:p.x,y:p.y-13*s,r:Math.max(w,h)*.9,b});
+      polygon([{x:p.x-w*.52,y:p.y-5*s},{x:p.x-w*.52,y:p.y-h*.85},{x:p.x,y:p.y-h-15*s},{x:p.x+w*.52,y:p.y-h*.85},{x:p.x+w*.52,y:p.y-5*s}], "#8e5b32","#f5d8a2");
+      polygon([{x:p.x-w*.6,y:p.y-h*.8},{x:p.x,y:p.y-h-24*s},{x:p.x+w*.6,y:p.y-h*.8}], "#dca653","#ffe3a5");
+      ctx.fillStyle="#2b3025";ctx.fillRect(p.x-4*s,p.y-h*.48,8*s,14*s);
+      ctx.fillStyle="#fef2cb";ctx.font=`700 ${Math.max(10,12*s)}px system-ui`;ctx.textAlign="center";ctx.fillText("⌂",p.x,p.y-h*.92);
+      if(view.selected?.id===b.id){ctx.strokeStyle="#f5d785";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.x,p.y,Math.max(w,h)*.8,Math.max(w,h)*.4,0,0,Math.PI*2);ctx.stroke();}
+      ctx.fillStyle="#fff7df";ctx.font=`700 ${Math.max(10,12*s)}px system-ui`;ctx.textAlign="center";ctx.fillText("Arena de Combate",p.x,p.y+22*s);return;
+    }
     hitTargets.push({x:p.x,y:p.y-9*s,r:Math.max(w,h)*.7,b});
     polygon([{x:p.x-w/2,y:p.y},{x:p.x,y:p.y+10*s},{x:p.x+w/2,y:p.y},{x:p.x,y:p.y-10*s}], "#566b62","#a4b6a7");
     polygon([{x:p.x-w/2,y:p.y-1*s},{x:p.x-w/2,y:p.y-h},{x:p.x,y:p.y-h+10*s},{x:p.x,y:p.y+10*s}], b.color,"#d8c9a7");
@@ -152,7 +162,7 @@
   function hide() { screen.hidden=true; view.mode="world"; }
   function selectTarget(target) {
     if(target.site){view.selected=target.site;selection.textContent=target.site.name+" — "+target.site.tag;action.textContent=target.site.type==="base"||target.site.type==="capital"?"Ver território":"Preparar marcha";}
-    else if(target.b){view.selected=target.b;selection.textContent=target.b.name+" — "+target.b.desc;action.textContent="Ver detalhes";}
+    else if(target.b){if(target.b.id==="shelter-house"){hide();return;}view.selected=target.b;selection.textContent=target.b.name+" — "+target.b.desc;action.textContent="Ver detalhes";}
     draw(performance.now());
   }
   canvas.addEventListener("pointerdown",e=>{canvas.setPointerCapture(e.pointerId);view.drag={x:e.clientX,y:e.clientY,px:view.panX,py:view.panY};view.moved=false;});
@@ -160,11 +170,12 @@
   canvas.addEventListener("pointerup",e=>{if(!view.drag)return;const moved=view.moved;view.drag=null;if(moved)return;const rect=canvas.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top;let nearest=null,dist=Infinity;for(const t of hitTargets){const d=Math.hypot(t.x-x,t.y-y);if(d<t.r&&d<dist){nearest=t;dist=d;}}if(nearest)selectTarget(nearest);});
   canvas.addEventListener("pointercancel",()=>{view.drag=null;});
   canvas.addEventListener("wheel",e=>{e.preventDefault();view.zoom=Math.max(.65,Math.min(1.8,view.zoom*(e.deltaY<0?1.08:.92)));draw(performance.now());},{passive:false});
-  worldBtn.addEventListener("click",()=>show("world"));baseBtn.addEventListener("click",()=>show("base"));arenaBtn.addEventListener("click",hide);
+  worldBtn.addEventListener("click",()=>show("world"));baseBtn.addEventListener("click",()=>show("base"));
+  if(returnBtn)returnBtn.addEventListener("click",()=>show(view.mode==="base"?"world":"base"));
   if(openWorldMapBtn)openWorldMapBtn.addEventListener("click",()=>show("world"));
   if(openShelterBtn)openShelterBtn.addEventListener("click",()=>show("base"));
   heroesBtn.addEventListener("click",()=>{notice.textContent="Painel de heróis: use o botão Herói da arena após retornar. Integração com esta tela será feita em uma etapa própria.";});
-  action.addEventListener("click",()=>{if(!view.selected){notice.textContent="Selecione primeiro um ponto no mapa.";return;}notice.textContent=view.mode==="world"?"Destino selecionado: "+(view.selected.name||"local")+". A marcha visual é demonstrativa; ainda não envia tropas ao servidor.":"Edifício selecionado: "+view.selected.name+". Melhorias e custos serão conectados numa próxima etapa.";});
+  action.addEventListener("click",()=>{if(!view.selected){notice.textContent="Selecione primeiro um ponto no mapa.";return;}if(view.mode==="base"&&view.selected.id==="shelter-house"){hide();return;}notice.textContent=view.mode==="world"?"Destino selecionado: "+(view.selected.name||"local")+". A marcha visual é demonstrativa; ainda não envia tropas ao servidor.":"Edifício selecionado: "+view.selected.name+". Melhorias e custos serão conectados numa próxima etapa.";});
   function frame(now){if(!screen.hidden&&view.mode==="world"){draw(now);view.lastFrame=now;}requestAnimationFrame(frame);}
   window.addEventListener("resize",resize);
   window.addEventListener("keydown",e=>{if(e.key==="Escape"&&!screen.hidden)hide();});
