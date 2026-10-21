@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import path from "node:path";
 import test from "node:test";
 
 const script = fileURLToPath(new URL("../scripts/check-postgres-connection.mjs", import.meta.url));
