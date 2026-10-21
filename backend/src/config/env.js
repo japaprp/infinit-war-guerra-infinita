@@ -8,6 +8,8 @@ export const env = {
     JWT_SECRET: process.env.JWT_SECRET || "unsafe_dev_secret",
     RECEIPT_SECRET: process.env.RECEIPT_SECRET || "unsafe_receipt_secret",
     DATA_DRIVER: (process.env.DATA_DRIVER || "json").toLowerCase(),
+    GAME_SUPABASE_DATABASE_URL: process.env.GAME_SUPABASE_DATABASE_URL || "",
+    GAME_SUPABASE_CA_CERT: process.env.GAME_SUPABASE_CA_CERT || "",
     MYSQL_HOST: process.env.MYSQL_HOST || "127.0.0.1",
     MYSQL_PORT: Number(process.env.MYSQL_PORT || 3306),
     MYSQL_DATABASE: process.env.MYSQL_DATABASE || "infinitwar",
