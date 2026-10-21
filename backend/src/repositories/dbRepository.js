@@ -258,10 +258,10 @@ async function readDbFromMySqlAppState() {
     return normalizeDbShape(parsed);
 }
 
-async function writeDbToMySqlAppState(db) {
-    if (!dbPool) return;
+async function writeDbToMySqlAppState(db, executor = dbPool) {
+    if (!executor) return;
     const payload = JSON.stringify(normalizeDbShape(db));
-    await dbPool.query(
+    await executor.query(
         `INSERT INTO app_state (id, payload)
          VALUES (1, ?)
          ON DUPLICATE KEY UPDATE payload = VALUES(payload), updated_at = CURRENT_TIMESTAMP(3)`,
@@ -637,15 +637,16 @@ async function syncReceipts(connection, receipts) {
     }
 }
 
-async function syncNormalizedTables(db) {
-    if (!dbPool) return;
+async function syncNormalizedTables(db, providedConnection = null) {
+    if (!dbPool && !providedConnection) return;
 
     const normalized = normalizeDbShape(db);
     const entries = Object.entries(normalized.users || {});
-    const connection = await dbPool.getConnection();
+    const ownsConnection = !providedConnection;
+    const connection = providedConnection || await dbPool.getConnection();
 
     try {
-        await connection.beginTransaction();
+        if (ownsConnection) await connection.beginTransaction();
 
         for (const [externalId, user] of entries) {
             const fallbackProfile = inferProfileFromUserId(externalId);
@@ -735,12 +736,14 @@ async function syncNormalizedTables(db) {
 
         await syncAlliances(connection, normalized.alliances || {});
         await syncReceipts(connection, normalized.receipts || {});
-        await connection.commit();
+        if (ownsConnection) await connection.commit();
     } catch (error) {
-        await connection.rollback();
+        if (ownsConnection) {
+            try { await connection.rollback(); } catch { /* preserve the original error */ }
+        }
         throw error;
     } finally {
-        connection.release();
+        if (ownsConnection) connection.release();
     }
 }
 
@@ -864,13 +867,22 @@ export async function writeDb(db) {
         return;
     }
 
+    let connection = null;
     try {
-        await syncNormalizedTables(normalized);
-        await writeDbToMySqlAppState(normalized);
+        connection = await dbPool.getConnection();
+        await connection.beginTransaction();
+        await syncNormalizedTables(normalized, connection);
+        await writeDbToMySqlAppState(normalized, connection);
+        await connection.commit();
     } catch (error) {
+        if (connection) {
+            try { await connection.rollback(); } catch { /* preserve the original error */ }
+        }
         if (strictPersistentMode) throw new Error(`Production database write failed; refusing JSON fallback: ${error.message}`);
         console.warn(`[repo] Erro ao gravar banco SQL (${error.message}). Gravando em JSON local.`);
         mode = "json";
         writeDbToFile(normalized);
+    } finally {
+        connection?.release();
     }
 }
