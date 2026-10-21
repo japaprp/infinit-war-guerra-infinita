@@ -10,7 +10,7 @@
     "migrate:mysql": "node src/scripts/migrate.js",
     "test:integration": "node --test test/integration.test.js test/auth-verification.integration.test.js test/concurrency.test.js test/map-game.integration.test.js",
     "test:config": "node --test test/deployment-config.test.js",
-    "test:deploy": "node --test test/deployment-config.test.js test/deployment-artifacts.test.js test/firebase-token.test.js test/postgres-compat.test.js test/repository-postgres.test.js"
+    "test:deploy": "node --test test/deployment-config.test.js test/deployment-artifacts.test.js test/firebase-token.test.js test/postgres-compat.test.js test/repository-postgres.test.js test/postgres-connection-check.test.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.11.3",
