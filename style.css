@@ -1395,19 +1395,12 @@ canvas {
         border-radius: 11px;
         font-size: 12px;
     }
-    .mission-toast {
-        left: 6px;
-        right: 6px;
-        bottom: calc(250px + env(safe-area-inset-bottom));
-        max-width: none;
-        padding: 7px 9px;
-        font-size: 11px;
-    }
+    .mission-toast { display: none; }
     .interaction-hint { display: none; }
     .quick-actions {
         left: 50%;
         transform: translateX(-50%);
-        bottom: calc(245px + env(safe-area-inset-bottom));
+        bottom: calc(248px + env(safe-area-inset-bottom));
         max-width: calc(100vw - 16px);
         flex-wrap: wrap;
         justify-content: center;
@@ -1437,7 +1430,5 @@ canvas {
         right: 8px;
         grid-template-columns: repeat(2, minmax(58px, 70px));
     }
-    .mission-toast {
-        bottom: calc(230px + env(safe-area-inset-bottom));
-    }
+    .mission-toast { display: none; }
 }
