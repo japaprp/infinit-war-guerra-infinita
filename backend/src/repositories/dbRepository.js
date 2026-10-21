@@ -859,6 +859,17 @@ export async function readDb() {
     }
 }
 
+export async function runSnapshotTransaction(connection, writeOperations) {
+    await connection.beginTransaction();
+    try {
+        await writeOperations();
+        await connection.commit();
+    } catch (error) {
+        try { await connection.rollback(); } catch { /* preserve the original error */ }
+        throw error;
+    }
+}
+
 export async function writeDb(db) {
     const normalized = normalizeDbShape(db);
 
@@ -870,10 +881,10 @@ export async function writeDb(db) {
     let connection = null;
     try {
         connection = await dbPool.getConnection();
-        await connection.beginTransaction();
-        await syncNormalizedTables(normalized, connection);
-        await writeDbToMySqlAppState(normalized, connection);
-        await connection.commit();
+        await runSnapshotTransaction(connection, async () => {
+            await syncNormalizedTables(normalized, connection);
+            await writeDbToMySqlAppState(normalized, connection);
+        });
     } catch (error) {
         if (connection) {
             try { await connection.rollback(); } catch { /* preserve the original error */ }
