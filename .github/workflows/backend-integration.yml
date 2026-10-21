@@ -42,3 +42,7 @@ jobs:
       - name: Run PostgreSQL TLS certificate tests
         run: npm run test:postgres-tls
         working-directory: backend
+
+      - name: Run PostgreSQL fail-closed configuration tests
+        run: npm run test:postgres
+        working-directory: backend
