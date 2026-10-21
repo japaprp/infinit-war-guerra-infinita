@@ -34,7 +34,7 @@ The dedicated Supabase project `guerra-infinita-db` (region `sa-east-1`, ref `gf
 
 The isolated integration branch supports `DATA_DRIVER=postgres` with `DATABASE_URL`. The schema is already present, but the application has not yet completed a real Node.js `pg` pool connection or a write/read/restart test against this project. Do not treat the successful connector `SELECT 1` as proof that the API's private connection works.
 
-A manual, read-only Node.js connection workflow is available at `.github/workflows/postgres-connection-check.yml`. It reads the repository secret `GAME_SUPABASE_DATABASE_URL`, runs `SELECT 1` plus a schema-presence check, and never prints the URL or connection error details. If the secret is absent, it reports `SKIPPED`. To run it, add the database URL directly in GitHub **Settings → Secrets and variables → Actions** under that secret name, then open **Actions → PostgreSQL connection check → Run workflow** and select `integration/postgres-auth-isolated`. Do not paste the URL into chat or commit it.
+A manual, read-only Node.js connection workflow is available at `.github/workflows/postgres-connection-check.yml`. It reads the repository secret `GAME_SUPABASE_DATABASE_URL`, runs `SELECT 1` plus a schema-presence check, and never prints the URL or connection error details. If the secret is absent or malformed, the check exits with failure; it does not report a successful skip. To run it, add the database URL directly in GitHub **Settings → Secrets and variables → Actions** under that secret name, then open **Actions → PostgreSQL connection check → Run workflow** and select `integration/postgres-auth-isolated`. Do not paste the URL into chat or commit it.
 
 ## Render environment
 
