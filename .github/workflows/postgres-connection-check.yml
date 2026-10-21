@@ -36,3 +36,9 @@ jobs:
           GAME_SUPABASE_DATABASE_URL: ${{ secrets.GAME_SUPABASE_DATABASE_URL }}
           GAME_SUPABASE_CA_CERT: ${{ secrets.GAME_SUPABASE_CA_CERT }}
         run: node scripts/check-postgres-connection.mjs
+
+      - name: Validate isolated PostgreSQL read/write, revision conflicts, and fresh TLS connection
+        env:
+          GAME_SUPABASE_DATABASE_URL: ${{ secrets.GAME_SUPABASE_DATABASE_URL }}
+          GAME_SUPABASE_CA_CERT: ${{ secrets.GAME_SUPABASE_CA_CERT }}
+        run: node scripts/check-postgres-persistence.mjs
