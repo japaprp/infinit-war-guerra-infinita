@@ -5,6 +5,9 @@ let redisClient = null;
 export async function initializeRedis(env) {
     if (!env.REDIS_ENABLED) {
         await closeRedisClient();
+        if (String(env.NODE_ENV || "development").toLowerCase() === "production") {
+            throw new Error("Production requires shared Redis for cross-instance mutation locks.");
+        }
         console.log("[redis] REDIS_ENABLED=false. Cache/lock em memoria local.");
         return null;
     }
@@ -37,6 +40,9 @@ export async function initializeRedis(env) {
             redisClient = null;
         }
         client.disconnect();
+        if (String(env.NODE_ENV || "development").toLowerCase() === "production") {
+            throw new Error("Production Redis connection failed; refusing unsafe in-memory lock fallback.");
+        }
         console.warn(`[redis] Falha ao conectar (${error.message}). Fallback em memoria local.`);
         return null;
     }
