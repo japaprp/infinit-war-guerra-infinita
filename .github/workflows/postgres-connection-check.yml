@@ -4,12 +4,17 @@ on:
   push:
     branches:
       - integration/postgres-auth-isolated
+      - fix/postgres-render-runtime-config
     paths:
       - ".github/workflows/postgres-connection-check.yml"
       - "backend/scripts/check-postgres-connection.mjs"
       - "backend/test/postgres-connection-check.test.js"
       - "backend/package.json"
       - "backend/package-lock.json"
+      - "backend/src/config/env.js"
+      - "backend/src/postgresCompat.js"
+      - "backend/test/deployment-config.test.js"
+      - "render.yaml"
   workflow_dispatch:
 
 permissions:
@@ -20,10 +25,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Checkout isolated integration branch
+      - name: Checkout workflow ref
         uses: actions/checkout@v4
         with:
-          ref: integration/postgres-auth-isolated
+          ref: ${{ github.ref }}
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
