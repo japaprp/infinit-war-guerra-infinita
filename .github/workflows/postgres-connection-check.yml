@@ -9,6 +9,7 @@ on:
       - ".github/workflows/postgres-connection-check.yml"
       - "backend/scripts/check-postgres-connection.mjs"
       - "backend/scripts/check-postgres-persistence.mjs"
+      - "backend/scripts/check-postgres-isolation-capabilities.mjs"
       - "backend/test/postgres-connection-check.test.js"
       - "backend/package.json"
       - "backend/package-lock.json"
@@ -43,13 +44,19 @@ jobs:
         run: npm ci
         working-directory: backend
       - name: Check script syntax
-        run: node --check scripts/check-postgres-connection.mjs
+        run: node --check scripts/check-postgres-connection.mjs && node --check scripts/check-postgres-isolation-capabilities.mjs && node --check scripts/check-postgres-persistence.mjs
         working-directory: backend
       - name: Run PostgreSQL connection-check unit tests
         run: node --test test/deployment-config.test.js test/postgres-compat.test.js test/postgres-connection-check.test.js test/repository-postgres.test.js test/concurrency.test.js
         working-directory: backend
       - name: Run read-only PostgreSQL connection check
         run: node scripts/check-postgres-connection.mjs
+        working-directory: backend
+        env:
+          GAME_SUPABASE_DATABASE_URL: ${{ secrets.GAME_SUPABASE_DATABASE_URL }}
+          GAME_SUPABASE_CA_CERT: ${{ secrets.GAME_SUPABASE_CA_CERT }}
+      - name: Inspect PostgreSQL isolation capabilities (read-only)
+        run: node scripts/check-postgres-isolation-capabilities.mjs
         working-directory: backend
         env:
           GAME_SUPABASE_DATABASE_URL: ${{ secrets.GAME_SUPABASE_DATABASE_URL }}
