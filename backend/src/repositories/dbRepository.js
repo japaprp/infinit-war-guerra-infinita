@@ -822,6 +822,13 @@ export function getRepositoryMode() {
     return mode;
 }
 
+export async function closeRepository() {
+    const currentPool = dbPool;
+    dbPool = null;
+    mode = "json";
+    if (currentPool?.end) await currentPool.end();
+}
+
 export async function readDb() {
     if (!["mysql", "postgres"].includes(mode) || !dbPool) {
         return readDbFromFile();
