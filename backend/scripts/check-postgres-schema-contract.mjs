@@ -24,7 +24,8 @@ const required = {
   buildings: ["id", "user_id", "building_type", "slot_code", "level", "state", "end_at_ms", "task_id", "created_at", "updated_at"],
   inventory: ["id", "external_id", "item_code", "quantity", "metadata_json", "updated_at"],
   receipts: ["receipt_id", "external_id", "hero_id", "pack_id", "cost_gems", "issued_at_ms", "signature", "used", "used_at_ms", "updated_at"],
-  alliances: ["id", "alliance_uid", "realm_id", "name", "tag", "leader_external_id", "member_count", "power", "created_at"]
+  alliances: ["id", "alliance_uid", "realm_id", "name", "tag", "leader_external_id", "member_count", "power", "created_at"],
+  battles: ["id", "realm_id", "attacker_external_id", "defender_external_id", "battle_type", "result", "report_json", "ended_at"]
 };
 
 const pool = new pg.Pool({
