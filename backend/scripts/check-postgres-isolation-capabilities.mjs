@@ -52,7 +52,7 @@ try {
       AND table_name = ANY($1::text[])
       AND table_schema NOT IN ('pg_catalog', 'information_schema')
     ORDER BY table_schema, table_name
-  `, [["app_state", "users", "heroes", "buildings", "inventory", "receipts", "alliances"]]);
+  `, [["app_state", "users", "heroes", "buildings", "inventory", "receipts", "alliances", "battles"]]);
 
   // Report only non-secret capability facts; never emit connection details.
   console.log("PG_ISOLATION_PREFLIGHT: verified TLS; read-only catalog inspection completed.");
