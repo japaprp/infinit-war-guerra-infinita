@@ -324,14 +324,24 @@ export function queryWorldTiles(_user, x, y, radius) {
     };
 }
 
-export function startMarch(_user, _payload) {
+export function startMarch(user, _payload = {}) {
+    ensureV1State(user);
+    user.v1.gameData ||= {};
+    user.v1.gameData.marches ||= [];
+
     const departAtMs = nowMs();
-    const arriveAtMs = departAtMs + 90 * 1000;
-    return {
+    const march = {
         marchId: `march_${crypto.randomUUID()}`,
         departAtMs,
-        arriveAtMs
+        arriveAtMs: departAtMs + 90 * 1000,
+        status: "MARCHING"
     };
+
+    user.v1.gameData.marches.push(march);
+    // Bound the retained history so a long-lived account cannot grow this ledger forever.
+    user.v1.gameData.marches = user.v1.gameData.marches.slice(-100);
+    bumpStateVersion(user);
+    return { marchId: march.marchId, departAtMs: march.departAtMs, arriveAtMs: march.arriveAtMs };
 }
 
 export function createRally(userId, payload) {
