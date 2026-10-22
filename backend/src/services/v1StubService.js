@@ -444,8 +444,6 @@ export function shopPurchase(user, payload) {
     user.inventory ||= {};
     user.inventory[sku] = (user.inventory[sku] || 0) + quantity;
 
-    bumpStateVersion(user);
-
     const result = {
         orderId: `order_${crypto.randomUUID()}`,
         gemsSpent: price,
