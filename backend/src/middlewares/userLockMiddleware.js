@@ -113,8 +113,11 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6, renewInterva
             attachReleaseOnResponse(res, startLockLease({ redisClient, lockKey, owner, ttlSec, renewIntervalMs }));
             return next();
         } catch {
-            // Preserve the existing per-user behavior: this lock is an additional guard.
-            return next();
+            // Do not run a mutation if per-user lock acquisition cannot be confirmed.
+            return res.status(503).json({
+                code: "USER_LOCK_UNAVAILABLE",
+                message: "Não foi possível confirmar o bloqueio deste usuário. Tente novamente."
+            });
         }
     };
 }
