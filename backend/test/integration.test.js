@@ -408,6 +408,52 @@ test("idempotency with Redis persists across server restart", async (t) => {
 });
 
 
+test("concurrent duplicate shop purchases with one idempotency key charge and grant once", async () => {
+    await fs.rm(dbPath, { force: true });
+    const server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_shop_concurrent_idem_1" }
+        });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+
+        const db = await readDb();
+        const user = db.users["guest:it_shop_concurrent_idem_1"];
+        user.economy.gems = 1000;
+        user.v1.resources.gems = 1000;
+        await writeDb(db);
+
+        const idempotencyKey = "it-shop-concurrent-001";
+        const options = {
+            token,
+            headers: { "x-idempotency-key": idempotencyKey },
+            body: { sku: "pack_speedup_5m", quantity: 1, idempotencyKey }
+        };
+        const [first, concurrent] = await Promise.all([
+            api(server.baseUrl, "POST", "/v1/shop/purchase", options),
+            api(server.baseUrl, "POST", "/v1/shop/purchase", options)
+        ]);
+
+        assert.equal([first, concurrent].filter((result) => result.status === 200).length, 1);
+        assert.equal([first, concurrent].filter((result) => result.status === 429).length, 1);
+
+        // The request rejected by the mutation lock must be safe to retry with the same key.
+        const retry = await api(server.baseUrl, "POST", "/v1/shop/purchase", options);
+        assert.equal(retry.status, 200);
+        const successful = first.status === 200 ? first : concurrent;
+        assert.equal(retry.body.orderId, successful.body.orderId);
+        assert.equal(retry.body.gemsSpent, 90);
+
+        const persisted = await readDb();
+        const finalUser = persisted.users["guest:it_shop_concurrent_idem_1"];
+        assert.equal(finalUser.v1.resources.gems, 910);
+        assert.equal(finalUser.inventory.pack_speedup_5m, 1);
+    } finally {
+        await server.stop();
+    }
+});
+
 test("marches persist across backend restart", async () => {
     await fs.rm(dbPath, { force: true });
     let server = await bootServer();
