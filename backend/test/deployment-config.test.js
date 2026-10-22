@@ -136,6 +136,7 @@ test("production configuration accepts a PostgreSQL connection URL", () => {
         RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
         DATA_DRIVER: "postgres",
         DATABASE_URL: "postgresql://game_user:private-password@db.example.test:5432/infinitwar?sslmode=require",
+        POSTGRES_CA_CERT: "-----BEGIN CERTIFICATE-----\\nTEST_CA\\n-----END CERTIFICATE-----",
         CORS_ORIGINS: "https://game.example.test"
     }));
 });
@@ -155,4 +156,30 @@ test("production configuration rejects malformed PostgreSQL connection URLs", ()
             /Invalid production configuration/
         );
     }
+});
+
+test("production PostgreSQL configuration requires an explicit PEM CA", () => {
+    const base = {
+        NODE_ENV: "production",
+        FIREBASE_PROJECT_ID: "infinit-war-test",
+        JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
+        RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
+        DATA_DRIVER: "postgres",
+        DATABASE_URL: "postgresql://game_user:private-password@db.example.test:5432/infinitwar",
+        CORS_ORIGINS: "https://game.example.test"
+    };
+    assert.throws(() => validateRuntimeConfig(base), /POSTGRES_CA_CERT must contain an explicit PEM certificate/);
+    assert.throws(() => validateRuntimeConfig({ ...base, POSTGRES_CA_CERT: "not-a-certificate" }), /POSTGRES_CA_CERT must contain an explicit PEM certificate/);
+    assert.doesNotThrow(() => validateRuntimeConfig({
+        ...base,
+        POSTGRES_CA_CERT: "-----BEGIN CERTIFICATE-----\\nTEST_CA\\n-----END CERTIFICATE-----"
+    }));
+});
+
+test("Render blueprint selects PostgreSQL and does not require legacy MySQL variables", () => {
+    const blueprint = read("render.yaml");
+    assert.match(blueprint, /key: DATA_DRIVER\\s+value: postgres/);
+    assert.match(blueprint, /key: DATABASE_URL\\s+sync: false/);
+    assert.match(blueprint, /key: POSTGRES_CA_CERT\\s+sync: false/);
+    assert.doesNotMatch(blueprint, /key: MYSQL_(?:HOST|PORT|DATABASE|USER|PASSWORD)/);
 });
