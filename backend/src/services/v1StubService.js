@@ -415,22 +415,45 @@ export function getPowerRanking(db, page = 1, pageSize = 50) {
 
 export function shopPurchase(user, payload) {
     ensureV1State(user);
-    const price = 90 * Math.max(1, payload.quantity || 1);
-    if (user.v1.resources.gems < price) {
+    const sku = String(payload.sku || "");
+    const quantity = Math.max(1, Math.floor(Number(payload.quantity) || 1));
+    const idempotencyKey = String(payload.idempotencyKey || "");
+    if (!sku || !idempotencyKey) {
+        return { error: { status: 400, message: "sku and idempotencyKey are required" } };
+    }
+
+    // The durable player ledger is the source of truth when Redis is unavailable,
+    // its cache write fails, or the Node process restarts.
+    user.v1.shop ||= { purchasesByKey: {} };
+    user.v1.shop.purchasesByKey ||= {};
+    const prior = user.v1.shop.purchasesByKey[idempotencyKey];
+    if (prior) {
+        if (prior.sku !== sku || prior.quantity !== quantity) {
+            return { error: { status: 409, message: "Idempotency key reused with different purchase" } };
+        }
+        return structuredClone(prior.result);
+    }
+
+    const price = 90 * quantity;
+    if (user.economy.gems < price) {
         return { error: { status: 409, message: "Insufficient gems" } };
     }
 
-    user.v1.resources.gems -= price;
+    user.economy.gems -= price;
+    user.v1.resources.gems = user.economy.gems;
     user.inventory ||= {};
-    user.inventory[payload.sku] = (user.inventory[payload.sku] || 0) + (payload.quantity || 1);
+    user.inventory[sku] = (user.inventory[sku] || 0) + quantity;
 
     bumpStateVersion(user);
 
-    return {
+    const result = {
         orderId: `order_${crypto.randomUUID()}`,
         gemsSpent: price,
-        grantedItems: [{ itemCode: payload.sku, qty: payload.quantity || 1 }]
+        grantedItems: [{ itemCode: sku, qty: quantity }]
     };
+    user.v1.shop.purchasesByKey[idempotencyKey] = { sku, quantity, result: structuredClone(result) };
+    bumpStateVersion(user);
+    return result;
 }
 
 export function claimBattlePass(user, payload) {
