@@ -454,6 +454,54 @@ test("concurrent duplicate shop purchases with one idempotency key charge and gr
     }
 });
 
+test("shop purchase idempotency survives restart without Redis and persists one grant", async () => {
+    await fs.rm(dbPath, { force: true });
+    let server = await bootServer({ redisEnabled: false });
+    let token;
+    const userId = "guest:it_shop_persisted_idem_1";
+    const idempotencyKey = "it-shop-persisted-001";
+    const options = {
+        token: "",
+        headers: { "x-idempotency-key": idempotencyKey },
+        body: { sku: "pack_speedup_5m", quantity: 1, idempotencyKey }
+    };
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_shop_persisted_idem_1" }
+        });
+        assert.equal(login.status, 200);
+        token = login.body.accessToken;
+        options.token = token;
+
+        const db = await readDb();
+        db.users[userId].economy.gems = 1000;
+        db.users[userId].v1.resources.gems = 1000;
+        await writeDb(db);
+
+        const first = await api(server.baseUrl, "POST", "/v1/shop/purchase", options);
+        assert.equal(first.status, 200);
+        assert.equal(first.body.gemsSpent, 90);
+
+        await server.stop();
+        clearIdempotencyMemoryForTests();
+        server = await bootServer({ redisEnabled: false });
+
+        const retryAfterRestart = await api(server.baseUrl, "POST", "/v1/shop/purchase", options);
+        assert.equal(retryAfterRestart.status, 200);
+        assert.equal(retryAfterRestart.body.orderId, first.body.orderId);
+        assert.deepEqual(retryAfterRestart.body.grantedItems, first.body.grantedItems);
+
+        const persisted = await readDb();
+        const finalUser = persisted.users[userId];
+        assert.equal(finalUser.economy.gems, 910);
+        assert.equal(finalUser.v1.resources.gems, 910);
+        assert.equal(finalUser.inventory.pack_speedup_5m, 1);
+        assert.equal(Object.keys(finalUser.v1.shop.purchasesByKey).length, 1);
+    } finally {
+        await server.stop();
+    }
+});
+
 test("marches persist across backend restart", async () => {
     await fs.rm(dbPath, { force: true });
     let server = await bootServer();
