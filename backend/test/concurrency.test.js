@@ -160,6 +160,25 @@ test("stale lock owner cannot delete a replacement lock after expiry", async () 
   assert.equal(await redisClient.get(key), "new-owner", "release by the stale owner must preserve the new owner's lock");
 });
 
+test("per-user mutation lock fails closed when Redis cannot confirm acquisition", async () => {
+  const redisClient = {
+    async set() { throw new Error("simulated Redis outage"); }
+  };
+  const middleware = createUserLockMiddleware({ redisClient });
+  let nextCalls = 0;
+  const response = mockResponse();
+
+  await middleware(
+    { method: "POST", user: { sub: "guest:user-lock-outage-test" } },
+    response,
+    () => { nextCalls++; }
+  );
+
+  assert.equal(response.statusCode, 503);
+  assert.equal(response.body.code, "USER_LOCK_UNAVAILABLE");
+  assert.equal(nextCalls, 0, "mutation handler must not run without a confirmed per-user lock");
+});
+
 test("shared database write lock fails closed when Redis cannot confirm acquisition", async () => {
   const redisClient = {
     async set() { throw new Error("simulated Redis outage"); }
