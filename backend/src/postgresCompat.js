@@ -256,7 +256,13 @@ function secureConnectionString(connectionString) {
 
 export function createPostgresPool(env) {
   const caPath = env.POSTGRES_CA_CERT_PATH || "/etc/secrets/guerra-infinita-root.crt";
-  const ca = existsSync(caPath) ? readFileSync(caPath, "utf8") : undefined;
+  const envCa = String(env.POSTGRES_CA_CERT || "").replace(/\\n/g, "\n").trim();
+  const fileCa = existsSync(caPath) ? readFileSync(caPath, "utf8").trim() : "";
+  const ca = envCa || fileCa || undefined;
+  if (String(env.NODE_ENV || "").toLowerCase() === "production" &&
+      (!ca || !ca.includes("-----BEGIN CERTIFICATE-----") || !ca.includes("-----END CERTIFICATE-----"))) {
+    throw new Error("Production PostgreSQL requires an explicit PEM CA via POSTGRES_CA_CERT or POSTGRES_CA_CERT_PATH");
+  }
   const pool = new pg.Pool({
     connectionString: secureConnectionString(env.DATABASE_URL),
     ssl: { rejectUnauthorized: true, ...(ca ? { ca } : {}) },
