@@ -197,3 +197,22 @@ test("Render blueprint selects PostgreSQL and does not require legacy MySQL vari
     assert.match(blueprint, /key: POSTGRES_CA_CERT\s+sync: false/);
     assert.doesNotMatch(blueprint, /key: MYSQL_(?:HOST|PORT|DATABASE|USER|PASSWORD)/);
 });
+
+
+test("production configuration rejects local-only mutation locks", () => {
+    assert.throws(
+        () => validateRuntimeConfig({
+            NODE_ENV: "production",
+            REDIS_ENABLED: false,
+            REDIS_URL: "redis://127.0.0.1:6379",
+            FIREBASE_PROJECT_ID: "infinit-war-test",
+            JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
+            RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
+            DATA_DRIVER: "postgres",
+            DATABASE_URL: "postgresql://game_user:private-password@db.example.test:5432/infinitwar",
+            POSTGRES_CA_CERT: "-----BEGIN CERTIFICATE-----\\nTEST_CA\\n-----END CERTIFICATE-----",
+            CORS_ORIGINS: "https://game.example.test"
+        }),
+        /REDIS_ENABLED=true is required in production/
+    );
+});
