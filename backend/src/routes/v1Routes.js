@@ -324,7 +324,7 @@ export function createV1Routes(env, runtime = {}) {
         const user = db.users[req.user.sub];
         if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
 
-        const result = shopPurchase(user, { sku, quantity: Number(quantity || 1) });
+        const result = shopPurchase(user, { sku, quantity: Number(quantity || 1), idempotencyKey });
         if (asError(res, result)) return;
 
         await writeDb(db);
