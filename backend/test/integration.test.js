@@ -406,3 +406,47 @@ test("idempotency with Redis persists across server restart", async (t) => {
         await server.stop();
     }
 });
+
+
+test("marches persist across backend restart", async () => {
+    await fs.rm(dbPath, { force: true });
+    let server = await bootServer();
+    let token;
+    let marchId;
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_march_persistence_1" }
+        });
+        assert.equal(login.status, 200);
+        token = login.body.accessToken;
+
+        const started = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            body: { target: "synthetic-test-target" }
+        });
+        assert.equal(started.status, 200);
+        assert.ok(started.body.marchId);
+        assert.ok(started.body.arriveAtMs > started.body.departAtMs);
+        marchId = started.body.marchId;
+
+        const stored = await readDb();
+        assert.equal(
+            stored.users["guest:it_march_persistence_1"].v1.gameData.marches.at(-1).marchId,
+            marchId
+        );
+    } finally {
+        await server.stop();
+    }
+
+    server = await bootServer();
+    try {
+        const recovered = await api(server.baseUrl, "GET", "/v1/player/me", { token });
+        assert.equal(recovered.status, 200);
+        const storedAfterRestart = await readDb();
+        const marches = storedAfterRestart.users["guest:it_march_persistence_1"].v1.gameData.marches;
+        assert.ok(marches.some((march) => march.marchId === marchId));
+        assert.equal(marches.filter((march) => march.marchId === marchId).length, 1);
+    } finally {
+        await server.stop();
+    }
+});
