@@ -506,6 +506,51 @@ test("shop purchase idempotency survives restart without Redis and persists one 
     }
 });
 
+test("shop purchase rejects changed payload or mismatched header key without another charge", async () => {
+    await fs.rm(dbPath, { force: true });
+    const server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_shop_key_reuse_1" }
+        });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+        const userId = "guest:it_shop_key_reuse_1";
+        const db = await readDb();
+        db.users[userId].economy.gems = 1000;
+        db.users[userId].v1.resources.gems = 1000;
+        await writeDb(db);
+
+        const key = "it-shop-key-reuse-001";
+        const headers = { "x-idempotency-key": key };
+        const first = await api(server.baseUrl, "POST", "/v1/shop/purchase", {
+            token, headers, body: { sku: "pack_speedup_5m", quantity: 1, idempotencyKey: key }
+        });
+        assert.equal(first.status, 200);
+
+        const changedPayload = await api(server.baseUrl, "POST", "/v1/shop/purchase", {
+            token, headers, body: { sku: "pack_speedup_5m", quantity: 2, idempotencyKey: key }
+        });
+        assert.equal(changedPayload.status, 409);
+        assert.equal(changedPayload.body.code, "IDEMPOTENCY_KEY_REUSED");
+
+        const mismatchedHeader = await api(server.baseUrl, "POST", "/v1/shop/purchase", {
+            token,
+            headers: { "x-idempotency-key": "header-key-does-not-match" },
+            body: { sku: "pack_speedup_5m", quantity: 1, idempotencyKey: key }
+        });
+        assert.equal(mismatchedHeader.status, 400);
+        assert.equal(mismatchedHeader.body.code, "IDEMPOTENCY_KEY_MISMATCH");
+
+        const persisted = await readDb();
+        assert.equal(persisted.users[userId].economy.gems, 910);
+        assert.equal(persisted.users[userId].inventory.pack_speedup_5m, 1);
+        assert.equal(Object.keys(persisted.users[userId].v1.shop.purchasesByKey).length, 1);
+    } finally {
+        await server.stop();
+    }
+});
+
 test("marches persist across backend restart", async () => {
     await fs.rm(dbPath, { force: true });
     let server = await bootServer();
