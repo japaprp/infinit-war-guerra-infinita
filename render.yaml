@@ -16,6 +16,10 @@ services:
         sync: false
       - key: POSTGRES_CA_CERT
         sync: false
+      - key: REDIS_ENABLED
+        value: "true"
+      - key: REDIS_URL
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: RECEIPT_SECRET
