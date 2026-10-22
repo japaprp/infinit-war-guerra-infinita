@@ -42,7 +42,7 @@ jobs:
         run: node --check scripts/check-postgres-connection.mjs
         working-directory: backend
       - name: Run PostgreSQL connection-check unit tests
-        run: node --test test/postgres-connection-check.test.js
+        run: node --test test/deployment-config.test.js test/postgres-compat.test.js test/postgres-connection-check.test.js
         working-directory: backend
       - name: Run read-only PostgreSQL connection check
         run: node scripts/check-postgres-connection.mjs
