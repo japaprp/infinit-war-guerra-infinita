@@ -63,6 +63,8 @@ test("production configuration rejects unsafe defaults and ephemeral JSON storag
     assert.throws(
         () => validateRuntimeConfig({
             NODE_ENV: "production",
+            REDIS_ENABLED: true,
+            REDIS_URL: "redis://redis.example.test:6379",
             FIREBASE_PROJECT_ID: "infinit-war-test",
             JWT_SECRET: "unsafe_dev_secret",
             RECEIPT_SECRET: "unsafe_receipt_secret",
@@ -76,6 +78,8 @@ test("production configuration rejects unsafe defaults and ephemeral JSON storag
 test("production configuration accepts explicit secrets, MySQL, and exact origins", () => {
     assert.doesNotThrow(() => validateRuntimeConfig({
         NODE_ENV: "production",
+            REDIS_ENABLED: true,
+            REDIS_URL: "redis://redis.example.test:6379",
             FIREBASE_PROJECT_ID: "infinit-war-test",
         JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
         RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
@@ -93,6 +97,8 @@ test("production configuration rejects origins containing paths", () => {
     assert.throws(
         () => validateRuntimeConfig({
             NODE_ENV: "production",
+            REDIS_ENABLED: true,
+            REDIS_URL: "redis://redis.example.test:6379",
             FIREBASE_PROJECT_ID: "infinit-war-test",
             JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
             RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
@@ -112,6 +118,8 @@ test("production configuration rejects an invalid MySQL port", () => {
     assert.throws(
         () => validateRuntimeConfig({
             NODE_ENV: "production",
+            REDIS_ENABLED: true,
+            REDIS_URL: "redis://redis.example.test:6379",
             FIREBASE_PROJECT_ID: "infinit-war-test",
             JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
             RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
@@ -131,6 +139,8 @@ test("production configuration rejects an invalid MySQL port", () => {
 test("production configuration accepts a PostgreSQL connection URL", () => {
     assert.doesNotThrow(() => validateRuntimeConfig({
         NODE_ENV: "production",
+            REDIS_ENABLED: true,
+            REDIS_URL: "redis://redis.example.test:6379",
         FIREBASE_PROJECT_ID: "infinit-war-test",
         JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
         RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
@@ -146,6 +156,8 @@ test("production configuration rejects malformed PostgreSQL connection URLs", ()
         assert.throws(
             () => validateRuntimeConfig({
                 NODE_ENV: "production",
+            REDIS_ENABLED: true,
+            REDIS_URL: "redis://redis.example.test:6379",
                 FIREBASE_PROJECT_ID: "infinit-war-test",
                 JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
                 RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
@@ -161,6 +173,8 @@ test("production configuration rejects malformed PostgreSQL connection URLs", ()
 test("production PostgreSQL configuration requires an explicit PEM CA", () => {
     const base = {
         NODE_ENV: "production",
+            REDIS_ENABLED: true,
+            REDIS_URL: "redis://redis.example.test:6379",
         FIREBASE_PROJECT_ID: "infinit-war-test",
         JWT_SECRET: "jwt-secret-that-is-long-enough-12345",
         RECEIPT_SECRET: "receipt-secret-that-is-long-enough-123",
