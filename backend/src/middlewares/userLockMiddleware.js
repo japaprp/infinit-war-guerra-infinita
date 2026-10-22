@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { markWriteLeaseLost, runWithWriteLease } from "./writeLeaseContext.js";
 
 const memoryLocks = new Map();
 
@@ -36,19 +37,21 @@ const RENEW_IF_OWNER = `
     return 0
 `;
 
-function startLockLease({ redisClient, lockKey, owner, ttlSec, renewIntervalMs }) {
+function startLockLease({ redisClient, lockKey, owner, ttlSec, renewIntervalMs, leaseState }) {
     const renew = async () => {
         if (redisClient) {
-            await redisClient.eval(RENEW_IF_OWNER, 1, lockKey, owner, String(ttlSec));
-        } else {
-            renewMemoryLock(lockKey, owner, ttlSec);
+            const renewed = await redisClient.eval(RENEW_IF_OWNER, 1, lockKey, owner, String(ttlSec));
+            if (Number(renewed) !== 1) {
+                markWriteLeaseLost(leaseState, "Redis no longer confirms lock ownership");
+            }
+        } else if (!renewMemoryLock(lockKey, owner, ttlSec)) {
+            markWriteLeaseLost(leaseState, "in-memory lock ownership was lost");
         }
     };
 
     const interval = setInterval(() => {
         renew().catch(() => {
-            // Keep the lease fail-closed: do not delete a lock we can no longer verify.
-            // If Redis is unavailable, its TTL remains the final recovery mechanism.
+            markWriteLeaseLost(leaseState, "lock renewal failed");
         });
     }, renewIntervalMs ?? Math.max(250, Math.floor((ttlSec * 1000) / 3)));
     interval.unref?.();
@@ -110,8 +113,9 @@ export function createUserLockMiddleware({ redisClient, ttlSec = 6, renewInterva
                 return res.status(429).json({ code: "LOCKED", message: "Operacao em andamento para este usuario. Tente novamente." });
             }
 
-            attachReleaseOnResponse(res, startLockLease({ redisClient, lockKey, owner, ttlSec, renewIntervalMs }));
-            return next();
+            const leaseState = { lost: false, lockKey };
+            attachReleaseOnResponse(res, startLockLease({ redisClient, lockKey, owner, ttlSec, renewIntervalMs, leaseState }));
+            return runWithWriteLease(leaseState, next);
         } catch {
             // Do not run a mutation if per-user lock acquisition cannot be confirmed.
             return res.status(503).json({
@@ -144,8 +148,9 @@ export function createStateWriteLockMiddleware({ redisClient, ttlSec = 30, renew
                 });
             }
 
-            attachReleaseOnResponse(res, startLockLease({ redisClient, lockKey, owner, ttlSec, renewIntervalMs }));
-            return next();
+            const leaseState = { lost: false, lockKey };
+            attachReleaseOnResponse(res, startLockLease({ redisClient, lockKey, owner, ttlSec, renewIntervalMs, leaseState }));
+            return runWithWriteLease(leaseState, next);
         } catch {
             // Fail closed for mutating requests; without a confirmed lock, don't write.
             return res.status(503).json({
