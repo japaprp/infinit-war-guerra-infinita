@@ -121,6 +121,26 @@
     </div>
 </section>
 
+
+<section class="convoy-dock" aria-label="Frota de expedição">
+  <div class="convoy-heading"><strong>FROTA DE EXPEDIÇÃO</strong><span>3 VIATURAS + 1 VIP</span></div>
+  <div class="convoy-grid" id="convoyGrid">
+    <button class="convoy-card" type="button" data-vehicle="alpha" aria-pressed="false"><span class="vehicle-art"><i></i></span><span class="convoy-meta"><b>ALFA</b><small data-vehicle-count="alpha">0/5 heróis</small><em>PADRÃO</em></span></button>
+    <button class="convoy-card" type="button" data-vehicle="bravo" aria-pressed="false"><span class="vehicle-art"><i></i></span><span class="convoy-meta"><b>BRAVO</b><small data-vehicle-count="bravo">0/5 heróis</small><em>PADRÃO</em></span></button>
+    <button class="convoy-card" type="button" data-vehicle="charlie" aria-pressed="false"><span class="vehicle-art"><i></i></span><span class="convoy-meta"><b>CHARLIE</b><small data-vehicle-count="charlie">0/5 heróis</small><em>PADRÃO</em></span></button>
+    <button class="convoy-card convoy-vip" type="button" data-vehicle="vip" aria-pressed="false"><span class="vehicle-art"><i></i></span><span class="convoy-meta"><b>VIP · FORTALEZA</b><small data-vehicle-count="vip">0/5 heróis</small><em>VIP</em></span></button>
+  </div>
+  <div class="vehicle-formation-head"><strong id="activeVehicleTitle">ESQUADRÃO ALFA</strong><span id="activeVehicleStatus">PRONTA PARA PARTIR · 60s</span></div>
+  <div class="vehicle-formation-slots" id="vehicleFormationSlots" aria-live="polite"></div>
+  <button class="vehicle-expedition-btn" id="vehicleExpeditionBtn" type="button">Enviar expedição</button>
+</section>
+<section class="city-chat" aria-label="Comunicador da aliança">
+  <div class="city-chat-title"><span>COMUNICADOR</span><b>ALIANÇA</b></div>
+  <p><strong>Comando:</strong> Sobreviventes, reforcem as defesas da base.</p>
+  <p><strong>Rádio:</strong> Expedição pronta para partir.</p>
+</section>
+<div class="city-clock"><span>☾</span><b id="cityClock">21:54</b><small>NOITE · SETOR SEGURO</small></div>
+
 <nav class="bottom-nav">
     <button class="nav-btn" id="toggleHeroes">Heroi</button>
     <button class="nav-btn center">Construir</button>
@@ -157,6 +177,7 @@
     <div class="hero-tabs" id="heroTabs"></div>
     <article class="hero-tab-content" id="heroTabContent"></article>
 
+    <p class="roster-assignment-hint">Use “Veículo” para escalar no esquadrão selecionado ou “Usar” para o esquadrão principal.</p>
     <div class="hero-roster" id="heroRoster"></div>
 </section>
 
@@ -176,5 +197,24 @@
 <script src="api/config.js"></script>
 <script src="api/client.js"></script>
 <script src="engine/game.js"></script>
+<script>
+document.querySelectorAll("[data-vehicle]").forEach((card) => {
+  card.addEventListener("click", () => {
+    document.querySelectorAll("[data-vehicle]").forEach((item) => item.classList.remove("selected"));
+    card.classList.add("selected");
+    const vehicle = card.dataset.vehicle;
+    const message = vehicle === "vip" ? "Fortaleza VIP selecionada. Atribuição dos 5 heróis será conectada na próxima etapa." : "Viatura " + vehicle + " selecionada. Atribuição dos 5 heróis será conectada na próxima etapa.";
+    const feed = document.getElementById("systemFeed");
+    if (feed) {
+      const item = document.createElement("div");
+      item.className = "feed-item";
+      item.textContent = message;
+      feed.appendChild(item);
+      window.setTimeout(() => item.remove(), 3500);
+    }
+  });
+});
+</script>
+
 </body>
 </html>

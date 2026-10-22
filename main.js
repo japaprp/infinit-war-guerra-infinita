@@ -17,27 +17,34 @@
         if (legacy) localStorage.setItem(AUTH_SESSION_KEY, legacy);
     }
 
+    const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
     startButton?.addEventListener("click", () => {
         const email = (emailInput?.value || "").trim().toLowerCase();
-        if (!emailInput || !emailInput.checkValidity() || !email) {
-            emailInput?.setCustomValidity("Digite um e-mail válido.");
+
+        // Validate explicitly instead of relying on WebView's native type=email UI.
+        // This accepts common domains such as outlook.com, gmail.com and hotmail.com.
+        if (!emailInput || !isValidEmail(email)) {
+            emailInput?.setCustomValidity("Digite um e-mail válido, como voce@outlook.com.");
             emailInput?.reportValidity();
             emailInput?.focus();
+            setMessage("Confira o e-mail digitado. O acesso de teste funciona offline neste dispositivo.");
             return;
         }
         emailInput.setCustomValidity("");
 
         const nick = (nicknameInput?.value || "").trim();
+        // Digits are valid in commander names (e.g. 121212).
         const safeNick = nick.replace(/[^a-zA-Z0-9_\- À-ÿ]/g, "").slice(0, 16);
         const fallbackNick = email.split("@")[0].replace(/[^a-zA-Z0-9_\- À-ÿ]/g, "").slice(0, 16);
         const finalNick = safeNick || fallbackNick || "Comandante";
 
-        // Prototype-only access: this stores an email locally, it does not authenticate ownership.
+        // Prototype-only offline access. This is a local test session, not verified authentication.
         const session = {
             uid: "guest-" + email,
             email,
             displayName: finalNick,
-            provider: "email-local",
+            provider: "guest-local",
             linkedAt: Date.now(),
             localOnly: true
         };
@@ -48,6 +55,6 @@
     });
 
     googleButton?.addEventListener("click", () => {
-        setMessage("O login Google ainda precisa ser configurado no Firebase. O botão ficará funcional depois dessa configuração.");
+        setMessage("O login Google ainda depende da configuração do Firebase. Use CONFIRMAR E ENTRAR para testar offline.");
     });
 })();

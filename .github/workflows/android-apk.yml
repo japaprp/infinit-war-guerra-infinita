@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/integrate-hero-recruit-asset
+      - fix/entry-email-validation-offline-scene
     paths:
       - '.github/workflows/android-apk.yml'
       - 'capacitor.config.json'

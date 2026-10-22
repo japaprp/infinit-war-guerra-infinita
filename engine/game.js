@@ -152,7 +152,12 @@ const ui = {
     sliceCompleteBuildBtn: document.getElementById("sliceCompleteBuildBtn"),
     sliceFightPveBtn: document.getElementById("sliceFightPveBtn"),
     sliceUpgradeHeroBtn: document.getElementById("sliceUpgradeHeroBtn"),
-    sliceClaimRewardBtn: document.getElementById("sliceClaimRewardBtn")
+    sliceClaimRewardBtn: document.getElementById("sliceClaimRewardBtn"),
+    convoyGrid: document.getElementById("convoyGrid"),
+    activeVehicleTitle: document.getElementById("activeVehicleTitle"),
+    vehicleFormationSlots: document.getElementById("vehicleFormationSlots"),
+    activeVehicleStatus: document.getElementById("activeVehicleStatus"),
+    vehicleExpeditionBtn: document.getElementById("vehicleExpeditionBtn")
 };
 
 const heroDetail = {
@@ -167,15 +172,28 @@ const player = new Player(1200, 1000, selectedElement.color, nick || "Jogador");
 const PLAYER_BASE_SPEED = player.speed;
 const minimapCtx = ui.minimapCanvas ? ui.minimapCanvas.getContext("2d") : null;
 
-const villageBuildings = [
-    { x: 920, y: 820, w: 120, h: 90, roof: "#8f4d39", body: "#6f5a4e", level: 30 },
-    { x: 1090, y: 840, w: 130, h: 92, roof: "#96533e", body: "#7a6354", level: 30 },
-    { x: 1280, y: 860, w: 125, h: 86, roof: "#8a4634", body: "#6a5546", level: 29 },
-    { x: 1020, y: 1020, w: 110, h: 82, roof: "#7f3f32", body: "#624d41", level: 28 },
-    { x: 1180, y: 1030, w: 140, h: 108, roof: "#9b5c44", body: "#6f5e54", level: 30 },
-    { x: 1370, y: 1050, w: 115, h: 84, roof: "#844335", body: "#655246", level: 30 },
-    { x: 1140, y: 1220, w: 180, h: 150, roof: "#b4684a", body: "#745d51", level: 30 }
-];
+const villageBuildings = (() => {
+    const buildings = [];
+    const roofs = ["#8f4d39", "#96533e", "#844335", "#a35d43", "#7f3f32"];
+    const bodies = ["#6f5a4e", "#7a6354", "#6a5546", "#745d51"];
+    // Six staggered residential blocks create a denser settlement around HQ.
+    for (let row = 0; row < 6; row += 1) {
+        for (let col = 0; col < 6; col += 1) {
+            if ((row === 2 || row === 3) && (col === 2 || col === 3)) continue;
+            const x = 700 + col * 175 + (row % 2) * 24;
+            const y = 650 + row * 142;
+            buildings.push({
+                x, y,
+                w: 92 + ((row + col) % 3) * 10,
+                h: 66 + ((row * 2 + col) % 3) * 8,
+                roof: roofs[(row + col) % roofs.length],
+                body: bodies[(row * 2 + col) % bodies.length],
+                level: 8 + ((row * 7 + col * 3) % 23)
+            });
+        }
+    }
+    return buildings;
+})();
 
 const resourceKinds = {
     gold: {
@@ -252,6 +270,19 @@ function createDefaultState() {
         selectedHeroId: "lucas",
         activeHeroTab: "atributos",
         activeSquadSlot: 0,
+        selectedVehicleId: "alpha",
+        vehicleSquads: {
+            alpha: ["lucas", "kai", "megan", null, null],
+            bravo: [null, null, null, null, null],
+            charlie: [null, null, null, null, null],
+            vip: [null, null, null, null, null]
+        },
+        expeditions: {
+            alpha: { status: "idle", startedAt: 0, endAt: 0, rewards: null },
+            bravo: { status: "idle", startedAt: 0, endAt: 0, rewards: null },
+            charlie: { status: "idle", startedAt: 0, endAt: 0, rewards: null },
+            vip: { status: "idle", startedAt: 0, endAt: 0, rewards: null }
+        },
         totalPuzzles: 0,
         nextUnlockAt: PUZZLES_PER_HERO,
         squad: ["lucas", "kai", "megan", null, null],
@@ -306,6 +337,20 @@ function loadState() {
         merged.verticalSlice = { ...fallback.verticalSlice, ...(parsed.verticalSlice || {}) };
         merged.heroes = { ...fallback.heroes, ...(parsed.heroes || {}) };
         merged.squad = Array.isArray(parsed.squad) ? parsed.squad.slice(0, 5) : fallback.squad;
+        const validVehicleIds = ["alpha", "bravo", "charlie", "vip"];
+        merged.selectedVehicleId = validVehicleIds.includes(parsed.selectedVehicleId) ? parsed.selectedVehicleId : fallback.selectedVehicleId;
+        merged.vehicleSquads = { ...fallback.vehicleSquads, ...(parsed.vehicleSquads || {}) };
+        merged.expeditions = { ...fallback.expeditions, ...(parsed.expeditions || {}) };
+        validVehicleIds.forEach((vehicleId) => {
+            const expedition = merged.expeditions[vehicleId];
+            merged.expeditions[vehicleId] = expedition && ["idle", "away", "ready"].includes(expedition.status)
+                ? { status: expedition.status, startedAt: Number(expedition.startedAt) || 0, endAt: Number(expedition.endAt) || 0, rewards: expedition.rewards && typeof expedition.rewards === "object" ? expedition.rewards : null }
+                : { ...fallback.expeditions[vehicleId] };
+            const savedSlots = merged.vehicleSquads[vehicleId];
+            merged.vehicleSquads[vehicleId] = Array.isArray(savedSlots)
+                ? Array.from({ length: 5 }, (_, index) => savedSlots[index] || null)
+                : fallback.vehicleSquads[vehicleId].slice();
+        });
         merged.buildQueue = Array.isArray(parsed.buildQueue) ? parsed.buildQueue.slice(0, 2) : fallback.buildQueue;
 
         heroTemplates.forEach((template) => {
@@ -1296,6 +1341,126 @@ function renderSquad() {
         .join("");
 }
 
+const EXPEDITION_DURATION_MS = 60 * 1000;
+
+function getVehicleLabel(vehicleId) {
+    return ({ alpha: "ALFA", bravo: "BRAVO", charlie: "CHARLIE", vip: "VIP · FORTALEZA" })[vehicleId] || "ALFA";
+}
+
+function getExpeditionRewards(vehicleId) {
+    const count = state.vehicleSquads[vehicleId].filter(Boolean).length;
+    return { gold: 2500 + count * 500, silver: 1800 + count * 300, wood: 1400 + count * 250, food: 30 + count * 10 };
+}
+
+function startVehicleExpedition(vehicleId) {
+    const expedition = state.expeditions[vehicleId];
+    if (!expedition || expedition.status !== "idle") return;
+    const heroCount = state.vehicleSquads[vehicleId].filter(Boolean).length;
+    if (heroCount === 0) {
+        pushFeed("Escalone pelo menos um herói na viatura " + getVehicleLabel(vehicleId) + " antes de partir.");
+        return;
+    }
+    const now = Date.now();
+    state.expeditions[vehicleId] = { status: "away", startedAt: now, endAt: now + EXPEDITION_DURATION_MS, rewards: getExpeditionRewards(vehicleId) };
+    pushFeed("Viatura " + getVehicleLabel(vehicleId) + " partiu para uma expedição de 60 segundos com " + heroCount + " herói(s).");
+    renderAll();
+    saveState();
+}
+
+function claimVehicleExpedition(vehicleId) {
+    const expedition = state.expeditions[vehicleId];
+    if (!expedition || expedition.status !== "ready") return;
+    const rewards = expedition.rewards || { gold: 0, silver: 0, wood: 0, food: 0 };
+    Object.keys(rewards).forEach((resource) => {
+        if (Object.prototype.hasOwnProperty.call(state.resources, resource)) state.resources[resource] += Math.max(0, Number(rewards[resource]) || 0);
+    });
+    state.expeditions[vehicleId] = { status: "idle", startedAt: 0, endAt: 0, rewards: null };
+    pushFeed("Expedição " + getVehicleLabel(vehicleId) + " resgatada: +" + formatCompact(rewards.gold) + " ouro, +" + formatCompact(rewards.silver) + " prata, +" + formatCompact(rewards.wood) + " madeira e +" + rewards.food + " alimento.");
+    renderAll();
+    saveState();
+}
+
+function refreshExpeditionStates() {
+    const now = Date.now();
+    let changed = false;
+    Object.keys(state.expeditions).forEach((vehicleId) => {
+        const expedition = state.expeditions[vehicleId];
+        if (expedition.status === "away" && expedition.endAt > 0 && now >= expedition.endAt) {
+            expedition.status = "ready";
+            changed = true;
+            pushFeed("Expedição " + getVehicleLabel(vehicleId) + " concluída. A recompensa está pronta para resgate.");
+        }
+    });
+    if (changed) saveState();
+}
+
+function assignHeroToVehicle(heroId) {
+    const heroState = state.heroes[heroId];
+    if (!heroState || !heroState.unlocked) return;
+    const vehicleId = state.selectedVehicleId;
+    if (state.expeditions[vehicleId].status !== "idle") {
+        pushFeed("A formação fica bloqueada enquanto a expedição estiver em andamento ou aguardando resgate.");
+        return;
+    }
+    const alreadyAssigned = Object.keys(state.vehicleSquads).some((otherVehicleId) => otherVehicleId !== vehicleId && state.vehicleSquads[otherVehicleId].includes(heroId));
+    if (alreadyAssigned) {
+        pushFeed(getHeroTemplate(heroId).name + " já está escalado em outra viatura.");
+        return;
+    }
+    const slots = state.vehicleSquads[vehicleId];
+    if (slots.includes(heroId)) {
+        pushFeed(getHeroTemplate(heroId).name + " já está escalado na viatura " + getVehicleLabel(vehicleId) + ".");
+        return;
+    }
+    const emptyIndex = slots.findIndex((slot) => !slot);
+    if (emptyIndex < 0) {
+        pushFeed("A viatura " + getVehicleLabel(vehicleId) + " está com as cinco vagas ocupadas. Remova um herói antes de escalar outro.");
+        return;
+    }
+    slots[emptyIndex] = heroId;
+    state.selectedHeroId = heroId;
+    pushFeed(getHeroTemplate(heroId).name + " escalado na viatura " + getVehicleLabel(vehicleId) + " · vaga " + (emptyIndex + 1) + ".");
+    renderAll();
+    saveState();
+}
+
+function renderConvoyFleet() {
+    ui.convoyGrid.querySelectorAll("[data-vehicle]").forEach((card) => {
+        const vehicleId = card.dataset.vehicle;
+        const selected = vehicleId === state.selectedVehicleId;
+        card.classList.toggle("selected", selected);
+        card.setAttribute("aria-pressed", String(selected));
+        const count = state.vehicleSquads[vehicleId].filter(Boolean).length;
+        const countLabel = card.querySelector("[data-vehicle-count]");
+        if (countLabel) countLabel.textContent = count + "/5 heróis";
+    });
+    const vehicleId = state.selectedVehicleId;
+    const expedition = state.expeditions[vehicleId];
+    const locked = expedition.status !== "idle";
+    ui.activeVehicleTitle.textContent = "ESQUADRÃO " + getVehicleLabel(vehicleId);
+    if (expedition.status === "away") {
+        ui.activeVehicleStatus.textContent = "EM MISSÃO · " + formatTimer(expedition.endAt - Date.now());
+        ui.vehicleExpeditionBtn.textContent = "Em expedição";
+        ui.vehicleExpeditionBtn.disabled = true;
+    } else if (expedition.status === "ready") {
+        ui.activeVehicleStatus.textContent = "RECOMPENSA DISPONÍVEL";
+        ui.vehicleExpeditionBtn.textContent = "Resgatar recompensa";
+        ui.vehicleExpeditionBtn.disabled = false;
+    } else {
+        ui.activeVehicleStatus.textContent = "PRONTA PARA PARTIR · 60s";
+        ui.vehicleExpeditionBtn.textContent = "Enviar expedição";
+        ui.vehicleExpeditionBtn.disabled = false;
+    }
+    ui.vehicleExpeditionBtn.dataset.vehicleId = vehicleId;
+    ui.vehicleFormationSlots.innerHTML = state.vehicleSquads[vehicleId]
+        .map((heroId, index) => {
+            if (!heroId) return '<div class="vehicle-hero-slot empty"><span class="slot-name">Vaga ' + (index + 1) + ' · livre</span></div>';
+            const hero = getHeroTemplate(heroId);
+            const removeControl = locked ? "" : '<button type="button" data-remove-vehicle-hero="' + index + '" aria-label="Remover ' + hero.name + ' da viatura">×</button>';
+            return '<div class="vehicle-hero-slot"><span class="slot-name" title="' + hero.name + '">' + (index + 1) + '. ' + hero.name + '</span>' + removeControl + '</div>';
+        }).join("");
+}
+
 function renderRoster() {
     ui.heroRoster.innerHTML = heroTemplates
         .map((hero) => {
@@ -1306,7 +1471,9 @@ function renderRoster() {
             const lockClass = heroState.unlocked ? "" : "locked";
             const tierClass = `tier-${hero.tier}`;
             const unlockText = heroState.unlocked ? `Poder ${formatCompact(runtimeHero.power)}` : `Bloqueado`;
-            const assignButton = heroState.unlocked ? `<button class="assign-btn" data-action="assign-hero" data-hero-id="${hero.id}">Usar</button>` : `<button class="assign-btn" disabled>Bloqueado</button>`;
+            const assignButton = heroState.unlocked
+                ? `<button class="assign-btn" data-action="assign-hero" data-hero-id="${hero.id}">Usar</button><button class="assign-vehicle-btn" data-action="assign-vehicle-hero" data-hero-id="${hero.id}">Veículo</button>`
+                : `<button class="assign-btn" disabled>Bloqueado</button><button class="assign-vehicle-btn" disabled>Bloqueado</button>`;
             const portrait = hero.portrait
                 ? `<img class="hero-card-portrait" src="${hero.portrait}" alt="Retrato de ${hero.name}" onerror="this.remove();">`
                 : hero.icon;
@@ -1410,10 +1577,12 @@ function renderTimers() {
 }
 
 function renderAll() {
+    refreshExpeditionStates();
     renderResources();
     renderMission();
     renderTimers();
     renderSquad();
+    renderConvoyFleet();
     renderRoster();
     renderHeroTabs();
     updateHeroDetail();
@@ -1423,7 +1592,6 @@ function renderAll() {
     updateQuickHealButton();
     updateInteractionHint();
     renderAutomationButtons();
-    renderVerticalSlicePanel();
 }
 
 async function pullStateFromBackend() {
@@ -1447,6 +1615,8 @@ async function pullStateFromBackend() {
         state.totalPuzzles = Number.isFinite(remote.state.totalPuzzles) ? remote.state.totalPuzzles : state.totalPuzzles;
         state.nextUnlockAt = Number.isFinite(remote.state.nextUnlockAt) ? remote.state.nextUnlockAt : state.nextUnlockAt;
         state.squad = Array.isArray(remote.state.squad) ? remote.state.squad.slice(0, 5) : state.squad;
+        state.vehicleSquads = { ...state.vehicleSquads, ...(remote.state.vehicleSquads || {}) };
+        state.expeditions = { ...state.expeditions, ...(remote.state.expeditions || {}) };
         state.mission = { ...state.mission, ...(remote.state.mission || {}) };
         state.events = { ...state.events, ...(remote.state.events || {}) };
         state.buildings = { ...state.buildings, ...(remote.state.buildings || {}) };
@@ -1467,7 +1637,39 @@ async function pullStateFromBackend() {
 }
 
 function bindUiActions() {
+    ui.vehicleExpeditionBtn.addEventListener("click", () => {
+        const vehicleId = ui.vehicleExpeditionBtn.dataset.vehicleId;
+        if (state.expeditions[vehicleId].status === "ready") claimVehicleExpedition(vehicleId);
+        else startVehicleExpedition(vehicleId);
+    });
+
+    ui.convoyGrid.addEventListener("click", (event) => {
+        const card = event.target.closest("[data-vehicle]");
+        if (!card) return;
+        state.selectedVehicleId = card.dataset.vehicle;
+        renderConvoyFleet();
+        renderRoster();
+        saveState();
+    });
+
+    ui.vehicleFormationSlots.addEventListener("click", (event) => {
+        const removeButton = event.target.closest("[data-remove-vehicle-hero]");
+        if (!removeButton) return;
+        const slotIndex = Number(removeButton.dataset.removeVehicleHero);
+        const heroId = state.vehicleSquads[state.selectedVehicleId][slotIndex];
+        if (!heroId || state.expeditions[state.selectedVehicleId].status !== "idle") return;
+        state.vehicleSquads[state.selectedVehicleId][slotIndex] = null;
+        pushFeed(getHeroTemplate(heroId).name + " removido da viatura " + getVehicleLabel(state.selectedVehicleId) + ".");
+        renderAll();
+        saveState();
+    });
+
     ui.heroRoster.addEventListener("click", (event) => {
+        const vehicleButton = event.target.closest("[data-action='assign-vehicle-hero']");
+        if (vehicleButton) {
+            assignHeroToVehicle(vehicleButton.dataset.heroId);
+            return;
+        }
         const assignButton = event.target.closest("[data-action='assign-hero']");
         if (assignButton) {
             assignHeroToSquad(assignButton.dataset.heroId);
@@ -1706,6 +1908,92 @@ function drawBuilding(building) {
     ctx.fillText(`Lv.${building.level}`, x + 8, y + building.h + 18);
 }
 
+
+function drawCommandTower() {
+    const x = 1200 - camera.x;
+    const y = 1030 - camera.y;
+    const glow = ctx.createRadialGradient(x + 72, y + 40, 8, x + 72, y + 40, 190);
+    glow.addColorStop(0, "#f4c76c88");
+    glow.addColorStop(1, "#f4c76c00");
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 120, y - 120, 390, 350);
+    ctx.fillStyle = "#252d2a";
+    ctx.fillRect(x + 25, y + 42, 96, 130);
+    ctx.fillStyle = "#6b6b59";
+    ctx.fillRect(x + 8, y + 32, 130, 20);
+    ctx.fillStyle = "#c5a467";
+    ctx.beginPath();
+    ctx.moveTo(x + 72, y - 36);
+    ctx.lineTo(x + 5, y + 32);
+    ctx.lineTo(x + 139, y + 32);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#ffe5a0";
+    ctx.fillRect(x + 63, y + 65, 18, 38);
+    ctx.fillStyle = "#e6a34d";
+    ctx.beginPath();
+    ctx.moveTo(x + 72, y - 64);
+    ctx.bezierCurveTo(x + 38, y - 20, x + 68, y - 14, x + 72, y + 2);
+    ctx.bezierCurveTo(x + 94, y - 20, x + 93, y - 39, x + 72, y - 64);
+    ctx.fill();
+    ctx.fillStyle = "#f7d77c";
+    ctx.beginPath(); ctx.arc(x + 72, y + 8, 13, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#f7e6bd";
+    ctx.font = "bold 12px Arial";
+    ctx.fillText("QG CENTRAL · Lv.30", x - 1, y + 194);
+}
+function drawDiner() {
+    const x = 1570 - camera.x;
+    const y = 1000 - camera.y;
+    ctx.fillStyle = "#18201e";
+    ctx.fillRect(x, y + 24, 148, 90);
+    ctx.fillStyle = "#c75d48";
+    ctx.fillRect(x - 8, y + 14, 164, 18);
+    ctx.fillStyle = "#ffcb83";
+    ctx.fillRect(x + 14, y + 44, 34, 25);
+    ctx.fillRect(x + 62, y + 44, 34, 25);
+    ctx.fillRect(x + 110, y + 44, 24, 25);
+    ctx.fillStyle = "#f3b85c";
+    ctx.font = "bold 14px Arial";
+    ctx.fillText("DINER", x + 43, y + 8);
+    ctx.shadowColor = "#f4ad58";
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = "#ffbd64";
+    ctx.fillRect(x + 15, y + 3, 118, 3);
+    ctx.shadowBlur = 0;
+}
+function drawConvoyVehicles() {
+    const vehicles = [
+        { x: 920, y: 1460, color: "#3b6671" },
+        { x: 1080, y: 1505, color: "#416e7b" },
+        { x: 1260, y: 1460, color: "#3b6671" },
+        { x: 1450, y: 1505, color: "#b79a57" }
+    ];
+    vehicles.forEach((v, i) => {
+        const x = v.x - camera.x, y = v.y - camera.y;
+        ctx.fillStyle = "#111715";
+        ctx.fillRect(x - 6, y + 5, 116, 50);
+        ctx.fillStyle = v.color;
+        ctx.fillRect(x, y, 104, 42);
+        ctx.fillStyle = "#1a292b";
+        ctx.fillRect(x + 18, y - 10, 58, 20);
+        ctx.fillStyle = "#b9c7c0";
+        ctx.fillRect(x + 24, y - 7, 18, 12);
+        ctx.fillRect(x + 48, y - 7, 20, 12);
+        ctx.fillStyle = "#e8d6a4";
+        ctx.fillRect(x + 90, y + 9, 8, 8);
+        [x + 20, x + 82].forEach(wx => {
+            ctx.fillStyle = "#111313";
+            ctx.beginPath(); ctx.arc(wx, y + 43, 12, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = "#a9aca0"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(wx, y + 43, 6, 0, Math.PI * 2); ctx.stroke();
+        });
+        ctx.fillStyle = "#f1e7c9";
+        ctx.font = "bold 10px Arial";
+        ctx.fillText(i === 3 ? "VIP" : ["ALFA", "BRAVO", "CHARLIE"][i], x + 25, y + 29);
+    });
+}
+
 function drawTrees() {
     for (let i = 0; i < 120; i += 1) {
         const tx = (i * 271) % world.width;
@@ -1731,6 +2019,9 @@ function drawVillage() {
     drawRoads();
     drawTrees();
     villageBuildings.forEach(drawBuilding);
+    drawCommandTower();
+    drawDiner();
+    drawConvoyVehicles();
     runtime.resourceNodes.forEach(drawResourceNode);
     runtime.monsters.forEach(drawMonster);
 }
@@ -1809,8 +2100,11 @@ window.addEventListener("keyup", (event) => {
 });
 
 setInterval(() => {
+    refreshExpeditionStates();
+    renderConvoyFleet();
     renderTimers();
-    renderVerticalSlicePanel();
+    const clock = document.getElementById("cityClock");
+    if (clock) clock.textContent = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }, 1000);
 
 function gameLoop(currentTime) {
@@ -1856,7 +2150,7 @@ async function bootstrapGame() {
     await waitFrame();
 
     resizeCanvas();
-    setMinimapVisible(true);
+    setMinimapVisible(false);
     renderAll();
     setLoadingProgress(80, "Montando interface de combate...");
 
