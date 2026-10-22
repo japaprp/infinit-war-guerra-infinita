@@ -104,6 +104,27 @@ try {
   }
   console.log("PG_REPOSITORY_CONCURRENCY_OK: two simultaneous synthetic snapshots completed and both users are present.");
 
+  // Increase contention using only synthetic snapshots in the temporary schema.
+  const stressCases = Array.from({ length: 8 }, (_, index) => ({
+    id: "ci:stress:" + index + ":" + randomUUID(),
+    gems: 300 + index
+  }));
+  const stressResults = await Promise.allSettled(
+    stressCases.map(({ id, gems }) => writeDb(makeDb(id, gems, { stress: true })))
+  );
+  const rejectedStressWrites = stressResults.filter(result => result.status === "rejected");
+  if (rejectedStressWrites.length) {
+    throw new Error("concurrent stress writes rejected: " + rejectedStressWrites.length);
+  }
+  const stressRead = await readDb();
+  const missingStressUsers = stressCases.filter(({ id, gems }) =>
+    !stressRead.users?.[id] || stressRead.users[id]?.economy?.gems !== gems
+  );
+  if (missingStressUsers.length) {
+    throw new Error("concurrent stress verification missing or inconsistent synthetic users: " + missingStressUsers.length);
+  }
+  console.log("PG_REPOSITORY_STRESS_OK: eight concurrent synthetic snapshots persisted and verified.");
+
   // Recreate the repository pool to prove data survives a fresh application connection pool.
   await closeRepository();
   await initializeRepository({
