@@ -56,10 +56,14 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
                     body
                 };
 
-                if (redisClient) {
-                    redisClient.set(key, JSON.stringify(payload), "EX", ttlSec).catch(() => {});
-                } else {
-                    setInMemory(key, payload, ttlSec);
+                // Cache only successful outcomes. Transient responses such as a lock
+                // conflict (429) must not poison retries using the same idempotency key.
+                if (payload.status >= 200 && payload.status < 300) {
+                    if (redisClient) {
+                        redisClient.set(key, JSON.stringify(payload), "EX", ttlSec).catch(() => {});
+                    } else {
+                        setInMemory(key, payload, ttlSec);
+                    }
                 }
 
                 return originalJson(body);
