@@ -14,6 +14,9 @@ on:
       - "backend/src/config/env.js"
       - "backend/src/postgresCompat.js"
       - "backend/test/deployment-config.test.js"
+      - "backend/test/repository-postgres.test.js"
+      - "backend/test/concurrency.test.js"
+      - "backend/src/middlewares/userLockMiddleware.js"
       - "render.yaml"
   workflow_dispatch:
 
@@ -42,7 +45,7 @@ jobs:
         run: node --check scripts/check-postgres-connection.mjs
         working-directory: backend
       - name: Run PostgreSQL connection-check unit tests
-        run: node --test test/deployment-config.test.js test/postgres-compat.test.js test/postgres-connection-check.test.js
+        run: node --test test/deployment-config.test.js test/postgres-compat.test.js test/postgres-connection-check.test.js test/repository-postgres.test.js test/concurrency.test.js
         working-directory: backend
       - name: Run read-only PostgreSQL connection check
         run: node scripts/check-postgres-connection.mjs
