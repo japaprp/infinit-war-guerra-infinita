@@ -1,4 +1,16 @@
-﻿const memoryEntries = new Map();
+const memoryEntries = new Map();
+
+function canonicalize(value) {
+    if (Array.isArray(value)) return value.map(canonicalize);
+    if (value && typeof value === "object") {
+        return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]));
+    }
+    return value;
+}
+
+function requestFingerprint(req) {
+    return JSON.stringify(canonicalize(req.body ?? null));
+}
 
 // Test hook to emulate a fresh Node.js process between integration-test server boots.
 export function clearIdempotencyMemoryForTests() {
@@ -35,6 +47,7 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
 
         const userKey = req.user?.sub || req.ip || "anonymous";
         const key = `idemp:${userKey}:${req.method}:${req.path}:${idempotencyKey}`;
+        const fingerprint = requestFingerprint(req);
 
         try {
             let cached = null;
@@ -46,6 +59,12 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
             }
 
             if (cached) {
+                if (cached.requestFingerprint !== fingerprint) {
+                    return res.status(409).json({
+                        code: "IDEMPOTENCY_KEY_REUSED",
+                        message: "Esta chave de idempotência já foi usada com dados diferentes."
+                    });
+                }
                 return res.status(cached.status).json(cached.body);
             }
 
@@ -53,7 +72,8 @@ export function createIdempotencyMiddleware({ redisClient, ttlSec = 300 } = {}) 
             res.json = (body) => {
                 const payload = {
                     status: res.statusCode || 200,
-                    body
+                    body,
+                    requestFingerprint: fingerprint
                 };
 
                 // Cache only successful outcomes. Transient responses such as a lock
