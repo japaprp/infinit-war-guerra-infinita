@@ -11,9 +11,11 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATA_DRIVER
-        value: mysql
-      - key: MYSQL_SSL
-        value: "true"
+        value: postgres
+      - key: DATABASE_URL
+        sync: false
+      - key: POSTGRES_CA_CERT
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: RECEIPT_SECRET
@@ -21,14 +23,4 @@ services:
       - key: FIREBASE_PROJECT_ID
         sync: false
       - key: CORS_ORIGINS
-        sync: false
-      - key: MYSQL_HOST
-        sync: false
-      - key: MYSQL_PORT
-        sync: false
-      - key: MYSQL_DATABASE
-        sync: false
-      - key: MYSQL_USER
-        sync: false
-      - key: MYSQL_PASSWORD
         sync: false
