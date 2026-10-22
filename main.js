@@ -1,19 +1,10 @@
-﻿(() => {
+(() => {
+    // TEST ONLY: bypass account gating so the local gameplay can be evaluated.
+    // Do not merge this branch into production; restore Firebase gating afterwards.
     let selectedElement = "fire";
-    const AUTH_SESSION_KEY = "iwar_auth_session";
-    const LEGACY_AUTH_SESSION_KEY = "gde_auth_session";
-
     const nicknameInput = document.getElementById("nickname");
     const elementButtons = Array.from(document.querySelectorAll(".element-btn"));
     const startButton = document.getElementById("startGameBtn");
-
-    const migrateLegacySession = () => {
-        if (localStorage.getItem(AUTH_SESSION_KEY)) return;
-        const legacy = localStorage.getItem(LEGACY_AUTH_SESSION_KEY);
-        if (legacy) localStorage.setItem(AUTH_SESSION_KEY, legacy);
-    };
-
-    migrateLegacySession();
 
     const updateElementSelection = (element) => {
         selectedElement = element;
@@ -31,36 +22,16 @@
 
     startButton.addEventListener("click", () => {
         const nick = nicknameInput.value.trim();
-        let authSession = null;
-
-        try {
-            const raw = localStorage.getItem(AUTH_SESSION_KEY);
-            authSession = raw ? JSON.parse(raw) : null;
-        } catch {
-            authSession = null;
-        }
-
         if (!nick) {
             alert("Digite um nickname antes de entrar na arena.");
             nicknameInput.focus();
             return;
         }
 
-        if (!authSession || !authSession.uid) {
-            alert("Entre com sua conta Google, Facebook ou e-mail antes de entrar.");
-            return;
-        }
-
-        if (authSession.provider === "password" && authSession.emailVerified !== true) {
-            alert("Confirme seu endereço de e-mail antes de entrar na arena.");
-            return;
-        }
-
         const safeNick = nick.replace(/[^a-zA-Z0-9_\- ]/g, "").slice(0, 16);
-
         localStorage.setItem("playerNick", safeNick || "Jogador");
         localStorage.setItem("playerElement", selectedElement);
-
+        // This bypass is deliberately limited to this isolated test branch.
         window.location.href = "game.html";
     });
 })();
