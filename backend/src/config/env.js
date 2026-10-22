@@ -41,6 +41,14 @@ export function validateRuntimeConfig(config) {
         problems.push("JWT_SECRET and RECEIPT_SECRET must be different values");
     }
 
+    // Snapshot writes are global; production must use a shared lock store across instances.
+    if (String(config.REDIS_ENABLED).toLowerCase() !== "true") {
+        problems.push("REDIS_ENABLED=true is required in production for shared mutation locks");
+    }
+    if (!String(config.REDIS_URL || "").trim()) {
+        problems.push("REDIS_URL is required in production for shared mutation locks");
+    }
+
     const driver = String(config.DATA_DRIVER || "").toLowerCase();
     if (!["mysql", "postgres"].includes(driver)) problems.push("DATA_DRIVER must be mysql or postgres for persistent hosted gameplay");
     if (driver === "mysql") {
