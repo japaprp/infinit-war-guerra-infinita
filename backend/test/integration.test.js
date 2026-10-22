@@ -90,6 +90,21 @@ test.after(async () => {
     await fs.rm(tmpDir, { recursive: true, force: true });
 });
 
+test("protected v1 routes reject missing and invalid bearer tokens", async () => {
+    const server = await bootServer();
+    try {
+        const missing = await api(server.baseUrl, "GET", "/v1/player/me");
+        assert.equal(missing.status, 401);
+        assert.equal(missing.body.error, "Missing bearer token");
+
+        const invalid = await api(server.baseUrl, "GET", "/v1/player/me", { token: "not-a-valid-session-token" });
+        assert.equal(invalid.status, 401);
+        assert.equal(invalid.body.error, "Invalid token");
+    } finally {
+        await server.stop();
+    }
+});
+
 test("v1 endpoints: heroes and buildings flow", async () => {
     await fs.rm(dbPath, { force: true });
 
