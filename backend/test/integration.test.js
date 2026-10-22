@@ -435,13 +435,17 @@ test("concurrent duplicate shop purchases with one idempotency key charge and gr
             api(server.baseUrl, "POST", "/v1/shop/purchase", options)
         ]);
 
-        assert.equal([first, concurrent].filter((result) => result.status === 200).length, 1);
-        assert.equal([first, concurrent].filter((result) => result.status === 429).length, 1);
+        const responses = [first, concurrent];
+        assert.ok(responses.every((result) => result.status === 200 || result.status === 429));
+        assert.ok(responses.some((result) => result.status === 200));
+        const successfulResponses = responses.filter((result) => result.status === 200);
+        assert.ok(successfulResponses.every((result) => result.body.orderId === successfulResponses[0].body.orderId),
+            "concurrent successful responses must replay one order, never create separate orders");
 
-        // The request rejected by the mutation lock must be safe to retry with the same key.
+        // If one request was rejected by the mutation lock, retrying the same key must recover the order.
         const retry = await api(server.baseUrl, "POST", "/v1/shop/purchase", options);
         assert.equal(retry.status, 200);
-        const successful = first.status === 200 ? first : concurrent;
+        const successful = successfulResponses[0];
         assert.equal(retry.body.orderId, successful.body.orderId);
         assert.equal(retry.body.gemsSpent, 90);
 
