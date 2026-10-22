@@ -104,6 +104,23 @@ try {
   }
   console.log("PG_REPOSITORY_CONCURRENCY_OK: two simultaneous synthetic snapshots completed and both users are present.");
 
+  // Recreate the repository pool to prove data survives a fresh application connection pool.
+  await closeRepository();
+  await initializeRepository({
+    NODE_ENV: "production",
+    DATA_DRIVER: "postgres",
+    DATABASE_URL: runtimeUrl.toString(),
+    POSTGRES_CA_CERT: ca
+  });
+  const afterPoolRestart = await readDb();
+  if (!afterPoolRestart.users?.[firstId] ||
+      afterPoolRestart.users[firstId]?.economy?.gems !== 777 ||
+      !afterPoolRestart.users?.[idA] ||
+      !afterPoolRestart.users?.[idB]) {
+    throw new Error("fresh-pool recovery/persistence assertion failed");
+  }
+  console.log("PG_REPOSITORY_POOL_RECOVERY_OK: synthetic records remained readable after closing and recreating the repository pool.");
+
   console.log("PG_REPOSITORY_INTEGRATION_OK: all writes were scoped to an isolated temporary schema; public game tables were not targeted.");
 } catch (error) {
   const code = String(error?.code || "UNKNOWN").replace(/[^A-Za-z0-9_]/g, "").slice(0, 32);
