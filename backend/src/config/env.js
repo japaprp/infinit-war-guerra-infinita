@@ -16,6 +16,7 @@ export const env = {
     MYSQL_PASSWORD: process.env.MYSQL_PASSWORD || "",
     MYSQL_SSL: String(process.env.MYSQL_SSL || "false").toLowerCase() === "true",
     DATABASE_URL: process.env.DATABASE_URL || "",
+    POSTGRES_CA_CERT: process.env.POSTGRES_CA_CERT || "",
     CORS_ORIGINS: process.env.CORS_ORIGINS || "",
     FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || "",
     REDIS_ENABLED: String(process.env.REDIS_ENABLED || "false").toLowerCase() === "true",
@@ -54,6 +55,11 @@ export function validateRuntimeConfig(config) {
                 !databaseUrl.username ||
                 databaseUrl.pathname.length < 2) {
                 problems.push("DATABASE_URL must include a PostgreSQL scheme, username, host, and database name");
+            }
+            const caCertificate = String(config.POSTGRES_CA_CERT || "").replace(/\\n/g, "\n").trim();
+            if (!caCertificate.includes("-----BEGIN CERTIFICATE-----") ||
+                !caCertificate.includes("-----END CERTIFICATE-----")) {
+                problems.push("POSTGRES_CA_CERT must contain an explicit PEM certificate for verified PostgreSQL TLS");
             }
         } catch {
             problems.push("DATABASE_URL must be a valid PostgreSQL connection URL when DATA_DRIVER=postgres");
