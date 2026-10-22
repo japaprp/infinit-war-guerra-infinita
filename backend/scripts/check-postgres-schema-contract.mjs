@@ -49,11 +49,46 @@ try {
     const present = actual.get(table) || new Set();
     for (const column of columns) if (!present.has(column)) missing.push(table + "." + column);
   }
-  if (missing.length) {
-    console.error("PG_SCHEMA_CONTRACT_FAILED: required public schema columns are missing: " + missing.join(", "));
+
+  // These unique keys are required by the repository's explicit ON CONFLICT targets.
+  const uniqueContracts = [
+    ["app_state", ["id"]],
+    ["users", ["external_id"]],
+    ["heroes", ["user_id", "hero_code"]],
+    ["buildings", ["user_id", "slot_code"]],
+    ["inventory", ["external_id", "item_code"]],
+    ["receipts", ["receipt_id"]],
+    ["alliances", ["alliance_uid"]]
+  ];
+  const { rows: indexRows } = await pool.query(`
+    SELECT table_name, array_agg(column_name ORDER BY ordinal_position) AS columns
+    FROM (
+      SELECT t.relname AS table_name, a.attname AS column_name, k.ordinality AS ordinal_position,
+             i.indexrelid, i.indnkeyatts
+      FROM pg_index i
+      JOIN pg_class t ON t.oid = i.indrelid
+      JOIN pg_namespace n ON n.oid = t.relnamespace
+      CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY AS k(attnum, ordinality)
+      JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = k.attnum
+      WHERE n.nspname = 'public'
+        AND t.relname = ANY($1::text[])
+        AND i.indisunique
+        AND k.ordinality <= i.indnkeyatts
+    ) unique_keys
+    GROUP BY table_name, indexrelid
+  `, [Object.keys(required)]);
+  const uniqueKeys = new Set(indexRows.map(row => row.table_name + ":" + row.columns.join(",")));
+  const missingUnique = uniqueContracts
+    .filter(([table, columns]) => !uniqueKeys.has(table + ":" + columns.join(",")))
+    .map(([table, columns]) => table + "(" + columns.join(",") + ")");
+
+  if (missing.length || missingUnique.length) {
+    if (missing.length) console.error("PG_SCHEMA_CONTRACT_MISSING_COLUMNS: " + missing.join(", "));
+    if (missingUnique.length) console.error("PG_SCHEMA_CONTRACT_MISSING_UNIQUE_KEYS: " + missingUnique.join(", "));
+    console.error("PG_SCHEMA_CONTRACT_FAILED: repository schema contract is incomplete; no data or schema was changed.");
     process.exitCode = 1;
   } else {
-    console.log("PG_SCHEMA_CONTRACT_OK: all required repository columns exist in public schema; catalog-only read, no data or schema changed.");
+    console.log("PG_SCHEMA_CONTRACT_OK: required columns and ON CONFLICT unique keys exist in public schema; catalog-only read, no data or schema changed.");
   }
 } catch (error) {
   const code = String(error?.code || "UNKNOWN").replace(/[^A-Za-z0-9_]/g, "").slice(0, 32);
