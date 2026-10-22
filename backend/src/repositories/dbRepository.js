@@ -1,4 +1,5 @@
 import fs from "fs";
+import { assertWriteLeasesValid } from "../middlewares/writeLeaseContext.js";
 import path from "path";
 import mysql from "mysql2/promise";
 import { createPostgresPool } from "../postgresCompat.js";
@@ -884,10 +885,11 @@ export async function readDb() {
     }
 }
 
-export async function runSnapshotTransaction(connection, writeOperations) {
+export async function runSnapshotTransaction(connection, writeOperations, validateWriteLease = assertWriteLeasesValid) {
     await connection.beginTransaction();
     try {
         await writeOperations();
+        validateWriteLease();
         await connection.commit();
     } catch (error) {
         try { await connection.rollback(); } catch { /* preserve the original error */ }
@@ -897,8 +899,10 @@ export async function runSnapshotTransaction(connection, writeOperations) {
 
 export async function writeDb(db) {
     const normalized = normalizeDbShape(db);
+    assertWriteLeasesValid();
 
     if (!["mysql", "postgres"].includes(mode) || !dbPool) {
+        assertWriteLeasesValid();
         writeDbToFile(normalized);
         return;
     }
@@ -909,8 +913,9 @@ export async function writeDb(db) {
         await runSnapshotTransaction(connection, async () => {
             await syncNormalizedTables(normalized, connection);
             await writeDbToMySqlAppState(normalized, connection);
-        });
+        }, assertWriteLeasesValid);
     } catch (error) {
+        if (error?.code === "WRITE_LEASE_LOST") throw error;
         if (strictPersistentMode) throw new Error(`Production database write failed; refusing JSON fallback: ${error.message}`);
         console.warn(`[repo] Erro ao gravar banco SQL (${error.message}). Gravando em JSON local.`);
         mode = "json";
