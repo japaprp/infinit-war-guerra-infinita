@@ -319,6 +319,13 @@ export function createV1Routes(env, runtime = {}) {
         if (!sku || !idempotencyKey) {
             return res.status(400).json({ code: "BAD_REQUEST", message: "sku and idempotencyKey are required" });
         }
+        const headerIdempotencyKey = req.headers["x-idempotency-key"];
+        if (headerIdempotencyKey && headerIdempotencyKey !== idempotencyKey) {
+            return res.status(400).json({
+                code: "IDEMPOTENCY_KEY_MISMATCH",
+                message: "O cabeçalho e o corpo devem usar a mesma chave de idempotência."
+            });
+        }
 
         const db = await readDb();
         const user = db.users[req.user.sub];
