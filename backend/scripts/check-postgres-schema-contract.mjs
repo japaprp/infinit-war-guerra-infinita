@@ -74,7 +74,7 @@ try {
   );
   const uniqueKeys = new Set();
   for (const row of indexRows) {
-    const match = row.indexdef.match(/\\bUSING\\s+\\w+\\s*\\(([^)]+)\\)/i);
+    const match = row.indexdef.match(/\bUSING\s+\w+\s*\(([^)]+)\)/i);
     if (!match) continue;
     const columns = match[1].split(",").map(column => column.trim().replace(/"/g, ""));
     uniqueKeys.add(row.table_name + ":" + columns.join(","));
