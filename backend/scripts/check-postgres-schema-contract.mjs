@@ -60,24 +60,25 @@ try {
     ["receipts", ["receipt_id"]],
     ["alliances", ["alliance_uid"]]
   ];
-  const { rows: indexRows } = await pool.query(`
-    SELECT table_name, array_agg(column_name ORDER BY ordinal_position) AS columns
-    FROM (
-      SELECT t.relname AS table_name, a.attname AS column_name, k.ordinality AS ordinal_position,
-             i.indexrelid, i.indnkeyatts
-      FROM pg_index i
-      JOIN pg_class t ON t.oid = i.indrelid
-      JOIN pg_namespace n ON n.oid = t.relnamespace
-      CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY AS k(attnum, ordinality)
-      JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = k.attnum
-      WHERE n.nspname = 'public'
-        AND t.relname = ANY($1::text[])
-        AND i.indisunique
-        AND k.ordinality <= i.indnkeyatts
-    ) unique_keys
-    GROUP BY table_name, indexrelid
-  `, [Object.keys(required)]);
-  const uniqueKeys = new Set(indexRows.map(row => row.table_name + ":" + row.columns.join(",")));
+  const { rows: indexRows } = await pool.query(
+    `SELECT t.relname AS table_name, pg_get_indexdef(i.indexrelid) AS indexdef
+     FROM pg_index i
+     JOIN pg_class t ON t.oid = i.indrelid
+     JOIN pg_namespace n ON n.oid = t.relnamespace
+     WHERE n.nspname = 'public'
+       AND t.relname = ANY($1::text[])
+       AND i.indisunique
+       AND i.indisvalid
+       AND i.indpred IS NULL`,
+    [Object.keys(required)]
+  );
+  const uniqueKeys = new Set();
+  for (const row of indexRows) {
+    const match = row.indexdef.match(/\\bUSING\\s+\\w+\\s*\\(([^)]+)\\)/i);
+    if (!match) continue;
+    const columns = match[1].split(",").map(column => column.trim().replace(/"/g, ""));
+    uniqueKeys.add(row.table_name + ":" + columns.join(","));
+  }
   const missingUnique = uniqueContracts
     .filter(([table, columns]) => !uniqueKeys.has(table + ":" + columns.join(",")))
     .map(([table, columns]) => table + "(" + columns.join(",") + ")");
