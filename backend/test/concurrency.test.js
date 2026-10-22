@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createStateWriteLockMiddleware, createUserLockMiddleware } from "../src/middlewares/userLockMiddleware.js";
+import { assertWriteLeasesValid } from "../src/middlewares/writeLeaseContext.js";
 
 function mockResponse() {
   const listeners = new Map();
@@ -142,6 +143,32 @@ test("shared database write lock remains held across lease renewal after the ori
   assert.equal(retryResponse.statusCode, 200);
   assert.equal(nextCalls, 2);
   retryResponse.finish();
+});
+
+test("lost Redis lease blocks persistence inside the active request context", async () => {
+  const redisClient = new FakeRedis();
+  const middleware = createStateWriteLockMiddleware({ redisClient, ttlSec: 1, renewIntervalMs: 5 });
+  const response = mockResponse();
+  let checkLease;
+  await middleware({ method: "POST" }, response, () => {
+    checkLease = new Promise((resolve) => {
+      setTimeout(() => {
+        try {
+          assertWriteLeasesValid();
+          resolve(null);
+        } catch (error) {
+          resolve(error);
+        }
+      }, 20);
+    });
+  });
+
+  redisClient.forceSet("lock:database:write", "replacement-owner", 30);
+  const error = await checkLease;
+  assert.equal(error?.code, "WRITE_LEASE_LOST");
+  response.json({ ok: false });
+  await flush();
+  assert.equal(await redisClient.get("lock:database:write"), "replacement-owner");
 });
 
 test("stale lock owner cannot delete a replacement lock after expiry", async () => {
