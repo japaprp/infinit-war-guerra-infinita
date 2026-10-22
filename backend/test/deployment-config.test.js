@@ -195,6 +195,8 @@ test("Render blueprint selects PostgreSQL and does not require legacy MySQL vari
     assert.match(blueprint, /key: DATA_DRIVER\s+value: postgres/);
     assert.match(blueprint, /key: DATABASE_URL\s+sync: false/);
     assert.match(blueprint, /key: POSTGRES_CA_CERT\s+sync: false/);
+    assert.match(blueprint, /key: REDIS_ENABLED\s+value: "true"/);
+    assert.match(blueprint, /key: REDIS_URL\s+sync: false/);
     assert.doesNotMatch(blueprint, /key: MYSQL_(?:HOST|PORT|DATABASE|USER|PASSWORD)/);
 });
 
