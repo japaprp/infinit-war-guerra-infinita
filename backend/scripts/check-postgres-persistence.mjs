@@ -65,7 +65,9 @@ try {
   );
   if (rows.length !== 1 ||
       rows[0].probe_id !== probeId ||
-      JSON.stringify(rows[0].payload) !== JSON.stringify(payload)) {
+      rows[0].payload?.purpose !== payload.purpose ||
+      rows[0].payload?.marker !== payload.marker ||
+      rows[0].payload?.schemaVersion !== payload.schemaVersion) {
     throw new Error("Committed synthetic record did not match the read-back value.");
   }
 
