@@ -56,6 +56,31 @@ test("idempotency does not cache transient non-2xx responses", async () => {
     assert.equal(retryResponse.body, undefined, "retry must reach the handler, not replay the transient error");
 });
 
+test("idempotency rejects the same key when the request payload changes", async () => {
+    const redisClient = makeRedis();
+    const middleware = createIdempotencyMiddleware({ redisClient });
+    const req = {
+        method: "POST",
+        headers: { "x-idempotency-key": "same-key-different-payload" },
+        user: { sub: "synthetic-user" },
+        path: "/v1/shop/purchase",
+        body: { sku: "pack_speedup_5m", quantity: 1 }
+    };
+    const firstResponse = makeResponse(200);
+    await middleware(req, firstResponse, () => {});
+    firstResponse.json({ orderId: "synthetic-order-1" });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    req.body = { sku: "pack_speedup_5m", quantity: 2 };
+    const retryResponse = makeResponse();
+    let nextCalled = false;
+    await middleware(req, retryResponse, () => { nextCalled = true; });
+
+    assert.equal(nextCalled, false, "changed payload must not reach the purchase handler");
+    assert.equal(retryResponse.statusCode, 409);
+    assert.equal(retryResponse.body.code, "IDEMPOTENCY_KEY_REUSED");
+});
+
 test("idempotency still caches successful responses", async () => {
     const redisClient = makeRedis();
     const middleware = createIdempotencyMiddleware({ redisClient });
