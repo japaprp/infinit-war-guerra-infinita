@@ -303,6 +303,7 @@ function buildUserFromRow(row) {
             buildings: [],
             alliances: v1Meta?.alliances && typeof v1Meta.alliances === "object" ? v1Meta.alliances : defaults.alliances,
             pass: v1Meta?.pass && typeof v1Meta.pass === "object" ? v1Meta.pass : defaults.pass,
+            shop: v1Meta?.shop && typeof v1Meta.shop === "object" ? v1Meta.shop : { purchasesByKey: {} },
             gameData: v1Meta?.gameData && typeof v1Meta.gameData === "object" ? v1Meta.gameData : {}
         }
     };
@@ -679,6 +680,8 @@ async function syncNormalizedTables(db, providedConnection = null) {
                     },
                     alliances: user?.v1?.alliances || { allianceId: "", name: "", tag: "" },
                     pass: user?.v1?.pass || { seasonId: "season_1", claimed: {} },
+                    // Purchase idempotency receipts must survive normalized PostgreSQL reads and process restarts.
+                    shop: user?.v1?.shop || { purchasesByKey: {} },
                     // Keep authoritative game-specific state (chests, vehicle presets,
                     // hunts, and per-player battle history) across normalized SQL reads.
                     gameData: user?.v1?.gameData || {}
