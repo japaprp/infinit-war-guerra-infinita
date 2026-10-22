@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { getRepositoryMode, initializeRepository, runSnapshotTransaction } from "../src/repositories/dbRepository.js";
+import { runWithWriteLease } from "../src/middlewares/writeLeaseContext.js";
 
 test("production PostgreSQL initialization refuses invalid URLs instead of falling back to JSON", async () => {
   await assert.rejects(
@@ -61,5 +62,27 @@ test("snapshot transaction rolls back normalized writes if app_state write fails
   );
 
   assert.deepEqual(events, ["begin", "normalized:done", "app_state:failed", "rollback"]);
+  assert.equal(events.includes("commit"), false);
+});
+
+
+test("snapshot transaction rolls back if the write lease is lost before commit", async () => {
+  const events = [];
+  const leaseState = { lost: false, lockKey: "synthetic-write-lock" };
+  const connection = {
+    async beginTransaction() { events.push("begin"); },
+    async commit() { events.push("commit"); },
+    async rollback() { events.push("rollback"); }
+  };
+
+  await assert.rejects(
+    runWithWriteLease(leaseState, () => runSnapshotTransaction(connection, async () => {
+      events.push("normalized:write");
+      leaseState.lost = true;
+    })),
+    (error) => error.code === "WRITE_LEASE_LOST"
+  );
+
+  assert.deepEqual(events, ["begin", "normalized:write", "rollback"]);
   assert.equal(events.includes("commit"), false);
 });
