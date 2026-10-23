@@ -48,6 +48,15 @@ function makeDb(externalId, gems, gameData = {}) {
           buildings: [{ buildingId: "b_ci", buildingType: "hq", slotCode: "ci_slot", level: 2, state: "IDLE", endAtMs: 0, taskId: "" }],
           alliances: { allianceId: "", name: "", tag: "" },
           pass: { seasonId: "ci", claimed: {} },
+          shop: {
+            purchasesByKey: {
+              "ci-purchase-key": {
+                sku: "ci_synthetic_pack",
+                quantity: 1,
+                result: { orderId: "ci-order-1", costGems: 90, gemsRemaining: gems - 90 }
+              }
+            }
+          },
           gameData
         }
       },
@@ -76,10 +85,12 @@ try {
       roundTrip.users?.[firstId]?.inventory?.test_item !== 7 ||
       roundTrip.users?.[firstId]?.v1?.heroes?.[0]?.heroId !== "ci_hero" ||
       roundTrip.users?.[firstId]?.v1?.buildings?.[0]?.slotCode !== "ci_slot" ||
-      roundTrip.users?.[firstId]?.v1?.gameData?.probe !== "round-trip") {
+      roundTrip.users?.[firstId]?.v1?.gameData?.probe !== "round-trip" ||
+      roundTrip.users?.[firstId]?.v1?.shop?.purchasesByKey?.["ci-purchase-key"]?.result?.orderId !== "ci-order-1" ||
+      roundTrip.users?.[firstId]?.v1?.shop?.purchasesByKey?.["ci-purchase-key"]?.quantity !== 1) {
     throw new Error("round-trip assertion failed");
   }
-  console.log("PG_REPOSITORY_ROUNDTRIP_OK: synthetic user, economy, inventory, hero, building and app_state data round-tripped.");
+  console.log("PG_REPOSITORY_ROUNDTRIP_OK: synthetic user, economy, inventory, hero, building, shop idempotency ledger and app_state data round-tripped.");
 
   const rollbackId = "ci:rollback:" + randomUUID();
   const invalidDb = makeDb(rollbackId, 888);
