@@ -23,15 +23,16 @@
       <p class="entry-description">Reúna sobreviventes, reconstrua seu abrigo e prepare seu esquadrão.</p>
       <section class="entry-login" aria-label="Acesso à conta">
         <p id="authStatus" class="entry-auth-status" aria-live="polite">Conta: verificando configuração…</p>
-        <label class="entry-label" for="authEmail">E-MAIL</label>
-        <input type="email" id="authEmail" placeholder="voce@exemplo.com" autocomplete="email" inputmode="email" required>
-        <label class="entry-label" for="authPassword">SENHA</label>
-        <input type="password" id="authPassword" placeholder="Mínimo de 6 caracteres" autocomplete="current-password" minlength="6" required>
-        <div class="entry-email-actions">
-          <button type="submit" form="emailAuthForm" id="emailLoginBtn" class="entry-primary-btn">ENTRAR COM E-MAIL <span>➜</span></button>
-          <button type="button" id="emailRegisterBtn" class="entry-secondary-btn">CRIAR CONTA</button>
-        </div>
-        <form id="emailAuthForm" class="entry-form-proxy" aria-hidden="true"></form>
+        <form id="emailAuthForm" class="entry-auth-form">
+          <label class="entry-label" for="authEmail">E-MAIL</label>
+          <input type="email" id="authEmail" placeholder="voce@exemplo.com" autocomplete="email" inputmode="email" required>
+          <label class="entry-label" for="authPassword">SENHA</label>
+          <input type="password" id="authPassword" placeholder="Mínimo de 6 caracteres" autocomplete="current-password" minlength="6" required>
+          <div class="entry-email-actions">
+            <button type="submit" id="emailLoginBtn" class="entry-primary-btn">ENTRAR COM E-MAIL <span>➜</span></button>
+            <button type="button" id="emailRegisterBtn" class="entry-secondary-btn">CRIAR CONTA</button>
+          </div>
+        </form>
         <div class="entry-divider"><span>OU ENTRE COM</span></div>
         <div class="entry-provider-actions">
           <button type="button" id="googleLoginBtn" class="entry-provider-btn"><span class="google-mark">G</span> GOOGLE</button>
