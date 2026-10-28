@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Guerra Infinita</string>
+    <string name="title_activity_main">Guerra Infinita</string>
+    <string name="package_name">com.infinitwar.guerrainfinita</string>
+    <string name="custom_url_scheme">com.infinitwar.guerrainfinita</string>
+</resources>
