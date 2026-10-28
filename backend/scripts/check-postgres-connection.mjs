@@ -48,7 +48,7 @@ try {
     }
 
     // Exercise a real PostgreSQL transaction without writing to persistent
-    // game tables. ON COMMIT DROP removes the temporary table automatically.
+    // game tables. ON COMMIT PRESERVE ROWS removes the temporary table automatically.
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
@@ -67,17 +67,20 @@ try {
             "UPDATE iwar_connection_probe SET revision = revision + 1 WHERE id = $1 AND revision = $2 RETURNING id",
             [1, 1]
         );
-        const probe = await client.query(
-            "SELECT revision, payload->>'stage' AS stage FROM iwar_connection_probe WHERE id = $1",
-            [1]
-        );
-
-        if (update.rowCount !== 1 || staleUpdate.rowCount !== 0 ||
-            probe.rows[0]?.revision !== 2 || probe.rows[0]?.stage !== "update") {
-            throw Object.assign(new Error("temporary PostgreSQL persistence probe failed"), { code: "PERSISTENCE_PROBE_FAILED" });
+        if (update.rowCount !== 1 || staleUpdate.rowCount !== 0) {
+            throw Object.assign(new Error("temporary PostgreSQL write or stale-revision guard failed"), { code: "PERSISTENCE_PROBE_FAILED" });
         }
 
         await client.query("COMMIT");
+        const probe = await client.query(
+            "SELECT revision, payload->>'stage' AS stage FROM pg_temp.iwar_connection_probe WHERE id = $1",
+            [1]
+        );
+        if (probe.rows[0]?.revision !== 2 || probe.rows[0]?.stage !== "update") {
+            throw Object.assign(new Error("committed temporary record did not match the read-back value"), { code: "PERSISTENCE_READBACK_FAILED" });
+        }
+
+        await client.query("DROP TABLE pg_temp.iwar_connection_probe");
         const cleanup = await client.query(
             "SELECT to_regclass('pg_temp.iwar_connection_probe') IS NULL AS temp_table_dropped"
         );
@@ -92,7 +95,7 @@ try {
     }
 
     console.log("PG_CONNECTION_OK: verified TLS connection and read-only schema check passed.");
-    console.log("PG_PERSISTENCE_PROBE_OK: temporary transaction insert/update, stale-revision guard, and cleanup passed.");
+    console.log("PG_PERSISTENCE_PROBE_OK: temporary transaction insert/update, committed read-back, stale-revision guard, and cleanup passed.");
 } catch (error) {
     const code = String(error?.code || "UNKNOWN").replace(/[^A-Za-z0-9_]/g, "").slice(0, 32);
     console.error(`PG_CONNECTION_CHECK_FAILED: database connection or temporary persistence check failed (code=${code}). Details withheld.`);
