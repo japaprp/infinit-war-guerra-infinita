@@ -48,7 +48,7 @@ try {
     }
 
     // Exercise a real PostgreSQL transaction without writing to persistent
-    // game tables. ON COMMIT PRESERVE ROWS removes the temporary table automatically.
+    // game tables. preserves the temporary table for committed read-back; the script drops it explicitly.
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
@@ -102,4 +102,10 @@ try {
     process.exitCode = 1;
 } finally {
     await pool.end().catch(() => {});
+}
+
+if (process.exitCode !== 1) {
+    // Run repository persistence, rollback, concurrency, and fresh-pool recovery
+    // checks in a random schema that is dropped in the imported script's finally block.
+    await import("./check-postgres-repository-integration.mjs");
 }
