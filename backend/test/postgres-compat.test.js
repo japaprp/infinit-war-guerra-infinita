@@ -63,8 +63,12 @@ test("normalizes MySQL timestamp precision without changing quoted text", () => 
 });
 
 test("uses explicit PostgreSQL CA environment value and normalizes escaped newlines", () => {
-  const certificate = "-----BEGIN CERTIFICATE-----\\nsynthetic-ca-data\\n-----END CERTIFICATE-----";
-  const escaped = certificate.replace(/\\n/g, "\\\\n");
+  const certificate = [
+    "-----BEGIN CERTIFICATE-----",
+    "synthetic-ca-data",
+    "-----END CERTIFICATE-----"
+  ].join(String.fromCharCode(10));
+  const escaped = certificate.split(String.fromCharCode(10)).join(String.fromCharCode(92) + "n");
   assert.equal(
     resolvePostgresCaCertificate({ POSTGRES_CA_CERT: escaped, POSTGRES_CA_CERT_PATH: "/missing/ca.pem" }),
     certificate
