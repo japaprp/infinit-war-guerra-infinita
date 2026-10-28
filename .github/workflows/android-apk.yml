@@ -54,11 +54,13 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Install pinned Node dependencies
-        run: npm ci
+        run: npm ci --omit=dev
+      - name: Audit installed production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - name: Validate API URL selection for Android WebView
         run: npm run test:android-config
       - name: Sync Capacitor Android project
-        run: npx cap sync android
+        run: npx --yes --package=@capacitor/cli@8.6.0 cap sync android
       - name: Build unsigned debug APK
         working-directory: android
         run: chmod +x gradlew && ./gradlew --no-daemon --stacktrace assembleDebug
