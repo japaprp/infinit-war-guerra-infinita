@@ -254,9 +254,16 @@ function secureConnectionString(connectionString) {
   return parsed.toString();
 }
 
-export function createPostgresPool(env) {
+export function resolvePostgresCaCertificate(env = {}) {
+  const envCa = String(env.POSTGRES_CA_CERT || "").replace(/\\\\n/g, "\\n").trim();
+  if (envCa) return envCa;
+
   const caPath = env.POSTGRES_CA_CERT_PATH || "/etc/secrets/guerra-infinita-root.crt";
-  const ca = existsSync(caPath) ? readFileSync(caPath, "utf8") : undefined;
+  return existsSync(caPath) ? readFileSync(caPath, "utf8").trim() : undefined;
+}
+
+export function createPostgresPool(env) {
+  const ca = resolvePostgresCaCertificate(env);
   const pool = new pg.Pool({
     connectionString: secureConnectionString(env.DATABASE_URL),
     ssl: { rejectUnauthorized: true, ...(ca ? { ca } : {}) },
