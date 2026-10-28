@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { translatePostgresQuery } from "../src/postgresCompat.js";
+import { resolvePostgresCaCertificate, translatePostgresQuery } from "../src/postgresCompat.js";
 
 test("translates positional placeholders in order", () => {
   assert.equal(
@@ -59,5 +59,21 @@ test("normalizes MySQL timestamp precision without changing quoted text", () => 
   assert.equal(
     translatePostgresQuery("UPDATE users SET updated_at = CURRENT_TIMESTAMP(3), nickname = 'CURRENT_TIMESTAMP(3)' WHERE id = ?"),
     "UPDATE users SET updated_at = NOW(), nickname = 'CURRENT_TIMESTAMP(3)' WHERE id = $1"
+  );
+});
+
+test("uses explicit PostgreSQL CA environment value and normalizes escaped newlines", () => {
+  const certificate = "-----BEGIN CERTIFICATE-----\\nsynthetic-ca-data\\n-----END CERTIFICATE-----";
+  const escaped = certificate.replace(/\\n/g, "\\\\n");
+  assert.equal(
+    resolvePostgresCaCertificate({ POSTGRES_CA_CERT: escaped, POSTGRES_CA_CERT_PATH: "/missing/ca.pem" }),
+    certificate
+  );
+});
+
+test("returns no CA when neither the environment nor the configured file provides one", () => {
+  assert.equal(
+    resolvePostgresCaCertificate({ POSTGRES_CA_CERT_PATH: "/missing/ca.pem" }),
+    undefined
   );
 });
