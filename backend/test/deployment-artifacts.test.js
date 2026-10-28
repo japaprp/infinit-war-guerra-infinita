@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -26,7 +27,7 @@ test("Render blueprint is an explicitly free backend template with a health chec
     assert.doesNotMatch(yaml, /type: pserv|type: worker|type: cron/);
 });
 
-test("both browser pages expose a blank API-origin placeholder and retain CSP", () => {
+test("both browser pages expose the verified HTTPS API origin and retain CSP", () => {
     const config = read("api/config.js");
     const html = read("index.html");
     const gameHtml = read("game.html");
@@ -34,11 +35,12 @@ test("both browser pages expose a blank API-origin placeholder and retain CSP", 
     assert.match(config, /configuredMeta/);
     assert.match(config, /isLocalDevelopment \? "http:\/\/localhost:4000" : ""/);
     for (const page of [html, gameHtml]) {
-        assert.match(page, /name="iwar-api-base-url" content=""/);
+        assert.ok(page.includes('name="iwar-api-base-url" content="https://infinit-war-api.onrender.com"'));
         assert.match(page, /Content-Security-Policy/);
         assert.match(page, /connect-src[^"]*http:\/\/localhost:4000/);
+        assert.ok(page.includes("https://infinit-war-api.onrender.com"));
     }
-    assert.match(docs, /actual frontend and API origins are confirmed/i);
+    assert.match(docs, /not approved for merge or deployment/i);
     assert.match(docs, /Do not commit secrets or invent a production URL/i);
 });
 
@@ -46,4 +48,16 @@ test("deployment preparation does not contain a committed production API hostnam
     const config = read("api/config.js");
     assert.doesNotMatch(config, /https:\/\/[^\s"']+\.onrender\.com/);
     assert.doesNotMatch(config, /https:\/\/api\.[^\s"']+/);
+});
+
+
+test("manual PostgreSQL connection workflow is read-only and never prints credentials", () => {
+    const script = read("backend/scripts/check-postgres-connection.mjs");
+    const workflow = read(".github/workflows/postgres-connection-check.yml");
+    assert.match(workflow, /workflow_dispatch/);
+    assert.ok(workflow.includes("GAME_SUPABASE_DATABASE_URL: ${{ secrets.GAME_SUPABASE_DATABASE_URL }}"));
+    assert.match(script, /SELECT 1 AS ok, to_regclass/);
+    assert.doesNotMatch(script, /console\.(?:log|error)\s*\([^)]*(?:connectionString|process\.env|parsed)/);
+    const syntax = spawnSync(process.execPath, ["--check", path.join(root, "backend/scripts/check-postgres-connection.mjs")], { encoding: "utf8" });
+    assert.equal(syntax.status, 0, syntax.stderr);
 });

@@ -45,7 +45,12 @@
 
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-            throw new Error(payload.error || `HTTP ${response.status}`);
+            const errorMessage = (typeof payload.error === "string" && payload.error)
+                || payload.message
+                || payload.error?.message
+                || payload.code
+                || `HTTP ${response.status}`;
+            throw new Error(errorMessage);
         }
 
         return payload;
@@ -111,6 +116,37 @@
     const purchaseSkuV1 = async ({ sku, quantity = 1, idempotencyKey }) =>
         request("POST", "/v1/shop/purchase", { sku, quantity, idempotencyKey });
 
+    const getMapBattleHistoryV1 = async (limit = 20) =>
+        request("GET", `/v1/world/battle-history?limit=${encodeURIComponent(limit)}`);
+    const startMapHuntV1 = async ({ targetId, heroIds, operationId, troopCount = 0 }) =>
+        request("POST", "/v1/world/hunts/start", { targetId, heroIds, operationId, troopCount });
+    const resolveMapHuntV1 = async (operationId) =>
+        request("POST", `/v1/world/hunts/${encodeURIComponent(operationId)}/resolve`, {});
+    const createAllianceRallyV1 = async ({ targetId, heroIds, troopCount, operationId }) =>
+        request("POST", "/v1/world/alliance-rallies", { targetId, heroIds, troopCount, operationId });
+    const getAllianceRallyV1 = async (operationId) =>
+        request("GET", `/v1/world/alliance-rallies/${encodeURIComponent(operationId)}`);
+    const joinAllianceRallyV1 = async ({ operationId, heroIds, troopCount }) =>
+        request("POST", `/v1/world/alliance-rallies/${encodeURIComponent(operationId)}/join`, { heroIds, troopCount });
+    const closeAllianceRallyV1 = async (operationId) =>
+        request("POST", `/v1/world/alliance-rallies/${encodeURIComponent(operationId)}/close`, {});
+    const dispatchAllianceRallyV1 = async (operationId) =>
+        request("POST", `/v1/world/alliance-rallies/${encodeURIComponent(operationId)}/dispatch`, {});
+    const resolveAllianceRallyV1 = async (operationId) =>
+        request("POST", `/v1/world/alliance-rallies/${encodeURIComponent(operationId)}/resolve`, {});
+    const getServerChestsV1 = async () => request("GET", "/v1/inventory/chests");
+    const openServerChestV1 = async ({ chestId, idempotencyKey }) =>
+        request("POST", `/v1/inventory/chests/${encodeURIComponent(chestId)}/open`, { idempotencyKey }, undefined, { "X-Idempotency-Key": idempotencyKey });
+    const getVehicleLoadoutV1 = async () => request("GET", "/v1/vehicle/loadout");
+    const setActiveVehiclePresetV1 = async (presetId) =>
+        request("POST", "/v1/vehicle/presets/active", { presetId });
+    const equipVehicleChipV1 = async ({ chipId, slotId, presetId }) =>
+        request("POST", "/v1/vehicle/chips/equip", { chipId, slotId, presetId });
+    const removeVehicleChipV1 = async ({ slotId, presetId }) =>
+        request("POST", "/v1/vehicle/chips/remove", { slotId, presetId });
+    const upgradeVehicleChipV1 = async (chipId) =>
+        request("POST", `/v1/vehicle/chips/${encodeURIComponent(chipId)}/upgrade`, {});
+
     const api = {
         setToken,
         getToken,
@@ -131,7 +167,23 @@
         startBuildV1,
         completeBuildV1,
         queryTilesV1,
-        purchaseSkuV1
+        purchaseSkuV1,
+        getMapBattleHistoryV1,
+        startMapHuntV1,
+        resolveMapHuntV1,
+        createAllianceRallyV1,
+        getAllianceRallyV1,
+        joinAllianceRallyV1,
+        closeAllianceRallyV1,
+        dispatchAllianceRallyV1,
+        resolveAllianceRallyV1,
+        getServerChestsV1,
+        openServerChestV1,
+        getVehicleLoadoutV1,
+        setActiveVehiclePresetV1,
+        equipVehicleChipV1,
+        removeVehicleChipV1,
+        upgradeVehicleChipV1
     };
 
     window.IWARApi = api;

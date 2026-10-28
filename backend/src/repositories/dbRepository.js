@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import mysql from "mysql2/promise";
+import { createPostgresPool } from "../postgresCompat.js";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -8,7 +9,7 @@ const __dirname = path.dirname(__filename);
 const DB_PATH = process.env.IWAR_DB_PATH || path.join(__dirname, "..", "..", "data", "db.json");
 
 let mode = "json";
-let mysqlPool = null;
+let dbPool = null;
 let strictPersistentMode = false;
 
 function safeNumber(value, fallback = 0) {
@@ -110,7 +111,11 @@ function normalizeDbShape(parsed) {
     return {
         users: parsed?.users || {},
         receipts: parsed?.receipts || {},
-        alliances: parsed?.alliances || {}
+        alliances: parsed?.alliances || {},
+        // Cross-player map operations are stored in app_state until dedicated SQL
+        // tables and transactional repository methods are introduced.
+        rallies: parsed?.rallies || {},
+        battles: parsed?.battles || {}
     };
 }
 
@@ -133,9 +138,10 @@ function writeDbToFile(db) {
 }
 
 async function ensureSqlSchema() {
-    if (!mysqlPool) return;
+    if (!dbPool) return;
+    if (dbPool.driver === "postgres") return;
 
-    await mysqlPool.query(`
+    await dbPool.query(`
         CREATE TABLE IF NOT EXISTS app_state (
             id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
             payload JSON NOT NULL,
@@ -143,7 +149,7 @@ async function ensureSqlSchema() {
         ) ENGINE=InnoDB;
     `);
 
-    await mysqlPool.query(`
+    await dbPool.query(`
         CREATE TABLE IF NOT EXISTS users (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             external_id VARCHAR(80) NOT NULL UNIQUE,
@@ -158,7 +164,7 @@ async function ensureSqlSchema() {
         ) ENGINE=InnoDB;
     `);
 
-    await mysqlPool.query(`
+    await dbPool.query(`
         CREATE TABLE IF NOT EXISTS heroes (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             user_id BIGINT UNSIGNED NOT NULL,
@@ -177,7 +183,7 @@ async function ensureSqlSchema() {
         ) ENGINE=InnoDB;
     `);
 
-    await mysqlPool.query(`
+    await dbPool.query(`
         CREATE TABLE IF NOT EXISTS buildings (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             user_id BIGINT UNSIGNED NOT NULL,
@@ -194,7 +200,7 @@ async function ensureSqlSchema() {
         ) ENGINE=InnoDB;
     `);
 
-    await mysqlPool.query(`
+    await dbPool.query(`
         CREATE TABLE IF NOT EXISTS inventory (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             external_id VARCHAR(80) NOT NULL,
@@ -206,7 +212,7 @@ async function ensureSqlSchema() {
         ) ENGINE=InnoDB;
     `);
 
-    await mysqlPool.query(`
+    await dbPool.query(`
         CREATE TABLE IF NOT EXISTS receipts (
             receipt_id VARCHAR(64) NOT NULL PRIMARY KEY,
             external_id VARCHAR(80) NOT NULL,
@@ -222,7 +228,7 @@ async function ensureSqlSchema() {
         ) ENGINE=InnoDB;
     `);
 
-    await mysqlPool.query(`
+    await dbPool.query(`
         CREATE TABLE IF NOT EXISTS alliances (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             alliance_uid VARCHAR(80) NOT NULL UNIQUE,
@@ -236,26 +242,26 @@ async function ensureSqlSchema() {
         ) ENGINE=InnoDB;
     `);
 
-    const [rows] = await mysqlPool.query("SELECT id FROM app_state WHERE id = 1 LIMIT 1");
+    const [rows] = await dbPool.query("SELECT id FROM app_state WHERE id = 1 LIMIT 1");
     if (rows.length === 0) {
         const initialPayload = JSON.stringify(normalizeDbShape(null));
-        await mysqlPool.query("INSERT INTO app_state (id, payload) VALUES (1, ?)", [initialPayload]);
+        await dbPool.query("INSERT INTO app_state (id, payload) VALUES (1, ?)", [initialPayload]);
     }
 }
 
-async function readDbFromMySqlAppState() {
-    if (!mysqlPool) return normalizeDbShape(null);
-    const [rows] = await mysqlPool.query("SELECT payload FROM app_state WHERE id = 1 LIMIT 1");
+async function readDbFromMySqlAppState(executor = dbPool) {
+    if (!executor) return normalizeDbShape(null);
+    const [rows] = await executor.query("SELECT payload FROM app_state WHERE id = 1 LIMIT 1");
     if (!rows.length) return normalizeDbShape(null);
 
     const parsed = parseJsonField(rows[0].payload, normalizeDbShape(null));
     return normalizeDbShape(parsed);
 }
 
-async function writeDbToMySqlAppState(db) {
-    if (!mysqlPool) return;
+async function writeDbToMySqlAppState(db, executor = dbPool) {
+    if (!executor) return;
     const payload = JSON.stringify(normalizeDbShape(db));
-    await mysqlPool.query(
+    await executor.query(
         `INSERT INTO app_state (id, payload)
          VALUES (1, ?)
          ON DUPLICATE KEY UPDATE payload = VALUES(payload), updated_at = CURRENT_TIMESTAMP(3)`,
@@ -296,7 +302,8 @@ function buildUserFromRow(row) {
             heroes: [],
             buildings: [],
             alliances: v1Meta?.alliances && typeof v1Meta.alliances === "object" ? v1Meta.alliances : defaults.alliances,
-            pass: v1Meta?.pass && typeof v1Meta.pass === "object" ? v1Meta.pass : defaults.pass
+            pass: v1Meta?.pass && typeof v1Meta.pass === "object" ? v1Meta.pass : defaults.pass,
+            gameData: v1Meta?.gameData && typeof v1Meta.gameData === "object" ? v1Meta.gameData : {}
         }
     };
 }
@@ -355,10 +362,10 @@ function quotePlaceholders(size) {
     return new Array(size).fill("?").join(", ");
 }
 
-async function readDbFromNormalizedTables() {
-    if (!mysqlPool) return null;
+async function readDbFromNormalizedTables(executor = dbPool) {
+    if (!executor) return null;
 
-    const [userRows] = await mysqlPool.query(
+    const [userRows] = await executor.query(
         "SELECT id, external_id, nickname, level, vip_level, power, realm_id, profile_json, created_at, updated_at FROM users"
     );
 
@@ -373,7 +380,7 @@ async function readDbFromNormalizedTables() {
         externalBySqlUserId.set(safeNumber(row.id, 0), externalId);
     }
 
-    const [heroRows] = await mysqlPool.query(
+    const [heroRows] = await executor.query(
         "SELECT user_id, hero_code, rarity, level, stars, ascension, shards_owned, stats_json, skill_levels_json FROM heroes"
     );
 
@@ -383,7 +390,7 @@ async function readDbFromNormalizedTables() {
         db.users[externalId].v1.heroes.push(buildHeroFromRow(row));
     }
 
-    const [buildingRows] = await mysqlPool.query(
+    const [buildingRows] = await executor.query(
         "SELECT user_id, building_type, slot_code, level, state, end_at_ms, task_id FROM buildings"
     );
 
@@ -393,14 +400,14 @@ async function readDbFromNormalizedTables() {
         db.users[externalId].v1.buildings.push(buildBuildingFromRow(row));
     }
 
-    const [inventoryRows] = await mysqlPool.query("SELECT external_id, item_code, quantity FROM inventory");
+    const [inventoryRows] = await executor.query("SELECT external_id, item_code, quantity FROM inventory");
     for (const row of inventoryRows) {
         const user = db.users[row.external_id];
         if (!user) continue;
         user.inventory[row.item_code] = safeNumber(row.quantity, 0);
     }
 
-    const [allianceRows] = await mysqlPool.query(
+    const [allianceRows] = await executor.query(
         "SELECT alliance_uid, realm_id, name, tag, leader_external_id, member_count, power FROM alliances"
     );
 
@@ -416,7 +423,7 @@ async function readDbFromNormalizedTables() {
         };
     }
 
-    const [receiptRows] = await mysqlPool.query(
+    const [receiptRows] = await executor.query(
         "SELECT receipt_id, external_id, hero_id, pack_id, cost_gems, issued_at_ms, signature, used, used_at_ms FROM receipts"
     );
     for (const row of receiptRows) {
@@ -630,15 +637,16 @@ async function syncReceipts(connection, receipts) {
     }
 }
 
-async function syncNormalizedTables(db) {
-    if (!mysqlPool) return;
+async function syncNormalizedTables(db, providedConnection = null) {
+    if (!dbPool && !providedConnection) return;
 
     const normalized = normalizeDbShape(db);
     const entries = Object.entries(normalized.users || {});
-    const connection = await mysqlPool.getConnection();
+    const ownsConnection = !providedConnection;
+    const connection = providedConnection || await dbPool.getConnection();
 
     try {
-        await connection.beginTransaction();
+        if (ownsConnection) await connection.beginTransaction();
 
         for (const [externalId, user] of entries) {
             const fallbackProfile = inferProfileFromUserId(externalId);
@@ -670,7 +678,10 @@ async function syncNormalizedTables(db) {
                         energyRegenPerMinute: safeNumber(resources.energyRegenPerMinute, defaults.resources.energyRegenPerMinute)
                     },
                     alliances: user?.v1?.alliances || { allianceId: "", name: "", tag: "" },
-                    pass: user?.v1?.pass || { seasonId: "season_1", claimed: {} }
+                    pass: user?.v1?.pass || { seasonId: "season_1", claimed: {} },
+                    // Keep authoritative game-specific state (chests, vehicle presets,
+                    // hunts, and per-player battle history) across normalized SQL reads.
+                    gameData: user?.v1?.gameData || {}
                 },
                 createdAt: safeNumber(user?.createdAt, Date.now()),
                 updatedAt: safeNumber(user?.updatedAt, Date.now())
@@ -725,19 +736,21 @@ async function syncNormalizedTables(db) {
 
         await syncAlliances(connection, normalized.alliances || {});
         await syncReceipts(connection, normalized.receipts || {});
-        await connection.commit();
+        if (ownsConnection) await connection.commit();
     } catch (error) {
-        await connection.rollback();
+        if (ownsConnection) {
+            try { await connection.rollback(); } catch { /* preserve the original error */ }
+        }
         throw error;
     } finally {
-        connection.release();
+        if (ownsConnection) connection.release();
     }
 }
 
 async function migrateAppStateToNormalizedIfNeeded() {
-    if (!mysqlPool) return;
+    if (!dbPool) return;
 
-    const [rows] = await mysqlPool.query("SELECT COUNT(*) AS total FROM users");
+    const [rows] = await dbPool.query("SELECT COUNT(*) AS total FROM users");
     const totalUsers = safeNumber(rows?.[0]?.total, 0);
     if (totalUsers > 0) return;
 
@@ -751,9 +764,9 @@ async function migrateAppStateToNormalizedIfNeeded() {
 }
 
 async function migrateReceiptsFromAppStateIfNeeded() {
-    if (!mysqlPool) return;
+    if (!dbPool) return;
 
-    const [rows] = await mysqlPool.query("SELECT COUNT(*) AS total FROM receipts");
+    const [rows] = await dbPool.query("SELECT COUNT(*) AS total FROM receipts");
     const totalReceipts = safeNumber(rows?.[0]?.total, 0);
     if (totalReceipts > 0) return;
 
@@ -761,7 +774,7 @@ async function migrateReceiptsFromAppStateIfNeeded() {
     const receiptCount = Object.keys(appStateDb.receipts || {}).length;
     if (receiptCount === 0) return;
 
-    const connection = await mysqlPool.getConnection();
+    const connection = await dbPool.getConnection();
     try {
         await connection.beginTransaction();
         await syncReceipts(connection, appStateDb.receipts || {});
@@ -778,37 +791,30 @@ async function migrateReceiptsFromAppStateIfNeeded() {
 export async function initializeRepository(env) {
     strictPersistentMode = String(env.NODE_ENV || "development").toLowerCase() === "production";
     mode = "json";
-    mysqlPool = null;
+    dbPool = null;
 
-    if (env.DATA_DRIVER !== "mysql") {
-        if (strictPersistentMode) throw new Error("Production requires DATA_DRIVER=mysql; JSON-file persistence is not durable on ephemeral hosts.");
+    if (!["mysql", "postgres"].includes(env.DATA_DRIVER)) {
+        if (strictPersistentMode) throw new Error("Production requires DATA_DRIVER=mysql or postgres; JSON-file persistence is not durable on ephemeral hosts.");
         return;
     }
 
     try {
-        mysqlPool = mysql.createPool({
-            host: env.MYSQL_HOST,
-            port: env.MYSQL_PORT,
-            user: env.MYSQL_USER,
-            password: env.MYSQL_PASSWORD,
-            database: env.MYSQL_DATABASE,
-            ...(env.MYSQL_SSL ? { ssl: { rejectUnauthorized: true } } : {}),
-            waitForConnections: true,
-            connectionLimit: 8,
-            queueLimit: 0
+        dbPool = env.DATA_DRIVER === "postgres" ? createPostgresPool(env) : mysql.createPool({
+            host: env.MYSQL_HOST, port: env.MYSQL_PORT, user: env.MYSQL_USER, password: env.MYSQL_PASSWORD, database: env.MYSQL_DATABASE,
+            ...(env.MYSQL_SSL ? { ssl: { rejectUnauthorized: true } } : {}), waitForConnections: true, connectionLimit: 8, queueLimit: 0
         });
 
         await ensureSqlSchema();
         await migrateAppStateToNormalizedIfNeeded();
         await migrateReceiptsFromAppStateIfNeeded();
 
-        mode = "mysql";
-        console.log("[repo] DATA_DRIVER=mysql ativo.");
+        mode = env.DATA_DRIVER;
+        console.log("[repo] DATA_DRIVER=" + env.DATA_DRIVER + " ativo.");
     } catch (error) {
         mode = "json";
-        mysqlPool = null;
-        if (strictPersistentMode) throw new Error(`Production MySQL initialization failed; refusing JSON fallback: ${error.message}`);
-        console.warn(`[repo] Falha ao conectar MySQL (${error.message}). Fallback para JSON local.`);
+        dbPool = null;
+        if (strictPersistentMode) throw new Error(`Production database initialization failed; refusing JSON fallback: ${error.message}`);
+        console.warn(`[repo] Falha ao conectar banco SQL (${error.message}). Fallback para JSON local.`);
     }
 }
 
@@ -816,48 +822,120 @@ export function getRepositoryMode() {
     return mode;
 }
 
+export async function closeRepository() {
+    const pool = dbPool;
+    dbPool = null;
+    mode = "json";
+    strictPersistentMode = false;
+    if (pool && typeof pool.end === "function") {
+        await pool.end();
+    }
+}
+
 export async function readDb() {
-    if (mode !== "mysql" || !mysqlPool) {
+    if (!["mysql", "postgres"].includes(mode) || !dbPool) {
         return readDbFromFile();
     }
 
+    let connection = null;
     try {
-        const fromNormalized = await readDbFromNormalizedTables();
+        connection = await dbPool.getConnection();
+        await connection.beginTransaction();
+        await connection.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+
+        const fromNormalized = await readDbFromNormalizedTables(connection);
+        const fromAppState = await readDbFromMySqlAppState(connection);
+        let result;
+
         if (fromNormalized) {
-            const fromAppState = await readDbFromMySqlAppState();
             if (Object.keys(fromNormalized.receipts || {}).length === 0) {
                 fromNormalized.receipts = fromAppState.receipts || {};
             }
             if (Object.keys(fromNormalized.alliances || {}).length === 0) {
                 fromNormalized.alliances = fromAppState.alliances || {};
             }
-            return normalizeDbShape(fromNormalized);
+            // Hydrate both normalized and app_state data from the same repeatable-read
+            // snapshot so a concurrent commit cannot produce a mixed-version result.
+            fromNormalized.rallies = fromAppState.rallies || {};
+            fromNormalized.battles = fromAppState.battles || {};
+            for (const [externalId, savedUser] of Object.entries(fromAppState.users || {})) {
+                const normalizedUser = fromNormalized.users[externalId];
+                if (!normalizedUser || !savedUser || typeof savedUser !== "object") continue;
+
+                // app_state is the compatibility source for user fields that do not
+                // have dedicated normalized columns (for example shop idempotency
+                // records and future feature state). Keep normalized SQL values
+                // authoritative where they exist, while restoring the rest.
+                const savedV1 = savedUser.v1 && typeof savedUser.v1 === "object" ? savedUser.v1 : {};
+                const normalizedV1 = normalizedUser.v1 && typeof normalizedUser.v1 === "object" ? normalizedUser.v1 : {};
+                normalizedUser.state = savedUser.state ?? normalizedUser.state ?? null;
+                normalizedUser.v1 = { ...savedV1, ...normalizedV1 };
+
+                if (savedUser.economy && typeof savedUser.economy === "object") {
+                    normalizedUser.economy = { ...savedUser.economy, ...(normalizedUser.economy || {}) };
+                }
+                if (savedUser.profile && typeof savedUser.profile === "object" && !normalizedUser.profile) {
+                    normalizedUser.profile = savedUser.profile;
+                }
+
+                // gameData is stored in app_state as the authoritative feature
+                // payload; normalized columns currently do not model it directly.
+                if (savedV1.gameData && typeof savedV1.gameData === "object") {
+                    normalizedUser.v1.gameData = savedV1.gameData;
+                }
+            }
+            result = normalizeDbShape(fromNormalized);
+        } else {
+            result = fromAppState;
         }
 
-        return await readDbFromMySqlAppState();
+        await connection.commit();
+        return result;
     } catch (error) {
-        if (strictPersistentMode) throw new Error(`Production MySQL read failed; refusing JSON fallback: ${error.message}`);
-        console.warn(`[repo] Erro ao ler MySQL (${error.message}). Usando JSON local.`);
+        if (connection) {
+            try { await connection.rollback(); } catch { /* preserve the original error */ }
+        }
+        if (strictPersistentMode) throw new Error(`Production database read failed; refusing JSON fallback: ${error.message}`);
+        console.warn(`[repo] Erro ao ler banco SQL (${error.message}). Usando JSON local.`);
         mode = "json";
         return readDbFromFile();
+    } finally {
+        connection?.release();
+    }
+}
+
+export async function runSnapshotTransaction(connection, writeOperations) {
+    await connection.beginTransaction();
+    try {
+        await writeOperations();
+        await connection.commit();
+    } catch (error) {
+        try { await connection.rollback(); } catch { /* preserve the original error */ }
+        throw error;
     }
 }
 
 export async function writeDb(db) {
     const normalized = normalizeDbShape(db);
 
-    if (mode !== "mysql" || !mysqlPool) {
+    if (!["mysql", "postgres"].includes(mode) || !dbPool) {
         writeDbToFile(normalized);
         return;
     }
 
+    let connection = null;
     try {
-        await syncNormalizedTables(normalized);
-        await writeDbToMySqlAppState(normalized);
+        connection = await dbPool.getConnection();
+        await runSnapshotTransaction(connection, async () => {
+            await syncNormalizedTables(normalized, connection);
+            await writeDbToMySqlAppState(normalized, connection);
+        });
     } catch (error) {
-        if (strictPersistentMode) throw new Error(`Production MySQL write failed; refusing JSON fallback: ${error.message}`);
-        console.warn(`[repo] Erro ao gravar MySQL (${error.message}). Gravando em JSON local.`);
+        if (strictPersistentMode) throw new Error(`Production database write failed; refusing JSON fallback: ${error.message}`);
+        console.warn(`[repo] Erro ao gravar banco SQL (${error.message}). Gravando em JSON local.`);
         mode = "json";
         writeDbToFile(normalized);
+    } finally {
+        connection?.release();
     }
 }
