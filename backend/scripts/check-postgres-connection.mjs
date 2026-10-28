@@ -53,7 +53,7 @@ try {
     try {
         await client.query("BEGIN");
         await client.query(
-            "CREATE TEMP TABLE iwar_connection_probe (id integer PRIMARY KEY, revision integer NOT NULL, payload jsonb NOT NULL) ON COMMIT DROP"
+            "CREATE TEMP TABLE iwar_connection_probe (id integer PRIMARY KEY, revision integer NOT NULL, payload jsonb NOT NULL) ON COMMIT PRESERVE ROWS"
         );
         await client.query(
             "INSERT INTO iwar_connection_probe (id, revision, payload) VALUES ($1, $2, $3::jsonb)",
