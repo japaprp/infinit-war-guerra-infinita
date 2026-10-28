@@ -860,9 +860,29 @@ export async function readDb() {
             fromNormalized.battles = fromAppState.battles || {};
             for (const [externalId, savedUser] of Object.entries(fromAppState.users || {})) {
                 const normalizedUser = fromNormalized.users[externalId];
-                if (!normalizedUser || !savedUser?.v1?.gameData) continue;
-                normalizedUser.v1 ||= {};
-                normalizedUser.v1.gameData = savedUser.v1.gameData;
+                if (!normalizedUser || !savedUser || typeof savedUser !== "object") continue;
+
+                // app_state is the compatibility source for user fields that do not
+                // have dedicated normalized columns (for example shop idempotency
+                // records and future feature state). Keep normalized SQL values
+                // authoritative where they exist, while restoring the rest.
+                const savedV1 = savedUser.v1 && typeof savedUser.v1 === "object" ? savedUser.v1 : {};
+                const normalizedV1 = normalizedUser.v1 && typeof normalizedUser.v1 === "object" ? normalizedUser.v1 : {};
+                normalizedUser.state = savedUser.state ?? normalizedUser.state ?? null;
+                normalizedUser.v1 = { ...savedV1, ...normalizedV1 };
+
+                if (savedUser.economy && typeof savedUser.economy === "object") {
+                    normalizedUser.economy = { ...savedUser.economy, ...(normalizedUser.economy || {}) };
+                }
+                if (savedUser.profile && typeof savedUser.profile === "object" && !normalizedUser.profile) {
+                    normalizedUser.profile = savedUser.profile;
+                }
+
+                // gameData is stored in app_state as the authoritative feature
+                // payload; normalized columns currently do not model it directly.
+                if (savedV1.gameData && typeof savedV1.gameData === "object") {
+                    normalizedUser.v1.gameData = savedV1.gameData;
+                }
             }
             result = normalizeDbShape(fromNormalized);
         } else {
