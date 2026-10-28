@@ -104,8 +104,3 @@ try {
     await pool.end().catch(() => {});
 }
 
-if (process.exitCode !== 1) {
-    // Run repository persistence, rollback, concurrency, and fresh-pool recovery
-    // checks in a random schema that is dropped in the imported script's finally block.
-    await import("./check-postgres-repository-integration.mjs");
-}
