@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { resolvePostgresCaCertificate } from "../src/postgresCompat.js";
 
 const script = fileURLToPath(new URL("../scripts/check-postgres-connection.mjs", import.meta.url));
 
@@ -43,4 +44,25 @@ test("PostgreSQL connection check rejects malformed CA data before connecting", 
   assert.equal(result.status, 1);
   assert.match(result.stderr, /GAME_SUPABASE_CA_CERT is not a PEM certificate/);
   assert.doesNotMatch(result.stdout + result.stderr, /not-a-certificate/);
+});
+
+test("PostgreSQL connection configuration normalizes escaped CA newlines", () => {
+  const certificate = [
+    "-----BEGIN CERTIFICATE-----",
+    "synthetic-ca-data",
+    "-----END CERTIFICATE-----"
+  ].join(String.fromCharCode(10));
+  const escaped = certificate.split(String.fromCharCode(10)).join(String.fromCharCode(92) + "n");
+  assert.equal(
+    resolvePostgresCaCertificate({ POSTGRES_CA_CERT: escaped, POSTGRES_CA_CERT_PATH: "/missing/ca.pem" }),
+    certificate
+  );
+});
+
+test("PostgreSQL connection configuration prefers the explicit CA environment value", () => {
+  const certificate = "-----BEGIN CERTIFICATE-----";
+  assert.equal(
+    resolvePostgresCaCertificate({ POSTGRES_CA_CERT: certificate, POSTGRES_CA_CERT_PATH: "/missing/ca.pem" }),
+    certificate
+  );
 });
