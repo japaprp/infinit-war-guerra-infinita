@@ -47,7 +47,7 @@ import {
     setActiveVehiclePreset,
     startHunt,
     transitionAllianceRally,
-    upgradeVehicleChip
+    upgradeVehicleChip,\n    createAllianceHelpRequest,\n    listAllianceHelpRequests,\n    contributeAllianceHelp
 } from "../services/mapGameService.js";
 
 function asError(res, result) {
@@ -303,6 +303,26 @@ export function createV1Routes(env, runtime = {}) {
 
         await writeDb(db);
         res.json(result);
+    });
+
+    router.post("/alliances/help-requests", userLock, async (req, res) => {
+        const db = await readDb(); const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = createAllianceHelpRequest(db, req.user.sub, user, req.body || {});
+        if (asError(res, result)) return;
+        await writeDb(db); return res.status(result.alreadyOpen ? 200 : 201).json(result);
+    });
+    router.get("/alliances/help-requests", async (req, res) => {
+        const db = await readDb(); const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = listAllianceHelpRequests(db, user);
+        if (asError(res, result)) return; return res.json(result);
+    });
+    router.post("/alliances/help-requests/:requestId/contribute", userLock, async (req, res) => {
+        const db = await readDb(); const user = db.users[req.user.sub];
+        if (!user) return res.status(404).json({ code: "NOT_FOUND", message: "User not found" });
+        const result = contributeAllianceHelp(db, req.user.sub, user, req.params.requestId);
+        if (asError(res, result)) return; await writeDb(db); return res.json(result);
     });
 
     router.get("/rankings/power", async (req, res) => {
