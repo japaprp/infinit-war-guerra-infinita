@@ -3,19 +3,7 @@
     const LEGACY_AUTH_SESSION_KEY = "gde_auth_session";
     const nicknameInput = document.getElementById("nickname");
     const emailInput = document.getElementById("authEmail");
-    const passwordInput = document.getElementById("authPassword");
-    const emailAuthForm = document.getElementById("emailAuthForm");
     const startButton = document.getElementById("startGameBtn");
-    const loginButton = document.getElementById("emailLoginBtn");
-
-    // The visible email/password controls are also wired into the real Firebase auth form.
-    // Reuse the existing auth.js handlers rather than maintaining a second auth implementation.
-    if (emailAuthForm && emailInput && passwordInput) {
-        emailAuthForm.addEventListener("submit", (event) => {
-            event.preventDefault();
-            loginButton?.click();
-        });
-    }
 
     startButton?.addEventListener("click", () => {
         let session = null;
@@ -26,15 +14,14 @@
             session = null;
         }
 
+        const status = document.getElementById("authStatus");
         if (!session || !session.uid) {
-            const status = document.getElementById("authStatus");
             if (status) status.textContent = "Entre com e-mail ou Google antes de continuar.";
             emailInput?.focus();
             return;
         }
 
         if (session.provider === "password" && session.emailVerified !== true) {
-            const status = document.getElementById("authStatus");
             if (status) status.textContent = "Confirme seu e-mail antes de continuar.";
             return;
         }
