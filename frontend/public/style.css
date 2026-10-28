@@ -1632,3 +1632,6 @@ body.entry-screen { min-height:100vh; min-height:100dvh; padding:0; overflow-x:h
  .entry-footer { padding:10px 12px; font-size:8px; }.entry-footer span:last-child { text-align:right; }
 }
 @media(max-width:360px) { .entry-provider-actions { grid-template-columns:1fr 1fr; }.entry-logout-btn { grid-column:span 2; }.entry-email-actions { grid-template-columns:1fr; } }
+
+/* CSS-drawn commander silhouette avoids a missing optional image in the Android package. */
+.entry-hero { background:radial-gradient(ellipse at 50% 13%,#171c19 0 9%,transparent 10%),radial-gradient(ellipse at 50% 37%,#222822 0 24%,transparent 25%),linear-gradient(90deg,transparent 18%,#202722 19% 81%,transparent 82%); clip-path:polygon(38% 20%,44% 8%,56% 8%,62% 20%,69% 28%,77% 43%,72% 48%,65% 38%,68% 65%,82% 100%,58% 100%,50% 72%,42% 100%,18% 100%,32% 65%,35% 38%,28% 48%,23% 43%,31% 28%); }
