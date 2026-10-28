@@ -8,6 +8,8 @@ on:
       - ".github/workflows/postgres-connection-check.yml"
       - "backend/scripts/check-postgres-connection.mjs"
       - "backend/scripts/check-postgres-repository-integration.mjs"
+      - "backend/src/repositories/dbRepository.js"
+      - "backend/src/postgresCompat.js"
       - "backend/test/postgres-connection-check.test.js"
       - "backend/package.json"
       - "backend/package-lock.json"
