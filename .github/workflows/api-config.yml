@@ -1,0 +1,30 @@
+name: API configuration tests
+
+on:
+  pull_request:
+    paths:
+      - "api/config.js"
+      - "index.html"
+      - "tests/api-config.test.js"
+      - "package.json"
+      - ".github/workflows/api-config.yml"
+  push:
+    branches:
+      - main
+      - "fix/hosted-api-base-url-tests"
+    paths:
+      - "api/config.js"
+      - "index.html"
+      - "tests/api-config.test.js"
+      - "package.json"
+      - ".github/workflows/api-config.yml"
+
+jobs:
+  api-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm run test:api-config
