@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "infinit-war-guerra-infinita",
   "version": "1.0.0",
   "description": "Infinit War (Guerra Infinita) - strategy survival prototype",
@@ -13,7 +13,8 @@
     "github:protect:main": "powershell -ExecutionPolicy Bypass -File scripts/setup-branch-protection.ps1 -Branch main",
     "github:publish": "powershell -ExecutionPolicy Bypass -File scripts/publish-github.ps1 -Branch main",
     "backend:dev": "npm --prefix backend run dev",
-    "backend:grpc": "npm --prefix backend run dev:grpc"
+    "backend:grpc": "npm --prefix backend run dev:grpc",
+    "test:api-config": "node --test tests/api-config.test.js"
   },
   "devDependencies": {
     "electron": "^31.7.7",
