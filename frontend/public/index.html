@@ -1,64 +1,66 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#10191a">
 <meta name="iwar-api-base-url" content="https://infinit-war-api.onrender.com">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:4000 https://infinit-war-api.onrender.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://*.facebook.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://www.facebook.com;">
-<title>Infinit War (Guerra Infinita)</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:4000 https://infinit-war-api.onrender.com https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://*.facebook.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://www.facebook.com;">
+<title>Guerra Infinita — Sobrevivência</title>
 <link rel="stylesheet" href="style.css">
-<style>
-.email-auth-form { display: grid; gap: 8px; margin-top: 12px; }
-.email-auth-form input { margin: 0; }
-.email-auth-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.email-auth-actions button, .verification-actions button { min-height: 38px; border: 1px solid #ffffff2d; border-radius: 8px; color: #fff; background: #263b57; padding: 8px; cursor: pointer; }
-.verification-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.auth-help { margin: 8px 0 0; color: #d7e2f1; font-size: 12px; }
-.auth-actions button:disabled, .email-auth-actions button:disabled, .verification-actions button:disabled { opacity: .55; cursor: not-allowed; }
-</style>
 </head>
-<body class="menu">
-<main class="menu-container">
-    <h1>Infinit War</h1>
-    <p class="subtitle">Escolha seu elemento e entre na arena.</p>
-
-    <div class="auth-box">
-        <p id="authStatus" class="auth-status" aria-live="polite">Conta: não vinculada</p>
-        <div class="auth-actions">
-            <button type="button" id="googleLoginBtn" class="oauth-btn google">Entrar com Google</button>
-            <button type="button" id="facebookLoginBtn" class="oauth-btn facebook">Entrar com Facebook</button>
-            <button type="button" id="logoutBtn" class="oauth-btn logout">Sair</button>
+<body class="entry-screen">
+<main class="war-entry">
+  <div class="entry-backdrop" aria-hidden="true"></div>
+  <header class="entry-topline">
+    <div class="entry-brand"><span class="brand-mark">GI</span><span>GUERRA <b>INFINITA</b><small>SOBREVIVA. RECONSTRUA.</small></span></div>
+    <span class="entry-version">TESTE ANDROID</span>
+  </header>
+  <section class="entry-content">
+    <div class="entry-copy">
+      <p class="entry-eyebrow">O MUNDO MUDOU. SUA HISTÓRIA COMEÇA AQUI.</p>
+      <h1>GUERRA<br><em>INFINITA</em></h1>
+      <p class="entry-description">Reúna sobreviventes, reconstrua seu abrigo e prepare seu esquadrão.</p>
+      <section class="entry-login" aria-label="Acesso à conta">
+        <p id="authStatus" class="entry-auth-status" aria-live="polite">Conta: verificando configuração…</p>
+        <label class="entry-label" for="authEmail">E-MAIL</label>
+        <input type="email" id="authEmail" placeholder="voce@exemplo.com" autocomplete="email" inputmode="email" required>
+        <label class="entry-label" for="authPassword">SENHA</label>
+        <input type="password" id="authPassword" placeholder="Mínimo de 6 caracteres" autocomplete="current-password" minlength="6" required>
+        <div class="entry-email-actions">
+          <button type="submit" form="emailAuthForm" id="emailLoginBtn" class="entry-primary-btn">ENTRAR COM E-MAIL <span>➜</span></button>
+          <button type="button" id="emailRegisterBtn" class="entry-secondary-btn">CRIAR CONTA</button>
         </div>
-        <form id="emailAuthForm" class="email-auth-form">
-            <label class="field-label" for="authEmail">E-mail</label>
-            <input type="email" id="authEmail" placeholder="voce@exemplo.com" autocomplete="email" required>
-            <label class="field-label" for="authPassword">Senha</label>
-            <input type="password" id="authPassword" placeholder="Mínimo de 6 caracteres" autocomplete="current-password" minlength="6" required>
-            <div class="email-auth-actions">
-                <button type="submit" id="emailLoginBtn">Entrar com e-mail</button>
-                <button type="button" id="emailRegisterBtn">Criar conta</button>
-            </div>
-        </form>
-        <p class="auth-help">Ao criar uma conta, você receberá um e-mail para confirmar seu endereço antes de entrar na arena.</p>
-        <div class="verification-actions">
-            <button type="button" id="resendVerificationBtn" hidden>Reenviar confirmação</button>
-            <button type="button" id="refreshVerificationBtn" hidden>Já confirmei meu e-mail</button>
+        <form id="emailAuthForm" class="entry-form-proxy" aria-hidden="true"></form>
+        <div class="entry-divider"><span>OU ENTRE COM</span></div>
+        <div class="entry-provider-actions">
+          <button type="button" id="googleLoginBtn" class="entry-provider-btn"><span class="google-mark">G</span> GOOGLE</button>
+          <button type="button" id="facebookLoginBtn" class="entry-provider-btn">f FACEBOOK</button>
+          <button type="button" id="logoutBtn" class="entry-logout-btn">SAIR</button>
         </div>
+        <div class="entry-verification-actions">
+          <button type="button" id="resendVerificationBtn" hidden>Reenviar confirmação</button>
+          <button type="button" id="refreshVerificationBtn" hidden>Já confirmei meu e-mail</button>
+        </div>
+        <p class="entry-auth-help">Contas novas precisam confirmar o e-mail antes de entrar.</p>
+      </section>
+      <div class="entry-commander">
+        <label class="entry-label" for="nickname">NOME DO COMANDANTE <span>(opcional)</span></label>
+        <input type="text" id="nickname" placeholder="Como quer ser chamado?" maxlength="16" autocomplete="nickname">
+        <button type="button" id="startGameBtn" class="entry-enter-btn">CONTINUAR PARA O ABRIGO <span>➜</span></button>
+      </div>
     </div>
-
-    <label class="field-label" for="nickname">Nickname</label>
-    <input type="text" id="nickname" placeholder="Digite seu nickname" maxlength="16" autocomplete="off">
-
-    <h2>Escolha seu elemento</h2>
-    <div class="elements" role="group" aria-label="Seleção de elemento">
-        <button type="button" class="element-btn is-selected" data-element="fire">Fogo</button>
-        <button type="button" class="element-btn" data-element="water">Água</button>
-        <button type="button" class="element-btn" data-element="earth">Terra</button>
+    <div class="entry-art" aria-hidden="true">
+      <div class="entry-sun"></div><div class="entry-smoke smoke-one"></div><div class="entry-smoke smoke-two"></div>
+      <div class="entry-ridge ridge-back"></div><div class="entry-ridge ridge-front"></div>
+      <div class="entry-ruins"><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="entry-ground"></div><div class="entry-hero-shadow"></div>
+      <img class="entry-hero" src="assets/characters/hero_recruit.png" alt="">
+      <div class="entry-art-label"><b>GUERRA INFINITA</b><span>RECONSTRUA SUA BASE</span></div>
     </div>
-
-    <button type="button" id="startGameBtn" class="start-btn">Entrar na Arena</button>
+  </section>
+  <footer class="entry-footer"><span>UM MUNDO EM RUÍNAS. UMA NOVA CHANCE.</span><span>VERSÃO DE DESENVOLVIMENTO</span></footer>
 </main>
-
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
 <script src="api/config.js" defer></script>
