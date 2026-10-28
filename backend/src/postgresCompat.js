@@ -255,7 +255,8 @@ function secureConnectionString(connectionString) {
 }
 
 export function resolvePostgresCaCertificate(env = {}) {
-  const envCa = String(env.POSTGRES_CA_CERT || "").replace(/\\\\n/g, "\\n").trim();
+  const escapedNewline = String.fromCharCode(92) + "n";
+  const envCa = String(env.POSTGRES_CA_CERT || "").split(escapedNewline).join(String.fromCharCode(10)).trim();
   if (envCa) return envCa;
 
   const caPath = env.POSTGRES_CA_CERT_PATH || "/etc/secrets/guerra-infinita-root.crt";
