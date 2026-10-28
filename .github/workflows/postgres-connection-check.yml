@@ -1,4 +1,4 @@
-name: PostgreSQL connection check
+name: PostgreSQL connection and isolated repository validation
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/postgres-connection-check.yml"
       - "backend/scripts/check-postgres-connection.mjs"
+      - "backend/scripts/check-postgres-repository-integration.mjs"
       - "backend/test/postgres-connection-check.test.js"
       - "backend/package.json"
       - "backend/package-lock.json"
@@ -16,9 +17,9 @@ permissions:
   contents: read
 
 jobs:
-  read-only-connection:
+  isolated-postgres-validation:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 10
     steps:
       - name: Checkout isolated integration branch
         uses: actions/checkout@v4
@@ -33,14 +34,22 @@ jobs:
       - name: Install backend dependencies
         run: npm ci
         working-directory: backend
-      - name: Check script syntax
-        run: node --check scripts/check-postgres-connection.mjs
+      - name: Check validation script syntax
+        run: |
+          node --check scripts/check-postgres-connection.mjs
+          node --check scripts/check-postgres-repository-integration.mjs
         working-directory: backend
       - name: Run PostgreSQL connection-check unit tests
         run: node --test test/postgres-connection-check.test.js
         working-directory: backend
-      - name: Run read-only PostgreSQL connection check
+      - name: Verify TLS, schema presence, and temporary transaction persistence
         run: node scripts/check-postgres-connection.mjs
+        working-directory: backend
+        env:
+          GAME_SUPABASE_DATABASE_URL: ${{ secrets.GAME_SUPABASE_DATABASE_URL }}
+          GAME_SUPABASE_CA_CERT: ${{ secrets.GAME_SUPABASE_CA_CERT }}
+      - name: Verify repository round-trip, rollback, concurrency, and pool recovery in a temporary schema
+        run: node scripts/check-postgres-repository-integration.mjs
         working-directory: backend
         env:
           GAME_SUPABASE_DATABASE_URL: ${{ secrets.GAME_SUPABASE_DATABASE_URL }}
