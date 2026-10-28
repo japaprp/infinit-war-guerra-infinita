@@ -1,6 +1,7 @@
 import pg from "pg";
 import { randomUUID } from "node:crypto";
 import { initializeRepository, readDb, writeDb, closeRepository } from "../src/repositories/dbRepository.js";
+import { createPostgresPool } from "../src/postgresCompat.js";
 
 const connectionString = process.env.GAME_SUPABASE_DATABASE_URL;
 const ca = process.env.GAME_SUPABASE_CA_CERT?.replace(/\\n/g, "\n").trim();
@@ -19,6 +20,7 @@ const adminPool = new pg.Pool({
   application_name: "iwar-isolated-repository-test"
 });
 let schemaCreated = false;
+let stage = "create-isolated-schema";
 const runtimeUrl = new URL(connectionString);
 runtimeUrl.searchParams.set("options", "-c search_path=" + schema + ",public");
 
@@ -68,8 +70,29 @@ function makeDb(externalId, gems, gameData = {}) {
 try {
   await adminPool.query(`CREATE SCHEMA ${schema}`);
   schemaCreated = true;
+
+  stage = "verify-isolated-search-path";
+  const preflightPool = createPostgresPool({
+    DATA_DRIVER: "postgres",
+    DATABASE_URL: runtimeUrl.toString(),
+    POSTGRES_CA_CERT: ca
+  });
+  try {
+    const [preflightRows] = await preflightPool.query(
+      "SELECT current_schema() AS current_schema, current_setting('search_path') AS search_path"
+    );
+    if (preflightRows[0]?.current_schema !== schema) {
+      throw Object.assign(new Error("repository pool did not select the isolated schema"), { code: "ISOLATION_SEARCH_PATH_FAILED" });
+    }
+    console.log("PG_REPOSITORY_ISOLATION_OK: repository pool resolved to the random test schema before any repository writes.");
+  } finally {
+    await preflightPool.end().catch(() => {});
+  }
+
+  stage = "create-isolated-schema-tables";
   for (const statement of ddl) await adminPool.query(statement);
 
+  stage = "initialize-repository";
   await initializeRepository({
     NODE_ENV: "production",
     DATA_DRIVER: "postgres",
@@ -77,6 +100,7 @@ try {
     POSTGRES_CA_CERT: ca
   });
 
+  stage = "round-trip";
   const firstId = "ci:" + randomUUID();
   const firstDb = makeDb(firstId, 777, { probe: "round-trip" });
   await writeDb(firstDb);
@@ -92,6 +116,7 @@ try {
   }
   console.log("PG_REPOSITORY_ROUNDTRIP_OK: synthetic user, economy, inventory, hero, building, shop idempotency ledger and app_state data round-tripped.");
 
+  stage = "rollback";
   const rollbackId = "ci:rollback:" + randomUUID();
   const invalidDb = makeDb(rollbackId, 888);
   invalidDb.users[rollbackId].v1.heroes = [{
@@ -106,6 +131,7 @@ try {
   }
   console.log("PG_REPOSITORY_ROLLBACK_OK: constraint failure left no partial synthetic user row.");
 
+  stage = "concurrent-writes";
   const idA = "ci:concurrent:a:" + randomUUID();
   const idB = "ci:concurrent:b:" + randomUUID();
   await Promise.all([writeDb(makeDb(idA, 111)), writeDb(makeDb(idB, 222))]);
@@ -116,6 +142,7 @@ try {
   console.log("PG_REPOSITORY_CONCURRENCY_OK: two simultaneous synthetic snapshots completed and both users are present.");
 
   // Increase contention using only synthetic snapshots in the temporary schema.
+  stage = "stress-writes";
   const stressCases = Array.from({ length: 8 }, (_, index) => ({
     id: "ci:stress:" + index + ":" + randomUUID(),
     gems: 300 + index
@@ -137,6 +164,7 @@ try {
   console.log("PG_REPOSITORY_STRESS_OK: eight concurrent synthetic snapshots persisted and verified.");
 
   // Recreate the repository pool to prove data survives a fresh application connection pool.
+  stage = "pool-recovery";
   await closeRepository();
   await initializeRepository({
     NODE_ENV: "production",
@@ -153,10 +181,11 @@ try {
   }
   console.log("PG_REPOSITORY_POOL_RECOVERY_OK: synthetic records remained readable after closing and recreating the repository pool.");
 
+  stage = "complete";
   console.log("PG_REPOSITORY_INTEGRATION_OK: all writes were scoped to an isolated temporary schema; public game tables were not targeted.");
 } catch (error) {
   const code = String(error?.code || "UNKNOWN").replace(/[^A-Za-z0-9_]/g, "").slice(0, 32);
-  console.error(`PG_REPOSITORY_INTEGRATION_FAILED: test failed (code=${code}); diagnostic details withheld.`);
+  console.error(`PG_REPOSITORY_INTEGRATION_FAILED: stage=${stage} (code=${code}); diagnostic details withheld.`);
   process.exitCode = 1;
 } finally {
   await closeRepository().catch(() => {});
