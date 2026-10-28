@@ -47,7 +47,10 @@ import {
     setActiveVehiclePreset,
     startHunt,
     transitionAllianceRally,
-    upgradeVehicleChip,\n    createAllianceHelpRequest,\n    listAllianceHelpRequests,\n    contributeAllianceHelp
+    upgradeVehicleChip,
+    createAllianceHelpRequest,
+    listAllianceHelpRequests,
+    contributeAllianceHelp
 } from "../services/mapGameService.js";
 
 function asError(res, result) {
