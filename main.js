@@ -5,11 +5,11 @@
     const emailInput = document.getElementById("authEmail");
     const startButton = document.getElementById("startGameBtn");
 
-    startButton?.addEventListener("click", () => {
+    const startGame = (sessionOverride = null) => {
         let session = null;
         try {
             const raw = localStorage.getItem(AUTH_SESSION_KEY) || localStorage.getItem(LEGACY_AUTH_SESSION_KEY);
-            session = raw ? JSON.parse(raw) : null;
+            session = sessionOverride || (raw ? JSON.parse(raw) : null);
         } catch {
             session = null;
         }
@@ -33,5 +33,10 @@
         localStorage.setItem("playerEmail", session.email || "");
         localStorage.setItem("playerElement", "Comandante");
         window.location.href = "game.html";
+    };
+
+    startButton?.addEventListener("click", () => startGame());
+    window.addEventListener("iwar:authenticated", (event) => {
+        if (event.detail && event.detail.uid) startGame(event.detail);
     });
 })();
