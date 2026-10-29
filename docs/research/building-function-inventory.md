@@ -85,3 +85,34 @@ Para cada estrutura, registrar uma linha por captura:
 ## Critério para marcar um desbloqueio como confirmado
 
 Só registrar `Torre de Vigia N → edifício X` quando houver evidência de jogo para essa relação: tela de requisito, tutorial observado ou teste repetível em conta nova. Guias comunitários servem como pista, não como confirmação única. Até então, usar **PENDENTE DE EVIDÊNCIA**.
+
+
+## Primeiros desbloqueios da referência — fonte comunitária, validar em jogo
+
+A wiki comunitária de Structures publica a seguinte coluna “Get at Watchtower Level”. Isto é uma **pista documental para planejar a coleta**, não uma confirmação oficial nem prova de pré-requisito para upgrade. A própria página pode estar desatualizada; conferir em conta nova antes de fixar esses níveis no jogo.
+
+| Torre de Vigia | Estruturas listadas como disponíveis |
+|---:|---|
+| 1 | Lumber Mill (serraria), Scrapyard (pátio de sucata), Kitchen (cozinha) |
+| 2 | Power Plant (usina), Hunters Hut (cabana dos caçadores) |
+| 3 | Dorm (dormitório) |
+| 4 | City Gate (portão da cidade), Military Center (centro militar), Radio Station (estação de rádio) |
+| 5 | Radar, Warehouse (armazém) |
+| 6 | Black Market (mercado negro), Hospital |
+| 7 | Library (biblioteca), Mart (mercado/loja) |
+| 8 | Research Center (centro de pesquisa), Alliance Hall (salão da aliança) |
+| 9 | Deerhunter Bar (bar dos caçadores) |
+| 10 | Infirmary (enfermaria), Arena |
+| 11 | Fighter Camp, Shooter Camp, Rider Camp, Alliance Plaza, Construction Hall |
+| 12 | Gathering Ground, Conscription Office |
+| 13 | Training Ground, Adventure Camp |
+| 14 | Supply Station |
+
+**Fontes comunitárias:** [Structures — Dark War Survival Wiki](https://dark-war-survival.fandom.com/wiki/Structures) e [Watchtower Upgrade Requirements — Dark War Survival](https://www.dark-war.com/calculators/watchtower). O segundo recurso lista requisitos de upgrades e assinala que valores/tempos podem variar com bônus. São fontes secundárias, não substituem a observação no cliente.
+
+### O que já podemos inferir com cuidado
+
+- A referência tem progressão orientada pela Torre de Vigia e edifícios de pré-requisito, não apenas uma lista plana de construções.
+- Os primeiros níveis relatados pela wiki incluem estruturas de produção básica (serraria, sucata, cozinha) antes de sistemas de aliança/pesquisa e edifícios de nível mais avançado.
+- Não mapear automaticamente os nomes para os edifícios atuais de Guerra Infinita: equivalências como “Quartel reserva”, “oficina médica”, “sala à prova de explosão” e “centro de emergência” ainda precisam de captura/observação para resolver diferenças de tradução ou de versão.
+- Custos e tempos publicados para a referência **não** devem ser copiados para `docs/balance/buildings_balance.csv`; esse CSV é o balanceamento próprio do projeto.
