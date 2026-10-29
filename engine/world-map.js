@@ -28,14 +28,17 @@
     { id:"resource-b", type:"resource", name:"Veio de Minério", tag:"Recurso · Minério", x:17, y:5, color:"#b6c3d1" },
     { id:"capital", type:"capital", name:"Capital Central", tag:"Território estratégico", x:10, y:3, color:"#d6bb70" }
   ];
+  // Progressão inicial inspirada em pistas comunitárias da referência.
+  // Os desbloqueios são provisórios até serem confirmados por captura em jogo.
   const buildings = [
-    {id:"hq",name:"Centro de Comando",x:0,y:0,w:1.8,h:1.8,color:"#d5a45a",desc:"Núcleo do abrigo e evolução da base."},
-    {id:"barracks",name:"Quartel",x:-2.2,y:1.1,w:1.35,h:1.3,color:"#769cc4",desc:"Local de preparação das tropas."},
-    {id:"workshop",name:"Oficina",x:2.1,y:1.15,w:1.4,h:1.35,color:"#b88b62",desc:"Construções e equipamentos."},
-    {id:"farm",name:"Estação de Suprimentos",x:-2.1,y:-1.45,w:1.35,h:1.2,color:"#83b778",desc:"Produção de recursos."},
-    {id:"radar",name:"Radar",x:2.15,y:-1.5,w:1.2,h:1.2,color:"#71c4c2",desc:"Exploração e alertas."},
-    {id:"hospital",name:"Enfermaria",x:0,y:2.65,w:1.4,h:1.3,color:"#d17d79",desc:"Recuperação e suporte."},
-    {id:"shelter-house",name:"Casinha do Abrigo",x:0,y:4.25,w:1.25,h:1.15,color:"#e5b765",desc:"Toque aqui para entrar na Arena de Combate."}
+    {id:"hq",name:"Torre de Vigia · Nv. 1",x:0,y:0,w:1.8,h:1.8,color:"#d5a45a",desc:"Centro da progressão do abrigo.",level:1,unlocked:true},
+    {id:"lumber-mill",name:"Serraria",x:-2.25,y:-1.55,w:1.35,h:1.2,color:"#83b778",desc:"Produção de madeira — função a validar.",level:1,unlocked:true},
+    {id:"scrapyard",name:"Pátio de Sucata",x:2.25,y:-1.55,w:1.35,h:1.2,color:"#a6aeb1",desc:"Produção de sucata — função a validar.",level:1,unlocked:true},
+    {id:"kitchen",name:"Cozinha",x:-2.2,y:1.1,w:1.35,h:1.3,color:"#d1a16b",desc:"Estrutura listada no nível 1 pela fonte comunitária; função exata a validar.",level:1,unlocked:true},
+    {id:"power-plant",name:"Usina · bloqueada",x:2.2,y:1.1,w:1.4,h:1.35,color:"#71c4c2",desc:"Pista comunitária: disponível a partir da Torre de Vigia nível 2.",level:2,unlocked:false},
+    {id:"hunters-hut",name:"Cabana dos Caçadores · bloqueada",x:-2.2,y:2.8,w:1.4,h:1.3,color:"#b88b62",desc:"Pista comunitária: disponível a partir da Torre de Vigia nível 2.",level:2,unlocked:false},
+    {id:"radar",name:"Radar · bloqueado",x:2.2,y:2.8,w:1.2,h:1.2,color:"#71c4c2",desc:"Pista comunitária: disponível a partir da Torre de Vigia nível 5.",level:5,unlocked:false},
+    {id:"shelter-house",name:"Casinha do Abrigo",x:0,y:4.35,w:1.25,h:1.15,color:"#e5b765",desc:"Atalho de navegação para a Arena; o combate ainda precisa de validação.",level:1,unlocked:true}
   ];
   let hitTargets = [];
   function resize() {
@@ -126,7 +129,8 @@
     polygon([{x:p.x-w/2,y:p.y-1*s},{x:p.x-w/2,y:p.y-h},{x:p.x,y:p.y-h+10*s},{x:p.x,y:p.y+10*s}], b.color,"#d8c9a7");
     polygon([{x:p.x,y:p.y-h+10*s},{x:p.x+w/2,y:p.y-h},{x:p.x+w/2,y:p.y-1*s},{x:p.x,y:p.y+10*s}], "#475b58","#c6d1c0");
     polygon([{x:p.x-w/2,y:p.y-h},{x:p.x,y:p.y-h-12*s},{x:p.x+w/2,y:p.y-h}], "#b6a27b","#f0dfbd");
-    ctx.fillStyle="#fff7df";ctx.font=`600 ${Math.max(9,11*s)}px system-ui`;ctx.textAlign="center";ctx.fillText(b.name,p.x,p.y+23*s);
+    ctx.fillStyle=b.unlocked===false?"#b8c0bb":"#fff7df";ctx.font=`600 ${Math.max(9,11*s)}px system-ui`;ctx.textAlign="center";ctx.fillText(b.name,p.x,p.y+23*s);
+    if(b.unlocked===false){ctx.fillStyle="#18231fdd";ctx.beginPath();ctx.arc(p.x,p.y-h*.48,10*s,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#e2e8df";ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p.x,p.y-h*.48,4*s,Math.PI,0);ctx.stroke();ctx.fillStyle="#e2e8df";ctx.fillRect(p.x-5*s,p.y-h*.48,10*s,8*s);}
     if(view.selected?.id===b.id){ctx.strokeStyle="#f5d785";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.x,p.y,Math.max(w,h)*.65,Math.max(w,h)*.28,0,0,Math.PI*2);ctx.stroke();}
   }
   function drawBase() {
@@ -162,7 +166,7 @@
   function hide() { screen.hidden=true; view.mode="world"; }
   function selectTarget(target) {
     if(target.site){view.selected=target.site;selection.textContent=target.site.name+" — "+target.site.tag;action.textContent=target.site.type==="base"||target.site.type==="capital"?"Ver território":"Preparar marcha";}
-    else if(target.b){if(target.b.id==="shelter-house"){hide();return;}view.selected=target.b;selection.textContent=target.b.name+" — "+target.b.desc;action.textContent="Ver detalhes";}
+    else if(target.b){if(target.b.id==="shelter-house"){hide();return;}view.selected=target.b;selection.textContent=target.b.name+" — "+target.b.desc+(target.b.unlocked===false?" Requisito indicado: Torre de Vigia nível "+target.b.level+".":"");action.textContent=target.b.unlocked===false?"Ver requisito":"Ver detalhes";}
     draw(performance.now());
   }
   canvas.addEventListener("pointerdown",e=>{canvas.setPointerCapture(e.pointerId);view.drag={x:e.clientX,y:e.clientY,px:view.panX,py:view.panY};view.moved=false;});
@@ -175,7 +179,7 @@
   if(openWorldMapBtn)openWorldMapBtn.addEventListener("click",()=>show("world"));
   if(openShelterBtn)openShelterBtn.addEventListener("click",()=>show("base"));
   heroesBtn.addEventListener("click",()=>{notice.textContent="Painel de heróis: use o botão Herói da arena após retornar. Integração com esta tela será feita em uma etapa própria.";});
-  action.addEventListener("click",()=>{if(!view.selected){notice.textContent="Selecione primeiro um ponto no mapa.";return;}if(view.mode==="base"&&view.selected.id==="shelter-house"){hide();return;}notice.textContent=view.mode==="world"?"Destino selecionado: "+(view.selected.name||"local")+". A marcha visual é demonstrativa; ainda não envia tropas ao servidor.":"Edifício selecionado: "+view.selected.name+". Melhorias e custos serão conectados numa próxima etapa.";});
+  action.addEventListener("click",()=>{if(!view.selected){notice.textContent="Selecione primeiro um ponto no mapa.";return;}if(view.mode==="base"&&view.selected.id==="shelter-house"){hide();return;}notice.textContent=view.mode==="world"?"Destino selecionado: "+(view.selected.name||"local")+". A marcha visual é demonstrativa; ainda não envia tropas ao servidor.":(view.selected.unlocked===false?"Bloqueado. Requisito de referência provisório: Torre de Vigia nível "+view.selected.level+". O desbloqueio real ainda precisa ser confirmado em jogo.":"Edifício selecionado: "+view.selected.name+". A tela mostra a progressão inicial; construção, melhorias, custos e produção ainda não estão conectados ao servidor.");});
   function frame(now){if(!screen.hidden&&view.mode==="world"){draw(now);view.lastFrame=now;}requestAnimationFrame(frame);}
   window.addEventListener("resize",resize);
   window.addEventListener("keydown",e=>{if(e.key==="Escape"&&!screen.hidden)hide();});
