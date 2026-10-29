@@ -3,9 +3,9 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 
-const root = new URL('../', import.meta.url);
 const configSource = fs.readFileSync(new URL('../frontend/public/api/config.js', import.meta.url), 'utf8');
 const html = fs.readFileSync(new URL('../frontend/public/index.html', import.meta.url), 'utf8');
+const mainSource = fs.readFileSync(new URL('../frontend/public/main.js', import.meta.url), 'utf8');
 const capacitor = JSON.parse(fs.readFileSync(new URL('../capacitor.config.json', import.meta.url), 'utf8'));
 
 function resolveApi(hostname, metaContent = '') {
@@ -46,4 +46,21 @@ test('Android package uses the reviewed browser client and HTTPS scheme without 
   assert.equal(capacitor.server.cleartext, false);
   assert.match(html, /meta name="iwar-api-base-url" content="https:\/\/infinit-war-api\.onrender\.com"/);
   assert.match(html, /connect-src[^>]*https:\/\/infinit-war-api\.onrender\.com/);
+});
+
+test('Android entry exposes working Firebase email login and account creation controls', () => {
+  for (const id of ['emailAuthForm', 'authEmail', 'authPassword', 'emailLoginBtn', 'emailRegisterBtn', 'googleLoginBtn', 'authStatus', 'startGameBtn']) {
+    assert.match(html, new RegExp('id="' + id + '"'), 'missing login control: ' + id);
+  }
+  assert.match(html, /auth\/auth\.js/);
+  assert.match(html, /firebase-auth-compat\.js/);
+  assert.doesNotMatch(html, /data-element="(?:fire|water|earth)"/);
+});
+
+test('entry navigation permits a logged-in user to continue without a nickname or element selection', () => {
+  assert.match(mainSource, /session\.uid/);
+  assert.match(mainSource, /session\.email/);
+  assert.match(mainSource, /localStorage\.setItem\("playerElement", "Comandante"\)/);
+  assert.match(mainSource, /window\.location\.href = "game\.html"/);
+  assert.match(mainSource, /sourceNick = typedNick \|\| session\.displayName/);
 });
