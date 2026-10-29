@@ -144,6 +144,7 @@
                 linkedAt: Date.now()
             };
             setSession(session);
+            window.dispatchEvent(new CustomEvent("iwar:authenticated", { detail: session }));
             renderStatus(session);
             await syncBackendSession(session, refreshedUser);
         } catch (error) {
