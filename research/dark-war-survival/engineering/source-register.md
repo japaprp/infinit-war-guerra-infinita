@@ -11,6 +11,7 @@
 | Datatable map | `DARKWAR_DATATABLE_ASSET_BUNDLE_MAP_2026-10-30.csv` | 1,064 asset-index records | Table-to-bundle mapping; 938 .bytes records | Uploaded |
 | Gameplay system trace | `DARKWAR_SYSTEM_BUNDLE_TRACE_2026-10-30.md` | 324 gameplay-relevant mappings | Human-readable selected datatable trace | Summarized in coverage/findings; original detailed report remains local |
 | Lua module trace | `DARKWAR_LUA_MODULE_BUNDLE_TRACE_2026-10-30.csv/.md` | 66 module records; 30 bundles | Lua module-to-bundle mapping | CSV uploaded; report summarized |
+| Lua binary TextAsset export | `DARKWAR_LUA_BINARY_EXPORT_MANIFEST_2026-10-30.csv` | 12,370 TextAsset `.bytes` records; 30 bundles | Per-file relative path, byte length, SHA-256 and observed header family | Mirrored as 13 metadata CSV parts; original binary payloads remain local |
 | APK/cache union V2 | `DARKWAR_INSTALLED_PACKAGE_BUNDLE_COVERAGE_V2_2026-10-30.csv/.md` | 1,473 rows | Historical selected-source crosswalk; superseded by V3 after parser repair | Uploaded; historical only |
 | APK/cache union V3 | `DARKWAR_INSTALLED_PACKAGE_BUNDLE_COVERAGE_V3_2026-10-30.csv` | 1,658 rows | Current selected-source crosswalk: 52 datatable + 30 Lua + 1,576 gameres | Uploaded; canonical |
 | Gamerares category coverage V1 | `DARKWAR_GAMERES_BUNDLE_COVERAGE_2026-10-30.csv/.md` | 1,392 rows | Historical category/source rollup with one UNMAPPED placeholder | Uploaded; superseded |
@@ -27,6 +28,7 @@
 ## GitHub data layout
 
 - `data/manifests/` — uploaded source CSVs (derived metadata only; no bundle payloads).
+- `data/manifests/lua-binary/` — 12,370-row Lua TextAsset metadata manifest split into 13 CSV parts, plus per-bundle summary and reconciliation.
 - `engineering/` — reconciled findings, coverage, source register, direct S21 audit and handoff.
 - `../index.md` and `../data-dictionary.md` — earlier screenshot-derived reference catalog.
 
@@ -38,6 +40,7 @@
 4. **Did the selected extracted payload match expected size and SHA-256?** Use the complete integrity manifest (82), hero manifest (114), or map/season manifest (54), depending on collection.
 5. **What is the category-level gameres availability?** Use gameres coverage V2 and the duplicate/category caveats in [crosswalk findings](crosswalk-findings-2026-10-30.md).
 6. **What exact gameres asset path was indexed?** Use the original 24,558-row map plus the 370-row repair patch, or rerun the parser script to reconstruct the corrected V2 map.
+7. **Which Lua TextAssets were exported and integrity-checked?** Use the 13-part Lua binary export manifest; use its per-bundle summary for aggregate counts and TextAsset-set SHA-256. Exact Lua version/decompilation status remains NOT RUN.
 
 ## Historical versus canonical
 
