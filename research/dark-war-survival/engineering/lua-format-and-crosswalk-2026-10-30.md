@@ -22,7 +22,11 @@ All files begin with the Lua signature `1B 4C 75 61`. The version and official-f
 
 **Corpus validation:** 12,370/12,370 header checks PASS; 6,185 Lua 5.4 + 6,185 Lua 5.5; zero failures, zero empty files, zero non-Lua signatures.
 
-**Boundary:** this validates chunk headers, not every prototype/instruction/body section. Full chunk loading, semantic disassembly and decompilation remain NOT RUN.
+**Full-chunk parser:** six representative samples (HeroDataManager, HeroEquipManager and HeroLevelUpTemplateManager, three per family) passed first. The corrected structural parser then completed the entire corpus: **12,370/12,370 PASS**, zero failures. It parsed recursive prototype trees, instruction arrays, constants, upvalues, source strings and debug sections, consumed each file exactly to EOF and verified the root closure-upvalue count.
+
+Corpus totals: 179,088 functions; 6,330,931 instructions; 1,825,399 constants; 2,571,205 string occurrences. The parser does not yet decode instruction opcodes or evaluate runtime behavior, so semantic disassembly and decompilation remain NOT RUN.
+
+**Lua 5.5 alignment finding:** the parser must retain a one-byte alignment offset bias corresponding to the observed prefix byte at offset 4 when aligning instruction and absolute-line-info arrays. Without this bias, the parser misreads the first constant count; with it, all 6,185 Lua 5.5 files parse completely. The prefix's implementation-level meaning remains NOT DETERMINED. The parser also handles Lua 5.5's 64-bit integer constants using BigInt varints.
 
 Official format references:
 - Lua 5.4.9: https://www.lua.org/source/5.4/lundump.c.html and https://www.lua.org/source/5.4/lundump.h.html
@@ -66,7 +70,17 @@ Candidate-only modules:
 - OffSeasonManager → season_activity_panel, season_activity_panel_group (LOW)
 - SeasonGroupManager → aps_season, aps_season_group, season_config_group, season_model (LOW)
 
-**Interpretation boundary:** a printable token in the text projection is not proof that the compiled function calls that table at runtime. Candidate references remain candidates. AssetRipper Text API output is a UTF-8 projection and is not byte-preserving; all binary-format validation above used the raw exported TextAsset files instead.
+**Interpretation boundary:** a printable token in the text projection is not proof that the compiled function calls that table at runtime. Candidate references remain candidates. AssetRipper Text API output is a UTF-8 projection and is not byte-preserving; binary parsing above used raw exported TextAsset files.
+
+### Binary constant-pool crosswalk (full structural parser)
+
+- The full parser extracted 26,354 table/API candidate-string rows from the 12,370 parsed chunks.
+- Normalizing case and punctuation produced 883 constant-to-index-name matches across 792 module variants and 34 distinct DataTable names.
+- 453 of those 883 module/table matches occur in module variants that also contain the `GetTableData` API symbol (380 module variants). This is module-level co-occurrence only, not proof that the table constant is passed to that function.
+- System categories: building 83 matches (52 with same-module `GetTableData`); heroes 6 (3); equipment 4 (1); seasons 50 (37); activities 119 (93); world/territory 90 (79). No exact normalized event-table constant match was found in this candidate extraction, although event tables exist in the DataTable index.
+- Specific module evidence: `UIBuildUpgradeView` and `UIBuildCreateView` each contain `GetTableData` plus `BUILDING`, `Effect` and `Goods` constants. `HeroEquipManager` contains `GetTableData` plus `GOODS`. `HeroWeaponUtil` and `HeroWeaponManager` contain `heroes_exclusive_equip` evidence. `SeasonDataManager` contains `GetTableData` plus `APS_Season`, `season_dialog`, `season_prew` and `SeasonPrewGroup`. `OffSeasonManager` contains `GetTableData` plus `activityPanel` and `SeasonActivityPanel`.
+- `HeroDataManager` and `HeroLevelUpTemplateManager` contain `GetTableData`, but no exact normalized DataTable-name constant match was found for those modules. `HeroLevelUpTemplateManager` still has the MEDIUM candidate `ABtest_heroes_levelup` / `NewHeroesLevelUp` from the earlier text-projection crosswalk.
+- Exact function/callsite association still requires opcode decoding; treat all constant-pool matches as candidate evidence, not confirmed runtime links.
 
 ## 4. DataTable system inventory
 
@@ -110,16 +124,16 @@ Exact prerequisites, upgrade costs, research bonuses, hero/equipment formulas, s
 ## 5. Tooling and resource gate
 
 - The connected Windows device has Node.js but no `lua`, `luac`, Java, GCC, Clang, MSVC `cl`, CMake or Make available on PATH; no local Lua decompiler binary was found in the checked Downloads tree.
-- Full Lua chunk parsing/decompilation is therefore NOT RUN. The Node scripts used here are binary-safe header validators only.
+- A custom Node.js structural parser based on official Lua 5.4.9/5.5.1 loader definitions passed all 12,370 full chunks. It is not a native Lua runtime and does not decode opcodes. Independent compiler/disassembler validation remains unavailable.
 - Free physical RAM at the latest check: approximately 488 MB. The prior AssetRipper safety gate requires approximately 875–975 MB free before startup, targeting 700–800 MB during import. The current state is below the minimum; no new DataTable AssetRipper import was attempted.
 - DataTable bundle payloads have not yet been exported and parsed in this stage. All table names above come from the index map and existing traces.
 
 ## 6. Next safe steps
 
-1. Preserve the verified Lua 5.4/5.5 classification and the marker validation in the shared research branch.
-2. When free RAM reaches the established gate, export one smallest relevant DataTable bundle at a time; start with the cached building bundle, then hero/equipment and season bundles.
-3. Obtain a trusted Lua 5.4.9 and Lua 5.5.1 full-chunk parser/disassembler path, then validate full chunk loading on the six known samples before any bulk work.
-4. Reconcile actual decompiled `GetTableData` callsites with the DataTable asset map. Keep exact string tokens, candidate links and confirmed callsites as separate evidence levels.
+1. Preserve the full-corpus Lua 5.4/5.5 structural parse, the 883 normalized constant-to-index matches and the four index-marker validations in the shared research branch.
+2. Decode Lua 5.4/5.5 instruction opcodes and associate constants with actual function/callsite contexts; do not promote module-level co-occurrence to a confirmed table call.
+3. When free RAM reaches the established gate, export one smallest relevant DataTable bundle at a time; start with the cached building bundle, then hero/equipment and season bundles.
+4. Reconcile confirmed `GetTableData` callsites with the DataTable asset map. Keep exact tokens, normalized constant matches, candidates and confirmed callsites as separate evidence levels.
 5. Only then document numeric construction costs/upgrades, hero stats/skills, equipment bonuses, season phases/rewards and event schedules.
 
 ## 7. Safety and publication boundary
