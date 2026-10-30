@@ -6,8 +6,8 @@ This directory mirrors derived metadata only. No APK, Unity AssetBundle, extract
 
 - 12,370 extracted TextAsset .bytes records from all 30 unique bundles in the existing Lua module crosswalk.
 - Each record includes bundle name, relative TextAsset path, byte length, SHA-256, first 16 bytes, observed header family, and explicit NOT_DETERMINED / NOT_RUN fields for Lua version and decompiler validation.
-- Two header families: LUA_MAGIC_03_54 (6,185 records) and LUA_MAGIC_A8_55 (6,185 records).
-- Exact Lua version and custom bytecode transformation are not established. Header-family labels are not proof of a specific Lua release.
+- Two header families validated against official chunk-header sentinels: Lua 5.4 (6,185 records; prefix byte 0x03) and Lua 5.5 (6,185 records; prefix byte 0xA8).
+- The prefix byte's application-specific meaning remains NOT DETERMINED. Full chunk-body parsing and semantic decompilation remain NOT RUN.
 
 ## CSV parts
 
@@ -32,6 +32,9 @@ Each part repeats the same header. Part 01 contains 999 data rows; Parts 02–12
 - [Per-bundle export summary](DARKWAR_LUA_BINARY_EXPORT_SUMMARY_2026-10-30.csv) — final file counts, TextAsset counts, header-family counts and aggregate TextAsset-set SHA-256.
 - [Export reconciliation](DARKWAR_LUA_BINARY_EXPORT_RECONCILIATION_2026-10-30.csv) — initial versus final file/byte counts.
 - [AssetRipper warning summary](DARKWAR_ASSETRIPPER_EXPORT_WARNINGS_2026-10-30.csv) — cumulative-log warning names and occurrence counts.
+- [Header-family correlation](DARKWAR_LUA_BINARY_HEADER_FAMILY_CORRELATION_2026-10-30.csv) — per-bundle variant/header relationship.
+- [Full-corpus header validation](../DARKWAR_LUA_HEADER_CORPUS_VALIDATION_2026-10-30.csv) — 12,370/12,370 header checks PASS.
+- [Six-sample validation](../DARKWAR_LUA_HEADER_SAMPLE_VALIDATION_2026-10-30.csv) — three modules per version family.
 - [Engineering report](../../engineering/lua-binary-export-2026-10-30.md) — method, scope, evidence and validation ledger.
 
 ## Interpretation boundary
