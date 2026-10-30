@@ -103,12 +103,12 @@ The A-register check further rejects this candidate: 9,735/36,497 checked A valu
 
 ## Next safe steps
 
-1. Determine whether Lua 5.5 IDs 85–127 are custom opcodes or transformed stock IDs; begin with the most frequent values and the exact raw instruction words.
-2. Compare candidate opcode IDs across repeated/related modules and Lua 5.4/5.5 variants; test whether opcode IDs are stable by operation context.
-3. Reconcile the `BXOR`/`IDIV`/`SETLIST` A-register anomalies against the actual opcode mode table before trusting stock semantics.
-4. Build a separate experimental disassembler only after opcode mapping and operand formats are independently validated; keep `parse-lua-chunks.js` unchanged.
-5. Then resume function-level correlation of `GetTableData` and DataTable names.
+1. Validate B/C/k operands for each empirically mapped opcode, including IDs that map to the same Lua 5.4 operation name.
+2. Validate signed/unsigned jump offsets, branch destinations, constant-pool indices, upvalue references, and prototype references.
+3. Resolve the remaining opcode aliases/specialized variants before treating the crosswalk as definitive.
+4. Build a separate experimental disassembler only after operand and control-flow checks pass; keep `parse-lua-chunks.js` unchanged.
+5. Use the validated disassembler to confirm actual `GetTableData` callsites and connect them to DataTable names.
 
-Publication: this report and the compact module summary were committed to `research/dark-war-survival-captures`. No merge, deployment, or external game release was performed.
+Publication: both investigation reports, the crosswalk CSV, the compact module summary, and the 66-module inventory summary were committed to `research/dark-war-survival-captures`. No merge, deployment, or external game release was performed.
 
 [executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]
