@@ -24,7 +24,7 @@ All files begin with the Lua signature `1B 4C 75 61`. The version and official-f
 
 **Full-chunk parser:** six representative samples (HeroDataManager, HeroEquipManager and HeroLevelUpTemplateManager, three per family) passed first. The corrected structural parser then completed the entire corpus: **12,370/12,370 PASS**, zero failures. It parsed recursive prototype trees, instruction arrays, constants, upvalues, source strings and debug sections, consumed each file exactly to EOF and verified the root closure-upvalue count.
 
-Corpus totals: 179,088 functions; 6,330,931 instructions; 1,825,399 constants; 2,571,205 string occurrences. The parser does not yet decode instruction opcodes or evaluate runtime behavior, so semantic disassembly and decompilation remain NOT RUN.
+Corpus totals: 179,088 functions; 6,330,931 instructions; 1,825,399 constants; 2,571,205 string occurrences. PASS: all 12,370 parser-input SHA-256 values match the original per-file export manifest exactly (12,370/12,370; zero missing keys or mismatches). The parser does not yet decode instruction opcodes or evaluate runtime behavior, so semantic disassembly and decompilation remain NOT RUN.
 
 **Lua 5.5 alignment finding:** the parser must retain a one-byte alignment offset bias corresponding to the observed prefix byte at offset 4 when aligning instruction and absolute-line-info arrays. Without this bias, the parser misreads the first constant count; with it, all 6,185 Lua 5.5 files parse completely. The prefix's implementation-level meaning remains NOT DETERMINED. The parser also handles Lua 5.5's 64-bit integer constants using BigInt varints.
 
