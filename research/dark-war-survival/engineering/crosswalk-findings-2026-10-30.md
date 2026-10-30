@@ -109,7 +109,7 @@ Status: **BLOCKED / NEEDS RECONCILIATION**. These values have different formats 
 - The source CSV contains 24,558 data rows and is approximately 4.8 MB.
 - It is now mirrored as four CSV parts under `data/manifests/`, each with the same header. Part 1 contains 7,999 data rows; Parts 2 and 3 contain 8,000 each; Part 4 contains 559. Total: 24,558 data rows.
 - No asset payloads were included. The original local CSV was not modified.
-- Status: **PASS — all four parts created and independently re-read from GitHub; a complete row-level reassembly/hash comparison is NOT RUN.**
+- Status: **PASS — all four part files were created and GitHub returned a blob SHA for each. Part 4 content was fetched back; Parts 1–3 are above the connector's content-return threshold and return blob metadata with an empty body. Full row-level reassembly/hash comparison is NOT RUN.**
 
 ## 5. Canonical join strategy
 
