@@ -7,7 +7,8 @@ This directory mirrors derived metadata only. No APK, Unity AssetBundle, extract
 - 12,370 extracted TextAsset .bytes records from all 30 unique bundles in the existing Lua module crosswalk.
 - Each record includes bundle name, relative TextAsset path, byte length, SHA-256, first 16 bytes, observed header family, and explicit NOT_DETERMINED / NOT_RUN fields for Lua version and decompiler validation.
 - Two header families validated against official chunk-header sentinels: Lua 5.4 (6,185 records; prefix byte 0x03) and Lua 5.5 (6,185 records; prefix byte 0xA8).
-- The prefix byte's application-specific meaning remains NOT DETERMINED. Full chunk-body parsing and semantic decompilation remain NOT RUN.
+- The prefix byte's application-specific meaning remains NOT DETERMINED. Full chunk structural parsing PASS: 12,370/12,370 files. Instruction opcode decoding and semantic decompilation remain NOT RUN.
+- Lua 5.5 parsing requires a one-byte alignment offset bias corresponding to the observed prefix byte; the implementation-level reason for this prefix remains NOT DETERMINED.
 
 ## CSV parts
 
@@ -34,7 +35,13 @@ Each part repeats the same header. Part 01 contains 999 data rows; Parts 02–12
 - [AssetRipper warning summary](DARKWAR_ASSETRIPPER_EXPORT_WARNINGS_2026-10-30.csv) — cumulative-log warning names and occurrence counts.
 - [Header-family correlation](DARKWAR_LUA_BINARY_HEADER_FAMILY_CORRELATION_2026-10-30.csv) — per-bundle variant/header relationship.
 - [Full-corpus header validation](../DARKWAR_LUA_HEADER_CORPUS_VALIDATION_2026-10-30.csv) — 12,370/12,370 header checks PASS.
-- [Six-sample validation](../DARKWAR_LUA_HEADER_SAMPLE_VALIDATION_2026-10-30.csv) — three modules per version family.
+- [Six-sample header validation](../DARKWAR_LUA_HEADER_SAMPLE_VALIDATION_2026-10-30.csv) — three modules per version family.
+- [Full-chunk parse summary](../DARKWAR_LUA_FULL_CHUNK_PARSE_SUMMARY_2026-10-30.csv) — 12,370/12,370 structural parse PASS and aggregate function/instruction/constant counts.
+- [Per-bundle parse summary](../DARKWAR_LUA_FULL_CHUNK_PARSE_BY_BUNDLE_2026-10-30.csv) — 30 bundle-level parse counts.
+- [Six full-chunk samples](../DARKWAR_LUA_FULL_CHUNK_SAMPLE_VALIDATION_2026-10-30.csv) — prototype, code, constant, upvalue and debug-structure results.
+- [Binary constant/DataTable matches](../DARKWAR_LUA_BINARY_CONSTANT_DATATABLE_MATCHES_V2_2026-10-30.csv) — 883 normalized constant-to-index-name matches, with same-module GetTableData evidence flag.
+- [Binary match summary](../DARKWAR_LUA_BINARY_CONSTANT_DATATABLE_SUMMARY_2026-10-30.csv) — category-level counts and evidence boundary.
+- [Structural parser source](../../tools/parse-lua-chunks.js) — portable Node.js parser for Lua 5.4/5.5 chunk structure.
 - [Engineering report](../../engineering/lua-binary-export-2026-10-30.md) — method, scope, evidence and validation ledger.
 
 ## Interpretation boundary
