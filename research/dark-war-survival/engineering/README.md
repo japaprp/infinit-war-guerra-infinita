@@ -8,6 +8,7 @@
 3. [Metadata manifests README](../data/manifests/README.md) — links to the mirrored CSV files.
 4. [Direct S21 package/cache audit](phone-audit-2026-10-30.md) — current installed split APK inventory, 311 cached bundles, SHA-256 and version-marker reconciliation.
 5. [Verified engineering handoff](handoff-2026-10-30.md) — last verified state, safety gate and next tasks.
+6. [Lua binary export report](lua-binary-export-2026-10-30.md) — 30/30 targeted Lua bundles exported, per-file SHA-256 manifest and header-family inventory.
 
 ## Project boundary
 - Dark War: Survival is the reference subject only.
@@ -16,6 +17,7 @@
 
 ## Evidence documents
 - [Consolidated technical findings](findings-2026-10-30.md) — architecture, client-side system inventory, version markers, limits.
+- [Lua binary export report](lua-binary-export-2026-10-30.md) — selected 30-bundle AssetRipper export, 12,370 TextAsset hashes, format caveats.
 - [Bundle coverage and reconciliation](coverage-2026-10-30.md) — APK/cache union, integrity status, unmapped records.
 - [Direct S21 package/cache audit](phone-audit-2026-10-30.md) — fresh read-only check against the currently installed five APK splits and external cache.
 - [Gamerares parser-fix validation](gameres-parser-fix-2026-10-30.md) — root cause and PASS evidence for all 370 repaired UNMAPPED rows.
@@ -27,6 +29,7 @@
 - Use APK/cache coverage V3 for selected datatable, Lua and gameres source availability; V2 is historical.
 - Use the complete 82-row hash manifest for targeted datatable/Lua integrity; use the separate 114-row hero and 54-row map/season manifests for those payload sets.
 - Use the datatable asset map and Lua module trace for table/module-to-bundle relationships; use union V3 and the complete hash manifest for exact source availability.
+- Use the [Lua binary export manifest index](../data/manifests/lua-binary/README.md) for the 12,370 extracted TextAsset metadata rows; the per-file binary payloads remain local.
 - Treat the 78-row initial collection manifest and old staging folders as historical first-pass evidence.
 - The 24,558-row detailed gameres asset map is mirrored in four original CSV parts; apply the 370-row repair patch by AssetIndex or rerun the parser to reconstruct corrected V2.
 - Do not add counts across different grains. A CSV row, distinct bundle, directory record, candidate model folder and extracted payload are different units.
@@ -54,4 +57,4 @@ This repository is public. Do not add original APKs, extracted proprietary bundl
 - 1,576 selected gameres bundles available in corrected APK/cache union V3.
 - The 370 formerly UNMAPPED gameres rows are resolved in V2; zero remain unmapped.
 - The V1 `UNMAPPED` placeholder is superseded by the parser repair: 370 rows now resolve to 185 real bundle names; V2 contains 1,576 actual bundles and no placeholder.
-- AssetRipper import remains BLOCKED by the low-memory safety gate.
+- Targeted AssetRipper export: 30/30 Lua crosswalk bundles PASS; 12,370 TextAsset .bytes files inventoried and SHA-256 hashed, 6,720 JSON sidecars; full APK extraction and semantic bytecode decompilation remain NOT RUN.
