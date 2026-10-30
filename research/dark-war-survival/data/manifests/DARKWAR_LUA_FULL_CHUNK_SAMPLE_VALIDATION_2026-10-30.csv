@@ -1,0 +1,7 @@
+Module,Variant,LuaVersion,SizeBytes,Functions,Instructions,Constants,Upvalues,Prototypes,StringOccurrences,UniqueStrings,StringPoolReferences,MaxPrototypeDepth,Status
+HeroDataManager,base,5.4,18763,59,1613,468,43,58,823,256,0,2,PASS_FULL_CHUNK_STRUCTURE
+HeroDataManager,55,5.5,15136,59,1622,468,43,58,859,256,603,2,PASS_FULL_CHUNK_STRUCTURE
+HeroEquipManager,base,5.4,32313,77,2663,859,59,76,1491,334,0,2,PASS_FULL_CHUNK_STRUCTURE
+HeroEquipManager,55,5.5,24537,77,2665,859,59,76,1521,334,1187,2,PASS_FULL_CHUNK_STRUCTURE
+HeroLevelUpTemplateManager,base,5.4,2214,13,155,56,10,12,97,45,0,1,PASS_FULL_CHUNK_STRUCTURE
+HeroLevelUpTemplateManager,55,5.5,1958,13,155,56,10,12,108,45,63,1,PASS_FULL_CHUNK_STRUCTURE
