@@ -52,7 +52,7 @@ The module trace contains 66 records mapped to 30 bundles. The trace's note of 2
 - S21-cache-only: 57.
 - Present in both: 0.
 - Missing from both within the selected inventory: 0.
-- 370 selected asset rows remain unmapped by the current range parser. They are not missing bundles.
+- Historical first-pass status: 370 selected asset rows were initially unmapped by the range parser. This was resolved later by DQ-08 using the direct AssetIndex -> BundleId join; zero remain unmapped in corrected local V2.
 
 Category counts in the consolidated coverage report: Hero 378, Season 190, MapTerrain 42, Building 389, Equipment 99, CombatUI 207, World 87. Categories may overlap; do not sum them to derive the 1,391 total.
 
@@ -126,8 +126,9 @@ Keep `Catalog` in the key when joining V2 coverage because different catalogs ma
 ## 6. Next reconciliation tasks
 
 1. Reconcile version markers and establish which index snapshots belong to the same release/build.
-2. Partition/sanitize the 24,558-row gameres map if a GitHub mirror is useful; keep the original unchanged.
-3. Continue lightweight, read-only parser work on the 370 unmapped asset rows.
+2. Crosswalk all 66 Lua module trace records against the DataTable asset map; label direct string matches separately from candidate semantic links.
+3. Validate the two observed Lua-magic header families with a compatible parser/decompiler on a small sample before any bulk decompilation.
+4. Extract conclusions about constructions, heroes, equipment and seasons only when the relevant Lua module and DataTable rows are linked by inspectable evidence.
 
 
 ## 7. DQ-07 — Direct S21 package/cache audit (2026-10-30)
@@ -164,3 +165,16 @@ Keep `Catalog` in the key when joining V2 coverage because different catalogs ma
 - Phone/local index SHA-256 comparisons pass 4/4.
 - Index file timestamps are 2026-10-30 10:55; .version files 10:56. CheckVersion.txt is timestamped 2026-10-29 22:00; package lastUpdateTime is 2026-10-29 19:18:55.
 - Status: **PASS** for subsystem marker integrity. **BLOCKED** only for the semantic relationship between client package/CheckVersion 1.250.669;1629 and resource index header #30491.250.670. A post-install resource update is plausible but not proven.
+
+
+## 8. DQ-10 — Targeted Lua binary export (2026-10-30)
+
+- All 30 unique bundles in the existing Lua module crosswalk were imported/exported one at a time through AssetRipper.
+- Final reconciled output: 19,090 files / 77,063,517 bytes, comprising 12,370 TextAsset `.bytes` files (65,672,743 bytes) and 6,720 JSON sidecars.
+- All 12,370 TextAsset files have per-file SHA-256 records. The metadata manifest is mirrored in 13 CSV parts; the original binary payloads remain local.
+- Original source bundle SHA-256 matches the canonical 82-row data/Lua integrity manifest for 30/30 bundles.
+- Two header families were observed: 6,185 records with `03-54-00-19-93...` and 6,185 with `A8-55-00-19-93...`. These are header-family labels only; exact Lua version and custom bytecode transformation remain NOT RUN.
+- One UI bundle had a late-arriving export file: the first measurement recorded 617 files, final tree contained 618. The final reconciliation records the delta and passes.
+- The cumulative AssetRipper log contains 3,172 warning lines from 52 distinct asset names repeated 61 times. The log is cumulative and cannot be attributed solely to this run; zero warning names matched exported `.bytes` basenames.
+- Status: **PASS** for 30/30 targeted bundle exports, final directory reconciliation and source-bundle SHA-256. **NOT RUN** for semantic decompilation, exact Lua version identification, full APK extraction and runtime validation.
+- Evidence: [Lua binary export report](lua-binary-export-2026-10-30.md), [manifest parts index](../data/manifests/lua-binary/README.md), [per-bundle summary](../data/manifests/lua-binary/DARKWAR_LUA_BINARY_EXPORT_SUMMARY_2026-10-30.csv), [reconciliation](../data/manifests/lua-binary/DARKWAR_LUA_BINARY_EXPORT_RECONCILIATION_2026-10-30.csv), and [warning summary](../data/manifests/lua-binary/DARKWAR_ASSETRIPPER_EXPORT_WARNINGS_2026-10-30.csv).
