@@ -18,16 +18,17 @@
 - [Consolidated technical findings](findings-2026-10-30.md) — architecture, client-side system inventory, version markers, limits.
 - [Bundle coverage and reconciliation](coverage-2026-10-30.md) — APK/cache union, integrity status, unmapped records.
 - [Direct S21 package/cache audit](phone-audit-2026-10-30.md) — fresh read-only check against the currently installed five APK splits and external cache.
+- [Gamerares parser-fix validation](gameres-parser-fix-2026-10-30.md) — root cause and PASS evidence for all 370 repaired UNMAPPED rows.
 - [Visual evidence catalog](../index.md) — screenshot-derived observations.
 - [Data dictionary](../data-dictionary.md) — structured observations.
 - [Chips and resonance notes](../../docs/sistemas/chips_ressonancia.md) — early original-game design notes; values remain reported observations unless independently validated.
 
 ## Canonical source rules
-- Use APK/cache coverage V2 for selected bundle source availability.
+- Use APK/cache coverage V3 for selected datatable, Lua and gameres source availability; V2 is historical.
 - Use the complete 82-row hash manifest for targeted datatable/Lua integrity; use the separate 114-row hero and 54-row map/season manifests for those payload sets.
-- Use the datatable asset map and Lua module trace for table/module-to-bundle relationships.
+- Use the datatable asset map and Lua module trace for table/module-to-bundle relationships; use union V3 and the complete hash manifest for exact source availability.
 - Treat the 78-row initial collection manifest and old staging folders as historical first-pass evidence.
-- The 24,558-row detailed gameres asset map is mirrored in four CSV parts; the source remains unchanged locally.
+- The 24,558-row detailed gameres asset map is mirrored in four original CSV parts; apply the 370-row repair patch by AssetIndex or rerun the parser to reconstruct corrected V2.
 - Do not add counts across different grains. A CSV row, distinct bundle, directory record, candidate model folder and extracted payload are different units.
 
 ## Evidence vocabulary
@@ -50,7 +51,7 @@ This repository is public. Do not add original APKs, extracted proprietary bundl
 - 82/82 data + Lua bundle size/hash checks PASS.
 - 114/114 selected hero-model bundle checks PASS (76 candidate folders, not a confirmed playable roster).
 - 54/54 selected map/season bundle checks PASS.
-- 1,391 selected gameres bundles available in APK/cache union.
-- 370 selected gameres asset rows remain unmapped by the current parser.
-- Hero category and gameres coverage count differences are RESOLVED: the extra row is the `UNMAPPED` placeholder, not a real bundle.
+- 1,576 selected gameres bundles available in corrected APK/cache union V3.
+- The 370 formerly UNMAPPED gameres rows are resolved in V2; zero remain unmapped.
+- The V1 `UNMAPPED` placeholder is superseded by the parser repair: 370 rows now resolve to 185 real bundle names; V2 contains 1,576 actual bundles and no placeholder.
 - AssetRipper import remains BLOCKED by the low-memory safety gate.
