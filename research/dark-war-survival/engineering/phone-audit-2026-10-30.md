@@ -15,7 +15,7 @@
 
 ## 2. Installed split APK inventory
 
-The ZIP central directory was enumerated directly on the phone for all five installed APKs.
+The ZIP central directory was enumerated directly on the phone for all five installed APKs. Across all five splits there are 5,801 ZIP entries and 5,785 unique path strings (16 repeated path occurrences in the aggregate). Per-split ZIP entry counts: base.apk 1,109; split_config.arm64_v8a.apk 12; split_gpdeku.apk 4; split_gpdeku.config.arm64_v8a.apk 6; split_install_time_pack.apk 4,670. Top-level path groups across the five ZIPs: assets 4,931; res 617; org 128; META-INF 60; root-level 49; lib 8; kotlin 7; okhttp3 1.
 
 | Component | AssetBundle entries |
 |---|---:|
@@ -23,10 +23,10 @@ The ZIP central directory was enumerated directly on the phone for all five inst
 | split_config.arm64_v8a.apk | 0 |
 | split_gpdeku.apk | 0 |
 | split_gpdeku.config.arm64_v8a.apk | 0 |
-| split_install_time_pack.apk | 4,664 |
-| **Total unique installed AssetBundle paths** | **4,664** |
+| split_install_time_pack.apk | 4,656 .bundle payloads + 8 index/control files |
+| **Total .bundle payloads** | **4,656** |
 
-The current on-device index contains 4,664 unique AssetBundle paths. The prior local file SPLIT_APK_ASSETBUNDLE_LIST_2026-10-30.txt also contains 4,664 entries. Exact filename-set comparison returned 0 additions and 0 removals. **PASS — the prior local APK path inventory matches the currently installed package's AssetBundle path inventory.**
+The current on-device directory listing contains 4,664 unique paths under assets/AssetBundles: 4,656 files ending in .bundle plus 8 index/control files (gameres, datatable, lua, download and their four .version markers). The local SPLIT_APK_ASSETBUNDLE_LIST_2026-10-30.txt contains all 4,664 paths; exact filename-set comparison returned 0 additions and 0 removals. The local DARKWAR_SPLIT_APK_BUNDLE_INDEX_2026-10-30.csv contains 4,656 rows, correctly counting only .bundle payloads. **PASS — both local inventories match their corresponding on-device grains; the apparent eight-entry difference is the eight index/control files, not missing bundles.**
 
 ## 3. S21 external AssetBundles cache
 
@@ -127,8 +127,8 @@ The phone CheckVersion.txt reads 1.250.669;1629. The local gameres index header 
 | ADB connection to S21 | PASS | Device serial RXCT100JBGV in device state |
 | Installed package identity/version | PASS | Package manager metadata |
 | Five installed APK components enumerated | PASS | pm path + installed package directory |
-| All installed APK ZIP AssetBundle entries indexed | PASS | 4,664 unique paths |
-| Prior local APK inventory reconciled | PASS | 4,664 exact entries; 0 added; 0 removed |
+| All installed APK ZIP AssetBundle entries indexed | PASS | 4,664 directory paths = 4,656 .bundle payloads + 8 controls |
+| Prior local APK inventory reconciled | PASS | 4,664 directory paths exact; CSV has 4,656 payload rows; 0 missing |
 | Phone cache inventory and SHA-256 | PASS | 319/319 files |
 | Four index SHA-256 comparisons | PASS | 4/4 identical to local Index_Metadata |
 | Four version marker comparisons | PASS | 4/4 contents identical |
@@ -145,3 +145,14 @@ The phone CheckVersion.txt reads 1.250.669;1629. The local gameres index header 
 3. Reconcile gameres/datatable/Lua/download markers with CheckVersion and package metadata without assuming they share one version namespace.
 4. Cross-reference selected cached Lua/datatable bundles with their current versioned filenames before drawing gameplay conclusions.
 5. Keep public GitHub limited to derived manifests and reports; retain proprietary payloads in controlled local storage.
+
+
+## 10. Count-grain clarification
+
+The two counts 4,664 and 4,656 are both correct but refer to different grains:
+
+- 4,664 unique paths under assets/AssetBundles, including the eight index/control files.
+- 4,656 actual .bundle payload files, which is the row count in the canonical split APK bundle CSV.
+- The ZIP archive itself contains 4,670 entries for split_install_time_pack.apk and 5,801 entries across all five installed APKs.
+
+Do not label 4,664 as the count of .bundle payloads. The canonical bundle-payload count remains 4,656.
