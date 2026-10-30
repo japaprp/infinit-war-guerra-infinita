@@ -17,6 +17,7 @@ See [dataset register](DARKWAR_MANIFEST_DATASET_REGISTER_2026-10-30.csv) for row
 - [Lua binary export metadata](lua-binary/README.md) — 12,370 extracted TextAsset records split across 13 CSV parts; per-file SHA-256 and header-family metadata, no binary payloads.
 - [Lua header corpus validation](DARKWAR_LUA_HEADER_CORPUS_VALIDATION_2026-10-30.csv) — 12,370/12,370 headers validate as Lua 5.4 or Lua 5.5 families.
 - [Full Lua chunk parse summary](DARKWAR_LUA_FULL_CHUNK_PARSE_SUMMARY_2026-10-30.csv) — 12,370/12,370 structural parser PASS.
+- [Parser/export SHA-256 reconciliation](DARKWAR_LUA_FULL_CHUNK_PARSE_INTEGRITY_RECONCILIATION_2026-10-30.csv) — all 12,370 parser inputs match the original export manifest.
 - [Per-bundle Lua parse summary](DARKWAR_LUA_FULL_CHUNK_PARSE_BY_BUNDLE_2026-10-30.csv) — 30 bundle summaries.
 - [Full-chunk sample validation](DARKWAR_LUA_FULL_CHUNK_SAMPLE_VALIDATION_2026-10-30.csv) — six representative files.
 - [Binary Lua constant/DataTable matches](DARKWAR_LUA_BINARY_CONSTANT_DATATABLE_MATCHES_V2_2026-10-30.csv) — 883 normalized constant-to-index-name matches.
