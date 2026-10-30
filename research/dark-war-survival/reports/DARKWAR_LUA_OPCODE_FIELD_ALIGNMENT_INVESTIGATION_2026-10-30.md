@@ -107,6 +107,6 @@ The A-register check further rejects this candidate: 9,735/36,497 checked A valu
 4. Build a separate experimental disassembler only after opcode mapping and operand formats are independently validated; keep `parse-lua-chunks.js` unchanged.
 5. Then resume function-level correlation of `GetTableData` and DataTable names.
 
-No GitHub publication, merge, deployment, or external release was performed by this report-generation step.
+Publication: this report and the compact module summary were committed to `research/dark-war-survival-captures`. No merge, deployment, or external game release was performed.
 
 [executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]
