@@ -14,7 +14,8 @@ See [dataset register](DARKWAR_MANIFEST_DATASET_REGISTER_2026-10-30.csv) for row
 - [Hero model payload manifest](DARKWAR_HERO_MODEL_ASSET_MANIFEST_2026-10-30.csv) — 114 bundle payload integrity records.
 - [Hero model directory map](DARKWAR_HERO_MODEL_DIRECTORY_MAP_2026-10-30.csv) — 396 directory records / 76 candidate folders.
 - [Map/season payload manifest](DARKWAR_MAP_SEASON_ASSET_MANIFEST_2026-10-30.csv) — 54 bundle payload integrity records.
-- [Split APK AssetBundle index](DARKWAR_SPLIT_APK_BUNDLE_INDEX_2026-10-30.csv) — 4,656 installed-package AssetBundle entries.
+- [Split APK AssetBundle index](DARKWAR_SPLIT_APK_BUNDLE_INDEX_2026-10-30.csv) — 4,656 installed-package .bundle payload entries (8 index/control paths are counted separately in the full ZIP directory inventory).
+- [S21 AssetBundles cache SHA-256 manifest](PHONE_ASSETBUNDLE_SHA256_2026-10-30.csv) — 319 files: 311 cached bundles plus four index files and four version markers.
 
 Historical [initial staging hash manifest](DARKWAR_COLLECTION_HASH_MANIFEST_2026-10-30.csv) is preserved but is not the canonical complete-set manifest.
 
