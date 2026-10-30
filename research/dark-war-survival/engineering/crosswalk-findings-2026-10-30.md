@@ -142,3 +142,16 @@ Keep `Catalog` in the key when joining V2 coverage because different catalogs ma
 - This audit has a broader scope than the selected 1,391-gameres union above. Keep exact bundle-name joins for canonical analysis and retain the normalized-name comparison only as a diagnostic.
 - Status: **PASS** for package/cache inventory and index/marker hash comparison; **BLOCKED** for CheckVersion/index-header release alignment; **NOT RUN** for extracting every installed payload.
 - Full details: [Direct S21 package/cache audit](phone-audit-2026-10-30.md). The sanitized 319-row manifest is [PHONE_ASSETBUNDLE_SHA256_2026-10-30.csv](../data/manifests/PHONE_ASSETBUNDLE_SHA256_2026-10-30.csv).
+
+
+## DQ-08 — Gamerares parser repair and union refresh (2026-10-30)
+
+- The 370 previously UNMAPPED rows were traced to pipe-separated asset-index expressions in [Bundles], for example 536|537. All 370 asset IDs resolve through the direct [Assets] AssetIndex -> BundleId relation and all 370 expressions validate.
+- 24,188 existing mappings match the direct index join; 370 were recovered; 0 missing references and 0 mismatches.
+- The corrected detailed map has 24,558 rows and 0 UNMAPPED rows in the local V2 output. The 370-row repair patch is mirrored by AssetIndex; the original four-part map remains immutable.
+- Corrected gameres coverage V2 has 1,576 distinct bundles: 1,518 APK-only, 58 cache-only, 0 both, 0 missing.
+- The refreshed multi-catalog union V3 has 1,658 rows: 52 datatable, 30 lua-gameplay, 1,576 gameres-selected; 1,552 APK-only, 106 cache-only, 0 both, 0 missing.
+- 34/34 selected datatable/Lua payloads present in the APK have matching package sizes; no size differences.
+- The older 1,391-bundle selected-gameres union and 1,392-row category CSV are retained as V1 historical artifacts, not the current source of truth.
+- Canonical artifacts: [union V3](../data/manifests/DARKWAR_INSTALLED_PACKAGE_BUNDLE_COVERAGE_V3_2026-10-30.csv), [gameres coverage V2](../data/manifests/DARKWAR_GAMERES_BUNDLE_COVERAGE_V2_2026-10-30.csv), [repair patch](../data/manifests/DARKWAR_GAMERES_UNMAPPED_REPAIR_2026-10-30.csv), [parser validation](gameres-parser-fix-2026-10-30.md).
+- Status: **PASS** — parser repair and source coverage refresh. Version marker namespace alignment remains **BLOCKED**.
