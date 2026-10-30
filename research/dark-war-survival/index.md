@@ -1,5 +1,10 @@
 # Catálogo de evidências — Dark War: Survival
 
+## Continuidade técnica e manifestos
+
+O ponto central para retomar a investigação técnica é o [Índice de Engenharia e Evidências](engineering/README.md). Consulte também o [Crosswalk de Manifestos](engineering/crosswalk-findings-2026-10-30.md), o [Registro de Fontes](engineering/source-register.md), o [Handoff de Continuidade](engineering/handoff-2026-10-30.md) e os [Manifestos CSV](data/manifests/README.md). Esta pasta mantém Dark War: Survival como referência de análise, separado da implementação original de Guerra Infinita.
+
+
 **Projeto de destino:** Guerra Infinita (implementação original)  
 **Estado:** auditoria da pasta `screenshots/` concluída: 94 arquivos de imagem presentes e 94 nomes únicos no catálogo, sem divergências entre pasta e inventário. A referência histórica de 96 indica que 2 imagens previstas ainda não estão na pasta atual. `WA0288` é o maior identificador observado, não a contagem total. `IMG-20261015-WA0288.jpg` aparece duas vezes no texto do inventário; `IMG-20261015-WA0213(1).jpg` é um arquivo distinto e seu nome original deve ser preservado.  
 **Branch de evidências:** `research/dark-war-survival-captures`  
