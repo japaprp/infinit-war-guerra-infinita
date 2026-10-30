@@ -2,6 +2,12 @@
 
 **Purpose:** maintain a reproducible, read-only technical reference study. **Reference date:** 2026-10-30.
 
+## Start here
+1. [Manifest and report crosswalk](crosswalk-findings-2026-10-30.md) — reconciled dataset grains, counts, discrepancies and canonical join strategy.
+2. [Source and manifest register](source-register.md) — tells you which source controls each question and which files are historical.
+3. [Metadata manifests README](../data/manifests/README.md) — links to the mirrored CSV files.
+4. [Verified engineering handoff](handoff-2026-10-30.md) — last verified state, safety gate and next tasks.
+
 ## Project boundary
 - Dark War: Survival is the reference subject only.
 - Guerra Infinita is a separate, original game project. Use high-level observations only; do not transfer proprietary code, art, names, account data, credentials, or copied balance tables.
@@ -10,10 +16,17 @@
 ## Evidence documents
 - [Consolidated technical findings](findings-2026-10-30.md) — architecture, client-side system inventory, version markers, limits.
 - [Bundle coverage and reconciliation](coverage-2026-10-30.md) — APK/cache union, integrity status, unmapped records.
-- [Engineering handoff](handoff-2026-10-30.md) — verified starting point, resource gate, next safe actions.
 - [Visual evidence catalog](../index.md) — screenshot-derived observations.
 - [Data dictionary](../data-dictionary.md) — structured observations.
 - [Chips and resonance notes](../../docs/sistemas/chips_ressonancia.md) — early original-game design notes; values remain reported observations unless independently validated.
+
+## Canonical source rules
+- Use APK/cache coverage V2 for selected bundle source availability.
+- Use the complete 82-row hash manifest for targeted datatable/Lua integrity; use the separate 114-row hero and 54-row map/season manifests for those payload sets.
+- Use the datatable asset map and Lua module trace for table/module-to-bundle relationships.
+- Treat the 78-row initial collection manifest and old staging folders as historical first-pass evidence.
+- The 24,558-row detailed gameres asset map remains in controlled local storage; its summary, category counts and unresolved parser limitations are documented in the crosswalk.
+- Do not add counts across different grains. A CSV row, distinct bundle, directory record, candidate model folder and extracted payload are different units.
 
 ## Evidence vocabulary
 | Label | Meaning |
@@ -37,4 +50,5 @@ This repository is public. Do not add original APKs, extracted proprietary bundl
 - 54/54 selected map/season bundle checks PASS.
 - 1,391 selected gameres bundles available in APK/cache union.
 - 370 selected gameres asset rows remain unmapped by the current parser.
+- Hero category count discrepancy (378 vs 379) and gameres coverage CSV row/distinct count (1,392 vs 1,391) are BLOCKED pending exact-key checks.
 - AssetRipper import remains BLOCKED by the low-memory safety gate.
