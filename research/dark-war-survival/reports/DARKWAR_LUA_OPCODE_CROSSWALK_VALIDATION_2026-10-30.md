@@ -122,6 +122,6 @@ Several Lua 5.5 IDs map to the same Lua 5.4 opcode name (for example, IDs 103 an
 4. Only after those checks, build a separate Lua 5.5 disassembler driven by the empirical opcode map.
 5. Use the validated disassembler to locate actual `GetTableData` callsites and connect them to DataTable names.
 
-No game modification, runtime injection, account manipulation, merge, deployment, or external release was performed.
+Publication: this report and `LUA_OPCODE_CROSSWALK_55_TO_54_2026-10-30.csv` were committed to `research/dark-war-survival-captures`. No game modification, runtime injection, account manipulation, merge, deployment, or external release was performed.
 
 [executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]
