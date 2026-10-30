@@ -11,7 +11,13 @@ See [dataset register](DARKWAR_MANIFEST_DATASET_REGISTER_2026-10-30.csv) for row
 - [Complete datatable + Lua integrity manifest](DARKWAR_COMPLETE_BUNDLE_HASH_MANIFEST_2026-10-30.csv) — 82 size/SHA-256 records.
 - [Datatable asset map](DARKWAR_DATATABLE_ASSET_BUNDLE_MAP_2026-10-30.csv) — 1,064 asset-index records.
 - [Lua module trace](DARKWAR_LUA_MODULE_BUNDLE_TRACE_2026-10-30.csv) — 66 module records.
+- [Lua/DataTable module crosswalk V2](DARKWAR_LUA_DATATABLE_MODULE_CROSSWALK_V2_2026-10-30.csv) — 66 module records with direct-token, no-token and semantic-blocked statuses.
+- [Direct Lua/DataTable token references](DARKWAR_LUA_DATATABLE_DIRECT_REFERENCES_2026-10-30.csv) — 34 exact printable-token matches across 8 modules and 12 table names; not runtime-call proof.
+- [Candidate Lua/DataTable references](DARKWAR_LUA_DATATABLE_CANDIDATE_REFERENCES_2026-10-30.csv) — 14 candidates, 2 medium and 12 low confidence.
 - [Lua binary export metadata](lua-binary/README.md) — 12,370 extracted TextAsset records split across 13 CSV parts; per-file SHA-256 and header-family metadata, no binary payloads.
+- [Lua header corpus validation](DARKWAR_LUA_HEADER_CORPUS_VALIDATION_2026-10-30.csv) — 12,370/12,370 headers validate as Lua 5.4 or Lua 5.5 families.
+- [Lua sample validation](DARKWAR_LUA_HEADER_SAMPLE_VALIDATION_2026-10-30.csv) — six representative module samples, three per family.
+- [Index version-marker validation](DARKWAR_INDEX_VERSION_MARKER_VALIDATION_2026-10-30.csv) — four index/marker pairs validated by size and CRC32.
 - [Gamerares category coverage V2](DARKWAR_GAMERES_BUNDLE_COVERAGE_V2_2026-10-30.csv) — corrected 1,576-bundle category/source rollup; no UNMAPPED placeholder.
 - [Gamerares category coverage V1](DARKWAR_GAMERES_BUNDLE_COVERAGE_2026-10-30.csv) — historical 1,392-row file; superseded.
 - [Gamerares UNMAPPED repair patch](DARKWAR_GAMERES_UNMAPPED_REPAIR_2026-10-30.csv) — 370 AssetIndex-keyed corrections resolving 185 bundle names.
@@ -22,6 +28,7 @@ See [dataset register](DARKWAR_MANIFEST_DATASET_REGISTER_2026-10-30.csv) for row
 - [S21 AssetBundles cache SHA-256 manifest](PHONE_ASSETBUNDLE_SHA256_2026-10-30.csv) — 319 files: 311 cached bundles plus four index files and four version markers.
 - [Gamerares parser repair validation](../engineering/gameres-parser-fix-2026-10-30.md) — 370/370 repaired UNMAPPED asset rows; 1,576 distinct gameres bundles.
 - [Parser script](../tools/parse-gameres-index.ps1) — reproducible direct AssetIndex-to-BundleId parser with pipe/range validation.
+- [Lua format and crosswalk report](../engineering/lua-format-and-crosswalk-2026-10-30.md) — official Lua 5.4/5.5 header validation, index marker reconciliation, and module/DataTable evidence boundaries.
 
 Historical [initial staging hash manifest](DARKWAR_COLLECTION_HASH_MANIFEST_2026-10-30.csv) is preserved but is not the canonical complete-set manifest.
 
