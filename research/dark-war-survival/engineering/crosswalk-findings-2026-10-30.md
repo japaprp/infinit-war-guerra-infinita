@@ -128,3 +128,17 @@ Keep `Catalog` in the key when joining V2 coverage because different catalogs ma
 1. Reconcile version markers and establish which index snapshots belong to the same release/build.
 2. Partition/sanitize the 24,558-row gameres map if a GitHub mirror is useful; keep the original unchanged.
 3. Continue lightweight, read-only parser work on the 370 unmapped asset rows.
+
+
+## 7. DQ-07 — Direct S21 package/cache audit (2026-10-30)
+
+- The currently installed five APK splits were inspected read-only on the Galaxy S21.
+- The install-time pack contains 4,670 ZIP entries; 4,664 paths are under assets/AssetBundles. Of those, 4,656 are .bundle payloads and 8 are index/control files. The canonical 4,656-row split APK CSV counts payloads only; the full 4,664-path local listing matches the phone exactly.
+- Across all five split APKs: 5,801 ZIP entries and 5,785 unique path strings.
+- The external cache contains 319 files: 311 bundles (161 gameres, 46 datatable, 104 Lua), four index files and four version markers. All 319 files were SHA-256 hashed.
+- Phone and local SHA-256 values match for all four index files; all four version marker contents match.
+- Comparing cache bundle names with the 4,656 package bundle payload names gives 0 exact filename matches, 291 candidate logical-name matches after diagnostic removal of the trailing 32-hex suffix, and 20 cache-only candidate logical names. Do not treat normalized names as canonical keys or as proof of identical payloads.
+- The 20 cache-only names are consistent with assets available in the runtime cache but absent from the package's bundle-name set; their source is not proven.
+- This audit has a broader scope than the selected 1,391-gameres union above. Keep exact bundle-name joins for canonical analysis and retain the normalized-name comparison only as a diagnostic.
+- Status: **PASS** for package/cache inventory and index/marker hash comparison; **BLOCKED** for CheckVersion/index-header release alignment; **NOT RUN** for extracting every installed payload.
+- Full details: [Direct S21 package/cache audit](phone-audit-2026-10-30.md). The sanitized 319-row manifest is [PHONE_ASSETBUNDLE_SHA256_2026-10-30.csv](../data/manifests/PHONE_ASSETBUNDLE_SHA256_2026-10-30.csv).
