@@ -21,6 +21,15 @@ Scope: all 30 unique bundles in the existing Lua module crosswalk. This is a tar
 
 All inventoried .bytes files begin with the 1B-4C-75-61 Lua magic prefix. Two header families were observed: 03-54-00-19-93... and A8-55-00-19-93.... These are recorded as header families only. Exact Lua version, custom packing/obfuscation semantics, and decompiler compatibility remain NOT RUN. Do not label these files as confirmed standard Lua 5.3 bytecode until a compatible parser validates the chunk structure.
 
+## Header-family correlation
+
+- PASS: all 30 bundle exports are internally homogeneous by observed header family.
+- 15 bundle names without the _55_ tag contain only LUA_MAGIC_03_54 files (6,185 files total).
+- 15 bundle names with the _55_ tag contain only LUA_MAGIC_A8_55 files (6,185 files total).
+- Zero bundles contain a mixture of the two observed families.
+- This is a filename/header correlation only. It does not prove that _55_ is a release number, that either family is standard Lua 5.3, or that the bytecode formats are semantically equivalent.
+- See DARKWAR_LUA_BINARY_HEADER_FAMILY_CORRELATION_2026-10-30.csv.
+
 ## Export warnings
 
 - The cumulative AssetRipper log contains 3,172 Failed to export warning lines, representing 52 distinct asset names repeated 61 times each.
