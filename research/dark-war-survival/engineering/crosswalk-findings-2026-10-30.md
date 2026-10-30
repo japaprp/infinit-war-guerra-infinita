@@ -155,3 +155,12 @@ Keep `Catalog` in the key when joining V2 coverage because different catalogs ma
 - The older 1,391-bundle selected-gameres union and 1,392-row category CSV are retained as V1 historical artifacts, not the current source of truth.
 - Canonical artifacts: [union V3](../data/manifests/DARKWAR_INSTALLED_PACKAGE_BUNDLE_COVERAGE_V3_2026-10-30.csv), [gameres coverage V2](../data/manifests/DARKWAR_GAMERES_BUNDLE_COVERAGE_V2_2026-10-30.csv), [repair patch](../data/manifests/DARKWAR_GAMERES_UNMAPPED_REPAIR_2026-10-30.csv), [parser validation](gameres-parser-fix-2026-10-30.md).
 - Status: **PASS** — parser repair and source coverage refresh. Version marker namespace alignment remains **BLOCKED**.
+
+
+## DQ-09 — Resource index marker integrity (2026-10-30)
+
+- All four index headers are #30491.250.670.
+- Each subsystem .version file stores subsystem version, index byte size and CRC32. Independent size/CRC32 checks pass for gameres (5,164,473 / 105024197), datatable (39,085 / 4029693006), lua (2,396,329 / 1497796709), and download (271 / 3124353645).
+- Phone/local index SHA-256 comparisons pass 4/4.
+- Index file timestamps are 2026-10-30 10:55; .version files 10:56. CheckVersion.txt is timestamped 2026-10-29 22:00; package lastUpdateTime is 2026-10-29 19:18:55.
+- Status: **PASS** for subsystem marker integrity. **BLOCKED** only for the semantic relationship between client package/CheckVersion 1.250.669;1629 and resource index header #30491.250.670. A post-install resource update is plausible but not proven.
