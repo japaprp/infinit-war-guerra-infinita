@@ -11,6 +11,7 @@ See [dataset register](DARKWAR_MANIFEST_DATASET_REGISTER_2026-10-30.csv) for row
 - [Complete datatable + Lua integrity manifest](DARKWAR_COMPLETE_BUNDLE_HASH_MANIFEST_2026-10-30.csv) — 82 size/SHA-256 records.
 - [Datatable asset map](DARKWAR_DATATABLE_ASSET_BUNDLE_MAP_2026-10-30.csv) — 1,064 asset-index records.
 - [Lua module trace](DARKWAR_LUA_MODULE_BUNDLE_TRACE_2026-10-30.csv) — 66 module records.
+- [Lua binary export metadata](lua-binary/README.md) — 12,370 extracted TextAsset records split across 13 CSV parts; per-file SHA-256 and header-family metadata, no binary payloads.
 - [Gamerares category coverage V2](DARKWAR_GAMERES_BUNDLE_COVERAGE_V2_2026-10-30.csv) — corrected 1,576-bundle category/source rollup; no UNMAPPED placeholder.
 - [Gamerares category coverage V1](DARKWAR_GAMERES_BUNDLE_COVERAGE_2026-10-30.csv) — historical 1,392-row file; superseded.
 - [Gamerares UNMAPPED repair patch](DARKWAR_GAMERES_UNMAPPED_REPAIR_2026-10-30.csv) — 370 AssetIndex-keyed corrections resolving 185 bundle names.
