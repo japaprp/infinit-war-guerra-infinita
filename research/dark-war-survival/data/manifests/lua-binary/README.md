@@ -37,6 +37,7 @@ Each part repeats the same header. Part 01 contains 999 data rows; Parts 02–12
 - [Full-corpus header validation](../DARKWAR_LUA_HEADER_CORPUS_VALIDATION_2026-10-30.csv) — 12,370/12,370 header checks PASS.
 - [Six-sample header validation](../DARKWAR_LUA_HEADER_SAMPLE_VALIDATION_2026-10-30.csv) — three modules per version family.
 - [Full-chunk parse summary](../DARKWAR_LUA_FULL_CHUNK_PARSE_SUMMARY_2026-10-30.csv) — 12,370/12,370 structural parse PASS and aggregate function/instruction/constant counts.
+- [Parser/export SHA-256 reconciliation](../DARKWAR_LUA_FULL_CHUNK_PARSE_INTEGRITY_RECONCILIATION_2026-10-30.csv) — all 12,370 parsed files match the original per-file export hashes.
 - [Per-bundle parse summary](../DARKWAR_LUA_FULL_CHUNK_PARSE_BY_BUNDLE_2026-10-30.csv) — 30 bundle-level parse counts.
 - [Six full-chunk samples](../DARKWAR_LUA_FULL_CHUNK_SAMPLE_VALIDATION_2026-10-30.csv) — prototype, code, constant, upvalue and debug-structure results.
 - [Binary constant/DataTable matches](../DARKWAR_LUA_BINARY_CONSTANT_DATATABLE_MATCHES_V2_2026-10-30.csv) — 883 normalized constant-to-index-name matches, with same-module GetTableData evidence flag.
