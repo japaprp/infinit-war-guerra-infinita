@@ -1,5 +1,5 @@
 "Dataset","Local source file","Rows","Grain","Canonical role","GitHub mirror","Notes"
-"Split APK bundle index","DARKWAR_SPLIT_APK_BUNDLE_INDEX_2026-10-30.csv","4656","AssetBundle entry","Installed package inventory","DARKWAR_SPLIT_APK_BUNDLE_INDEX_2026-10-30.csv","ZIP total-entry count is a different grain"
+"Split APK bundle index","DARKWAR_SPLIT_APK_BUNDLE_INDEX_2026-10-30.csv","4656",".bundle payload entry","Installed package inventory","DARKWAR_SPLIT_APK_BUNDLE_INDEX_2026-10-30.csv","Current S21 audit confirms 4,656 .bundle payloads; 4,664 assets/AssetBundles paths include 8 index/control files; ZIP total-entry count is a different grain"
 "Datatable asset map","DARKWAR_DATATABLE_ASSET_BUNDLE_MAP_2026-10-30.csv","1064","Asset-index record; 938 .bytes records","Full datatable mapping","DARKWAR_DATATABLE_ASSET_BUNDLE_MAP_2026-10-30.csv","60 full-catalog bundle records; 52 targeted gameplay bundles"
 "Gameplay datatable trace","DARKWAR_SYSTEM_BUNDLE_TRACE_2026-10-30.md","324","Gameplay-relevant table mapping","Selected gameplay trace","Crosswalk findings","Subset of full datatable map"
 "Lua module trace","DARKWAR_LUA_MODULE_BUNDLE_TRACE_2026-10-30.csv","66","Lua module record","Lua module-to-bundle map","DARKWAR_LUA_MODULE_BUNDLE_TRACE_2026-10-30.csv","30 distinct targeted bundles"
@@ -11,3 +11,4 @@
 "Hero model asset manifest","DARKWAR_HERO_MODEL_ASSET_MANIFEST_2026-10-30.csv","114","Extracted bundle payload","Hero model integrity","DARKWAR_HERO_MODEL_ASSET_MANIFEST_2026-10-30.csv","76 candidate folders, not playable roster"
 "Hero model directory map","DARKWAR_HERO_MODEL_DIRECTORY_MAP_2026-10-30.csv","396","Directory-index record","Candidate model folder mapping","DARKWAR_HERO_MODEL_DIRECTORY_MAP_2026-10-30.csv","76 distinct candidate folders"
 "Map/season asset manifest","DARKWAR_MAP_SEASON_ASSET_MANIFEST_2026-10-30.csv","54","Extracted bundle payload","Map/season integrity","DARKWAR_MAP_SEASON_ASSET_MANIFEST_2026-10-30.csv","42 map-terrain + 8 S5 + 3 S7 + 1 Ben prefab"
+"S21 cache SHA-256 manifest","PHONE_ASSETBUNDLE_SHA256_2026-10-30.csv","319","Phone cache file record","Current S21 AssetBundles cache inventory and integrity","PHONE_ASSETBUNDLE_SHA256_2026-10-30.csv","311 .bundle files + 4 indexes + 4 version markers; hashes captured read-only; no account/session data included"
