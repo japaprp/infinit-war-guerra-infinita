@@ -140,10 +140,10 @@ The phone CheckVersion.txt reads 1.250.669;1629. The local gameres index header 
 
 ## 9. Next safe steps
 
-1. Reconcile the 20 cache-only candidate bundles and the 291 version-suffixed logical-name pairs.
-2. Correct the 370-row gameres interval parser using the now-confirmed index snapshot.
-3. Reconcile gameres/datatable/Lua/download markers with CheckVersion and package metadata without assuming they share one version namespace.
-4. Cross-reference selected cached Lua/datatable bundles with their current versioned filenames before drawing gameplay conclusions.
+1. DONE — 370 UNMAPPED rows repaired; see [parser-fix validation](gameres-parser-fix-2026-10-30.md).
+2. Reconcile gameres/datatable/Lua/download markers with CheckVersion and package metadata without assuming they share one version namespace.
+3. Cross-reference selected cached Lua/datatable bundles with their current versioned filenames before drawing gameplay conclusions.
+4. Investigate the 20 cache-only candidate bundles and 291 version-suffixed logical-name pairs; keep normalized matching diagnostic only.
 5. Keep public GitHub limited to derived manifests and reports; retain proprietary payloads in controlled local storage.
 
 
@@ -156,3 +156,8 @@ The two counts 4,664 and 4,656 are both correct but refer to different grains:
 - The ZIP archive itself contains 4,670 entries for split_install_time_pack.apk and 5,801 entries across all five installed APKs.
 
 Do not label 4,664 as the count of .bundle payloads. The canonical bundle-payload count remains 4,656.
+
+
+## 11. Gamerares parser correction
+
+The 370 UNMAPPED rows were resolved after identifying pipe-separated asset-index expressions. The corrected parser uses the direct [Assets] AssetIndex -> BundleId relation and validates each recovered expression in [Bundles]. Validation: 24,188 existing mappings matched, 370/370 recovered, 0 missing references, 0 mismatches, 1,576 distinct bundles, 0 UNMAPPED in the corrected local V2 map. See [parser-fix validation](gameres-parser-fix-2026-10-30.md).
