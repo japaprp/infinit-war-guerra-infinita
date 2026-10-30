@@ -25,7 +25,7 @@
 - Use the complete 82-row hash manifest for targeted datatable/Lua integrity; use the separate 114-row hero and 54-row map/season manifests for those payload sets.
 - Use the datatable asset map and Lua module trace for table/module-to-bundle relationships.
 - Treat the 78-row initial collection manifest and old staging folders as historical first-pass evidence.
-- The 24,558-row detailed gameres asset map remains in controlled local storage; its summary, category counts and unresolved parser limitations are documented in the crosswalk.
+- The 24,558-row detailed gameres asset map is mirrored in four CSV parts; the source remains unchanged locally.
 - Do not add counts across different grains. A CSV row, distinct bundle, directory record, candidate model folder and extracted payload are different units.
 
 ## Evidence vocabulary
