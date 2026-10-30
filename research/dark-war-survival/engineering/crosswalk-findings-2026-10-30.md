@@ -15,7 +15,7 @@
 | Lua gameplay trace | 66 | Targeted module records mapped to 30 bundles | Lua module trace |
 | Targeted gameplay Lua set | 30 | Selected bundles reconciled across APK and cache | V2 coverage + complete hash manifest |
 | Selected gameres asset map | 24,558 | Fine-grained asset rows; 3,962 bundle records were parsed in the report | Local detailed gameres map |
-| Selected gameres coverage | 1,391 | Distinct bundles reported available in the APK/cache union | V2 coverage + gameres coverage report |
+| Selected gameres coverage | 1,391 actual bundles | V2 union count after excluding the `UNMAPPED` placeholder row | V2 coverage + gameres coverage CSV |
 | Hero model directory map | 396 | Directory records grouped into 76 candidate model folders | Hero directory map |
 | Selected hero model payloads | 114 | Extracted bundle payloads with size/hash checks | Hero asset manifest |
 | Selected map/season payloads | 54 | Extracted bundle payloads with size/hash checks | Map/season manifest |
@@ -71,18 +71,17 @@ Map/season set composition: 42 map-terrain bundles, 8 S5 scene bundles, 3 S7 sce
 
 ## 4. Discrepancies and quality risks
 
-### DQ-01 — Hero bundle count: 378 vs 379
-- The consolidated gameres coverage report lists 378 Hero bundles.
-- The detailed gameres asset map's Hero section lists 379 distinct bundles.
-- Status: **BLOCKED / UNRESOLVED**. The exact bundle-name set difference has not yet been computed.
-- Required check: normalize bundle names, compare distinct Hero bundle-name sets from both CSVs, identify the extra/missing key, and verify whether one record is an unmapped placeholder or a category assignment difference.
-- Do not silently overwrite either source count.
+### DQ-01 — Hero category count: 378 actual bundles vs 379 rows (RESOLVED)
+- The V2 APK/cache crosswalk contains 378 Hero bundles.
+- The category coverage CSV contains 379 Hero rows: 378 actual named bundles plus the literal placeholder `UNMAPPED`.
+- Exact-key comparison confirmed that `UNMAPPED` is the only extra value; it is not an installed bundle.
+- Status: **PASS — explained by an unmapped asset placeholder**. Use 378 as the actual Hero bundle count and retain the `UNMAPPED` row as parser-quality evidence.
 
-### DQ-02 — Gamerares coverage CSV rows vs distinct bundle count
-- The gameres coverage CSV has 1,392 data rows; the report states 1,391 distinct bundles.
-- The file's row grain may include one repeated bundle key or a category-specific record. This has not yet been proven.
-- Status: **BLOCKED / UNRESOLVED**.
-- Required check: count rows, distinct BundleName values, duplicate keys, and category memberships from the CSV. Keep row count separate from unique-bundle count.
+### DQ-02 — Gamerares coverage CSV rows vs actual bundle count (RESOLVED)
+- The cleaned category coverage CSV has 1,392 data rows and 1,392 distinct BundleName values.
+- Exact set comparison with the 1,391 `gameres-selected` rows in V2 found one additional value: `UNMAPPED`.
+- No duplicate bundle-name keys exist in the cleaned category coverage CSV.
+- Status: **PASS — one placeholder row explains the one-row difference**. The actual APK/cache union remains 1,391 bundles.
 
 ### DQ-03 — Version marker alignment
 Observed markers:
@@ -125,8 +124,6 @@ Keep `Catalog` in the key when joining V2 coverage because different catalogs ma
 
 ## 6. Next reconciliation tasks
 
-1. Resolve DQ-01 and DQ-02 by exact set/duplicate-key comparison.
-2. Reconcile version markers and establish which index snapshots belong to the same release/build.
-3. Partition the 24,558-row gameres map into category-specific sanitized CSVs if needed; keep original unchanged.
-4. Update this report only when the exact row-level evidence is available.
-5. Continue lightweight, read-only parser work on the 370 unmapped asset rows.
+1. Reconcile version markers and establish which index snapshots belong to the same release/build.
+2. Partition/sanitize the 24,558-row gameres map if a GitHub mirror is useful; keep the original unchanged.
+3. Continue lightweight, read-only parser work on the 370 unmapped asset rows.
