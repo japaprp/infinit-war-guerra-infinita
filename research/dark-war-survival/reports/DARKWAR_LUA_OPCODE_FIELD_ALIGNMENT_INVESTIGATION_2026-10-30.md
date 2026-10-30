@@ -3,6 +3,8 @@
 **Date:** 2026-10-30  
 **Scope:** Read-only analysis of preserved Lua 5.4/5.5 bytecode samples. No game modification, account manipulation, runtime injection, or deployment.
 
+**Follow-up finding:** A later same-day cross-version alignment recovered a stable empirical mapping for 100 observed Lua 5.5 opcode IDs across 910 function pairs and 25,920 instruction positions, with a separate holdout test and A-register validation. See `DARKWAR_LUA_OPCODE_CROSSWALK_VALIDATION_2026-10-30.md` and `LUA_OPCODE_CROSSWALK_55_TO_54_2026-10-30.csv`. This supersedes the earlier unresolved opcode-semantics status below.
+
 ## Project identity
 
 Dark War: Survival is the original game under analysis. Guerra Infinita is the planned name for the completed reconstruction. This report belongs to that same study.
