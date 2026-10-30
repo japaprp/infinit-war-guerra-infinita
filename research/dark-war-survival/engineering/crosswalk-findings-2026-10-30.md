@@ -92,7 +92,7 @@ Observed markers:
 - lua.version: 1760,2396329,1497796709
 - download.version: 911,271,3124353645
 
-Status: **BLOCKED / NEEDS RECONCILIATION**. These values have different formats and may represent independent index versions/build markers. Do not infer a same-build guarantee.
+Status: **PARTIALLY RESOLVED**. The four index headers all read `#30491.250.670`. Each adjacent `.version` marker matches its index's actual byte length, CRC32 and `[Version]` integer (4/4 PASS). The separate CheckVersion/package value `1.250.669;1629` remains a different source and its relationship to the resource build header is still BLOCKED; a post-install resource update is plausible but unconfirmed.
 
 ### DQ-04 — Initial staging vs complete manifest
 - Initial staging manifest: 78 records.
@@ -125,10 +125,10 @@ Keep `Catalog` in the key when joining V2 coverage because different catalogs ma
 
 ## 6. Next reconciliation tasks
 
-1. Reconcile version markers and establish which index snapshots belong to the same release/build.
-2. Crosswalk all 66 Lua module trace records against the DataTable asset map; label direct string matches separately from candidate semantic links.
-3. Validate the two observed Lua-magic header families with a compatible parser/decompiler on a small sample before any bulk decompilation.
-4. Extract conclusions about constructions, heroes, equipment and seasons only when the relevant Lua module and DataTable rows are linked by inspectable evidence.
+1. Obtain a trusted full Lua 5.4.9 and Lua 5.5.1 parser/disassembler path; validate complete chunk loading on the six representative samples before semantic analysis.
+2. Wait for the established AssetRipper RAM gate, then export one small relevant DataTable bundle at a time.
+3. Reconcile actual decompiled GetTableData callsites with the DataTable asset map; keep direct printable tokens, candidates and confirmed callsites as separate evidence levels.
+4. Extract conclusions about construction costs/upgrades, hero stats/skills, equipment bonuses, seasons and events only from parsed table payloads and confirmed module links.
 
 
 ## 7. DQ-07 — Direct S21 package/cache audit (2026-10-30)
@@ -178,3 +178,25 @@ Keep `Catalog` in the key when joining V2 coverage because different catalogs ma
 - The cumulative AssetRipper log contains 3,172 warning lines from 52 distinct asset names repeated 61 times. The log is cumulative and cannot be attributed solely to this run; zero warning names matched exported `.bytes` basenames.
 - Status: **PASS** for 30/30 targeted bundle exports, final directory reconciliation and source-bundle SHA-256. **NOT RUN** for semantic decompilation, exact Lua version identification, full APK extraction and runtime validation.
 - Evidence: [Lua binary export report](lua-binary-export-2026-10-30.md), [manifest parts index](../data/manifests/lua-binary/README.md), [per-bundle summary](../data/manifests/lua-binary/DARKWAR_LUA_BINARY_EXPORT_SUMMARY_2026-10-30.csv), [reconciliation](../data/manifests/lua-binary/DARKWAR_LUA_BINARY_EXPORT_RECONCILIATION_2026-10-30.csv), and [warning summary](../data/manifests/lua-binary/DARKWAR_ASSETRIPPER_EXPORT_WARNINGS_2026-10-30.csv).
+
+
+## 9. DQ-11 — Lua bytecode format validation (2026-10-30)
+
+- All 12,370 raw AssetRipper TextAsset `.bytes` files from the 30 targeted Lua bundles were checked with a binary-safe Node.js validator.
+- PASS: 6,185 files match the official Lua 5.4 chunk-header structure (`version byte 0x54`); 6,185 match the official Lua 5.5 structure (`version byte 0x55`).
+- Both families begin with the Lua signature `1B 4C 75 61`, format byte 0 and LUAC_DATA sentinel. The additional byte at offset 4 is `0x03` for Lua 5.4 and `0xA8` for Lua 5.5; its application-specific meaning is NOT DETERMINED.
+- PASS: version-specific size fields and numeric sentinels match the official Lua 5.4.9 and 5.5.1 header definitions for all 12,370 files. Zero invalid, zero empty and zero non-Lua files.
+- PASS: six representative files (HeroDataManager, HeroEquipManager and HeroLevelUpTemplateManager, base and 55 variants) pass independently.
+- Full chunk body/prototype/instruction validation, semantic disassembly and decompilation remain NOT RUN. Header compatibility is not a claim that all code bodies were successfully interpreted.
+- Evidence: [Lua format and crosswalk report](lua-format-and-crosswalk-2026-10-30.md), [corpus summary](../data/manifests/DARKWAR_LUA_HEADER_CORPUS_VALIDATION_2026-10-30.csv), [six samples](../data/manifests/DARKWAR_LUA_HEADER_SAMPLE_VALIDATION_2026-10-30.csv).
+
+## 10. DQ-12 — Lua/DataTable crosswalk and system inventory (2026-10-30)
+
+- The crosswalk contains 66 Lua module records across 30 bundles.
+- PASS at token-evidence level: 34 exact printable ASCII table-token reference rows across 8 modules and 12 table names.
+- Candidate-only evidence: 14 rows across HeroLevelUpTemplateManager (2 MEDIUM), OffSeasonManager and SeasonGroupManager (12 LOW total).
+- Crosswalk V2 record statuses: 20 direct-token matches, 36 with no direct table token in the text projection and 10 semantic links blocked pending full bytecode decompilation.
+- Exact printable tokens were obtained from AssetRipper Text projection, not a byte-preserving parser. They do not prove a runtime callsite or selected variant.
+- The canonical DataTable map has 1,064 asset-index records / 938 `.bytes` table records / 60 bundle names. Indexed families include building (22 records), heroes (56), equipment (20), seasons (44), activities (42) and events (14). These are index-name counts including base/55 variants, not gameplay table row counts.
+- DataTable payload export remains BLOCKED at this checkpoint: free RAM was ~488 MB, below the prior AssetRipper startup gate of ~875–975 MB. No DataTable import was attempted.
+- Evidence: [Lua format and crosswalk report](lua-format-and-crosswalk-2026-10-30.md), [module crosswalk V2](../data/manifests/DARKWAR_LUA_DATATABLE_MODULE_CROSSWALK_V2_2026-10-30.csv), [direct references](../data/manifests/DARKWAR_LUA_DATATABLE_DIRECT_REFERENCES_2026-10-30.csv), [candidate references](../data/manifests/DARKWAR_LUA_DATATABLE_CANDIDATE_REFERENCES_2026-10-30.csv).
