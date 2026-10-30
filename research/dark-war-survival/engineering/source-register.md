@@ -13,7 +13,7 @@
 | Lua module trace | `DARKWAR_LUA_MODULE_BUNDLE_TRACE_2026-10-30.csv/.md` | 66 module records; 30 bundles | Lua module-to-bundle mapping | CSV uploaded; report summarized |
 | APK/cache union | `DARKWAR_INSTALLED_PACKAGE_BUNDLE_COVERAGE_V2_2026-10-30.csv/.md` | 1,473 rows in CSV | Canonical source-availability crosswalk for selected datatable, Lua and gameres sets | CSV uploaded; report summarized |
 | Gamerares category coverage | `DARKWAR_GAMERES_BUNDLE_COVERAGE_2026-10-30.csv/.md` | 1,392 CSV rows | Category/source availability; includes one UNMAPPED placeholder and 1,391 actual bundles | CSV uploaded; report summarized |
-| Gamerares detailed asset map | `DARKWAR_GAMERES_GAMEPLAY_ASSET_BUNDLE_MAP_2026-10-30.csv/.md` | 24,558 asset rows; 4,814,955 bytes | Fine-grained asset path to bundle map | Large CSV remains in controlled local storage; summary and limitations published |
+| Gamerares detailed asset map | `DARKWAR_GAMERES_GAMEPLAY_ASSET_BUNDLE_MAP_2026-10-30.csv/.md` | 24,558 asset rows; 4,814,955 bytes | Fine-grained asset path to bundle map | Mirrored as four CSV parts; summary and limitations published |
 | Complete data/Lua integrity | `DARKWAR_COMPLETE_BUNDLE_HASH_MANIFEST_2026-10-30.csv` | 82 payload records | Canonical SHA-256 and size evidence for 52 datatable + 30 Lua bundles | Uploaded |
 | Initial staging integrity | `DARKWAR_COLLECTION_HASH_MANIFEST_2026-10-30.csv` | 78 payload records | Historical first-pass staging inventory | Uploaded; historical only, not canonical complete set |
 | Hero model integrity | `DARKWAR_HERO_MODEL_ASSET_MANIFEST_2026-10-30.csv` | 114 payload records | Selected APK-packaged hero model bundle integrity | Uploaded |
