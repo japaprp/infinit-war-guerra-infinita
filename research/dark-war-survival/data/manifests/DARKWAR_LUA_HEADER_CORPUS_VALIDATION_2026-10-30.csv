@@ -1,4 +1,4 @@
 Family,FileCount,WrapperPrefix,VersionByte,HeaderValidationFailures,ZeroByteFiles,NonLuaFiles,TotalBytes,Status
 Lua 5.4,6185,0x03,0x54,0,0,0,,
 Lua 5.5,6185,0xA8,0x55,0,0,0,,
-ALL,12370,,,,0,0,65672743,PASS
+ALL,12370,,,0,0,0,65672743,PASS
