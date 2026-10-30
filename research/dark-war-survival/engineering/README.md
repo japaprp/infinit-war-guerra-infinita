@@ -18,6 +18,7 @@
 ## Evidence documents
 - [Consolidated technical findings](findings-2026-10-30.md) — architecture, client-side system inventory, version markers, limits.
 - [Lua binary export report](lua-binary-export-2026-10-30.md) — selected 30-bundle AssetRipper export, 12,370 TextAsset hashes, format caveats.
+- [Lua format and crosswalk report](lua-format-and-crosswalk-2026-10-30.md) — all 12,370 Lua headers validated as official 5.4/5.5 families, four index markers reconciled, DataTable crosswalk evidence and resource gates.
 - [Bundle coverage and reconciliation](coverage-2026-10-30.md) — APK/cache union, integrity status, unmapped records.
 - [Direct S21 package/cache audit](phone-audit-2026-10-30.md) — fresh read-only check against the currently installed five APK splits and external cache.
 - [Gamerares parser-fix validation](gameres-parser-fix-2026-10-30.md) — root cause and PASS evidence for all 370 repaired UNMAPPED rows.
