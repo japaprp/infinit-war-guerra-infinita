@@ -141,7 +141,7 @@ The phone CheckVersion.txt reads 1.250.669;1629. The local gameres index header 
 ## 9. Next safe steps
 
 1. DONE — 370 UNMAPPED rows repaired; see [parser-fix validation](gameres-parser-fix-2026-10-30.md).
-2. Reconcile gameres/datatable/Lua/download markers with CheckVersion and package metadata without assuming they share one version namespace.
+2. DONE — validate all four subsystem marker sizes and CRC32 values. Remaining: determine whether the client label 1.250.669;1629 and resource-index header #30491.250.670 are separate release namespaces or a post-install resource update; do not force them to match.
 3. Cross-reference selected cached Lua/datatable bundles with their current versioned filenames before drawing gameplay conclusions.
 4. Investigate the 20 cache-only candidate bundles and 291 version-suffixed logical-name pairs; keep normalized matching diagnostic only.
 5. Keep public GitHub limited to derived manifests and reports; retain proprietary payloads in controlled local storage.
@@ -161,3 +161,13 @@ Do not label 4,664 as the count of .bundle payloads. The canonical bundle-payloa
 ## 11. Gamerares parser correction
 
 The 370 UNMAPPED rows were resolved after identifying pipe-separated asset-index expressions. The corrected parser uses the direct [Assets] AssetIndex -> BundleId relation and validates each recovered expression in [Bundles]. Validation: 24,188 existing mappings matched, 370/370 recovered, 0 missing references, 0 mismatches, 1,576 distinct bundles, 0 UNMAPPED in the corrected local V2 map. See [parser-fix validation](gameres-parser-fix-2026-10-30.md).
+
+
+## 12. Version-marker integrity reconciliation
+
+- All four index headers: #30491.250.670.
+- The four .version files encode subsystem version, index byte size and CRC32.
+- Independent validation: gameres 5,164,473 bytes / CRC32 105024197; datatable 39,085 / 4029693006; lua 2,396,329 / 1497796709; download 271 / 3124353645. All four size and CRC32 checks PASS.
+- Phone/local index SHA-256: 4/4 identical.
+- Index files modified 2026-10-30 10:55; .version files 10:56; CheckVersion.txt 2026-10-29 22:00; installed package lastUpdateTime 2026-10-29 19:18:55.
+- PASS: subsystem index marker integrity. BLOCKED: semantics of client package version 1.250.669;1629 versus resource-index header #30491.250.670. The later resource timestamps are consistent with a post-install resource update, but that interpretation is not yet proven.
