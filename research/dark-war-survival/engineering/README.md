@@ -50,5 +50,5 @@ This repository is public. Do not add original APKs, extracted proprietary bundl
 - 54/54 selected map/season bundle checks PASS.
 - 1,391 selected gameres bundles available in APK/cache union.
 - 370 selected gameres asset rows remain unmapped by the current parser.
-- Hero category count discrepancy (378 vs 379) and gameres coverage CSV row/distinct count (1,392 vs 1,391) are BLOCKED pending exact-key checks.
+- Hero category and gameres coverage count differences are RESOLVED: the extra row is the `UNMAPPED` placeholder, not a real bundle.
 - AssetRipper import remains BLOCKED by the low-memory safety gate.
