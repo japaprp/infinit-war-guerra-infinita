@@ -11,7 +11,7 @@ This directory mirrors derived metadata only. No APK, Unity AssetBundle, extract
 
 ## CSV parts
 
-Each part repeats the same header. Part 01 contains 999 data rows; Parts 02–12 contain 1,000 data rows each; Part 13 contains 371 data rows. Total: 12,370 data rows.
+Each part repeats the same header. Part 01 contains 999 data rows; Parts 02–12 contain 1,000 data rows each; Part 13 contains 371 data rows. Total: 12,370 data rows. All 13 paths, headers and first data rows were fetched back successfully. Full remote reassembly and byte-for-byte comparison against the local 12,370-row source manifest remain NOT RUN.
 
 - [Part 01](DARKWAR_LUA_BINARY_EXPORT_MANIFEST_PART_01_OF_13_2026-10-30.csv)
 - [Part 02](DARKWAR_LUA_BINARY_EXPORT_MANIFEST_PART_02_OF_13_2026-10-30.csv)
