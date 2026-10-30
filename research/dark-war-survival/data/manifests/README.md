@@ -16,6 +16,11 @@ See [dataset register](DARKWAR_MANIFEST_DATASET_REGISTER_2026-10-30.csv) for row
 - [Candidate Lua/DataTable references](DARKWAR_LUA_DATATABLE_CANDIDATE_REFERENCES_2026-10-30.csv) — 14 candidates, 2 medium and 12 low confidence.
 - [Lua binary export metadata](lua-binary/README.md) — 12,370 extracted TextAsset records split across 13 CSV parts; per-file SHA-256 and header-family metadata, no binary payloads.
 - [Lua header corpus validation](DARKWAR_LUA_HEADER_CORPUS_VALIDATION_2026-10-30.csv) — 12,370/12,370 headers validate as Lua 5.4 or Lua 5.5 families.
+- [Full Lua chunk parse summary](DARKWAR_LUA_FULL_CHUNK_PARSE_SUMMARY_2026-10-30.csv) — 12,370/12,370 structural parser PASS.
+- [Per-bundle Lua parse summary](DARKWAR_LUA_FULL_CHUNK_PARSE_BY_BUNDLE_2026-10-30.csv) — 30 bundle summaries.
+- [Full-chunk sample validation](DARKWAR_LUA_FULL_CHUNK_SAMPLE_VALIDATION_2026-10-30.csv) — six representative files.
+- [Binary Lua constant/DataTable matches](DARKWAR_LUA_BINARY_CONSTANT_DATATABLE_MATCHES_V2_2026-10-30.csv) — 883 normalized constant-to-index-name matches.
+- [Binary match summary](DARKWAR_LUA_BINARY_CONSTANT_DATATABLE_SUMMARY_2026-10-30.csv) — category counts and same-module GetTableData co-occurrence.
 - [Lua sample validation](DARKWAR_LUA_HEADER_SAMPLE_VALIDATION_2026-10-30.csv) — six representative module samples, three per family.
 - [Index version-marker validation](DARKWAR_INDEX_VERSION_MARKER_VALIDATION_2026-10-30.csv) — four index/marker pairs validated by size and CRC32.
 - [Gamerares category coverage V2](DARKWAR_GAMERES_BUNDLE_COVERAGE_V2_2026-10-30.csv) — corrected 1,576-bundle category/source rollup; no UNMAPPED placeholder.
