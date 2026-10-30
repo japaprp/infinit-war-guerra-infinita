@@ -63,7 +63,8 @@ All 12,370 raw TextAsset .bytes files begin with the Lua signature 1B-4C-75-61. 
 - PASS: all 13 manifest parts and supporting metadata files were created on the research branch; each part's path and header/first data row were fetched back successfully.
 - PASS: all 13 GitHub manifest parts were fetched in full; 12,370 data rows total, expected per-part row counts, identical headers and 30 bundle-name keys.
 - NOT RUN: byte-for-byte comparison of the fully fetched remote manifest rows against the local source file.
-- NOT RUN: full chunk-body/prototype/instruction parsing, semantic disassembly or decompilation.
+- PASS: all 12,370 files passed recursive full-chunk structural parsing; 179,088 functions, 6,330,931 instructions, 1,825,399 constants and 2,571,205 string occurrences parsed; zero failures.
+- NOT RUN: instruction opcode decoding, semantic disassembly and decompilation.
 - NOT RUN: compare all exported TextAssets against a complete APK-wide asset inventory.
 - NOT RUN: runtime validation against the live game.
 
