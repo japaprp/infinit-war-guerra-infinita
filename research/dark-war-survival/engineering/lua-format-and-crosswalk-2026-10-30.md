@@ -49,16 +49,22 @@ The existing crosswalk contains 66 Lua module records across 30 bundles.
 - 14 candidate-reference rows across 3 modules: 2 MEDIUM and 12 LOW confidence.
 - Crosswalk V2 record statuses: 20 direct token matches, 36 with no direct table token in the text projection, and 10 semantic links blocked pending bytecode decompilation.
 
-Modules with exact token references:
-- Arena3v3Manager, ArenaManager
-- HeroEquipManager, HeroIntensifyManager, HeroWeaponManager
-- UIWorldCupActListPanelCtrl
-- WorldBattleBuffManager, WorldMarchDataManager
+Modules with exact token references and table names:
+- Arena3v3Manager → army, score
+- ArenaManager → army
+- HeroEquipManager → goods
+- HeroIntensifyManager → effect, hero_camp_intensify
+- HeroWeaponManager → heroes_exclusive_equip
+- UIWorldCupActListPanelCtrl → recharge
+- WorldBattleBuffManager → effect
+- WorldMarchDataManager → desert, lw_train_property, status, trade_post, worldcity
+
+The 12 distinct direct-token table names are: army, desert, effect, goods, hero_camp_intensify, heroes_exclusive_equip, lw_train_property, recharge, score, status, trade_post and worldcity.
 
 Candidate-only modules:
-- HeroLevelUpTemplateManager (MEDIUM)
-- OffSeasonManager (LOW)
-- SeasonGroupManager (LOW)
+- HeroLevelUpTemplateManager → heroes_levelup (MEDIUM)
+- OffSeasonManager → season_activity_panel, season_activity_panel_group (LOW)
+- SeasonGroupManager → aps_season, aps_season_group, season_config_group, season_model (LOW)
 
 **Interpretation boundary:** a printable token in the text projection is not proof that the compiled function calls that table at runtime. Candidate references remain candidates. AssetRipper Text API output is a UTF-8 projection and is not byte-preserving; all binary-format validation above used the raw exported TextAsset files instead.
 
@@ -86,6 +92,20 @@ Indexed tables include `c_equips`, `ds_equip`, `ds_equip_attribute`, `ds_equip_m
 
 ### Seasons and events — index-level evidence
 Season tables include `aps_season`, `aps_season_group`, `d_season_intro`, `season_activity_panel`, `season_activity_panel_group`, `season_alliance_achieve`, `season_config_group`, `season_donate_building`, `season_model`, `season_reward` and related groups. Event/activity tables include `activity_Blindbox_main`, `activity_barter`, `activity_cyclebox`, `activity_dig`, `activity_jigsaw`, `activity_monster`, `activity_panel`, `activity_pass`, `Adventure_event`, `detect_event`, `land_event`, `people_event` and `pve_event`. These names establish indexed client data domains, not active event schedules or reward mechanics.
+
+## 4A. Additional systems confirmed by the expanded client index/catalog
+
+These are client-side module and DataTable-name inventories. They establish that the client contains these data domains; they do not establish live availability, numeric rules, or server-authoritative behavior.
+
+- **Competitive modes:** separate Arena, Arena 3v3, Champion Battle, World Cup schedule/betting, Strongest Kingdom phase and Wasteland King ranking/level systems. Indexed tables include `strongest_kingdom_phase`, `world_cup_main`, `world_cup_group`, `world_cup_stage`, `world_cup_team`, `wastelandking_level` and `wastelandking_rank`.
+- **World map, territory and alliance:** indexed tables include `world_scene`, `worldcity`, `worldcity_color`, `worldcity_season_param`, `world_fortress`, `world_fortress_reward`, `world_alliance_tower`, `monster_refresh`, `world_quest` and `world_restrictions`. Lua modules include WorldTroopManager, WorldRallyLineManager, WorldStrongHoldMapManager, WorldCrossServerMoveCity and WorldDesertBattle.
+- **Base progression:** indexed tables include `building`, `building_B`, `building_des`, `building_des_B`, `level_up`, `growth_fund`, `dragon_building`, `canyon_building`, `defence_tower`, `alliance_res_build`, `city_zombie_attack`, `city_zombie_spawn` and `city_soldier`.
+- **Science, research and production:** indexed tables include `APS_science`, `aps_science_tab`, `alScience`, `alScienceTab`, `armor_production_upgrade`, `aps_resources`, `aps_gather_resource`, `car_microchip`, `car_microchip_attribute`, `car_microchip_grading` and `car_microchip_promote`.
+- **Seasonal progression:** separate modules include SeasonBuildQueueManager, SeasonBuildUpgrades, SeasonCrossServerRankData, SeasonGroup, SeasonManager, SeasonWeek, SeasonPrologue, OffSeasonManager and WorldPointSeasonActManager.
+- **March and troop movement:** modules include WorldMarchDataManager, WorldTroopManager, WorldTroopLineManager, WorldRallyLineManager, WorldCrossServerMoveCity, MarchInner and MarchEmoji.
+- **PvE and monsters:** indexed families include `APS_monster`, `aps_pve_level_old`, `aps_pve_part_zombie`, `aps_pve_zombie`, `camp_pve`, `camp_pve_type`, `pve_event`, `pve_heroes`, `trial_pve`, `trial_pve_map`, `nightmare_level`, `lw_monster` and `lw_monster_born`.
+
+Exact prerequisites, upgrade costs, research bonuses, hero/equipment formulas, season reset/reward rules, event schedules, march caps and battle calculations remain NOT YET VERIFIED; these require parsed table payloads and confirmed Lua callsites.
 
 ## 5. Tooling and resource gate
 
