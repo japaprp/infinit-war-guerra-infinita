@@ -59,6 +59,7 @@ All 12,370 raw TextAsset .bytes files begin with the Lua signature 1B-4C-75-61. 
 - PASS: every one of the 12,370 exported .bytes files has a SHA-256 entry in the per-file manifest.
 - PASS: all 12,370 files match the official Lua 5.4 or Lua 5.5 header structure; zero invalid, empty or non-Lua files.
 - PASS: six representative sample files (three per family) pass the full header-sentinel check.
+- PASS: the structural parser's SHA-256 values match the original per-file export manifest for all 12,370 files (zero missing keys or mismatches).
 - PASS: zero cumulative-log warning names matched exported .bytes basenames.
 - PASS: all 13 manifest parts and supporting metadata files were created on the research branch; each part's path and header/first data row were fetched back successfully.
 - PASS: all 13 GitHub manifest parts were fetched in full; 12,370 data rows total, expected per-part row counts, identical headers and 30 bundle-name keys.
