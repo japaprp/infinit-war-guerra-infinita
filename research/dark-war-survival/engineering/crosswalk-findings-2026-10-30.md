@@ -105,10 +105,11 @@ Status: **BLOCKED / NEEDS RECONCILIATION**. These values have different formats 
 - The later split APK bundle index contains 4,656 AssetBundle entries.
 - These counts refer to different grains (all ZIP entries versus AssetBundle entries); do not report them as conflicting counts.
 
-### DQ-06 — Detailed gameres asset map not yet mirrored to GitHub
-- The local detailed CSV contains 24,558 rows and is approximately 4.8 MB.
-- The category/source summaries and all other key metadata manifests are mirrored to GitHub. This large granular file remains in controlled local storage for now; no asset payload is involved.
-- Status: **NOT RUN** for a public sanitized partition/export. Its summary remains documented here.
+### DQ-06 — Detailed gameres asset map mirror (RESOLVED)
+- The source CSV contains 24,558 data rows and is approximately 4.8 MB.
+- It is now mirrored as four CSV parts under `data/manifests/`, each with the same header. Part 1 contains 7,999 data rows; Parts 2 and 3 contain 8,000 each; Part 4 contains 559. Total: 24,558 data rows.
+- No asset payloads were included. The original local CSV was not modified.
+- Status: **PASS — all four parts created and independently re-read from GitHub; a complete row-level reassembly/hash comparison is NOT RUN.**
 
 ## 5. Canonical join strategy
 
