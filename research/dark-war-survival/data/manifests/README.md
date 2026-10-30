@@ -18,4 +18,4 @@ See [dataset register](DARKWAR_MANIFEST_DATASET_REGISTER_2026-10-30.csv) for row
 
 Historical [initial staging hash manifest](DARKWAR_COLLECTION_HASH_MANIFEST_2026-10-30.csv) is preserved but is not the canonical complete-set manifest.
 
-The 24,558-row [detailed gameres asset map](../engineering/crosswalk-findings-2026-10-30.md#dq-06--detailed-gameres-asset-map-not-yet-mirrored-to-github) remains in controlled local storage pending a partitioned/sanitized export.
+The 24,558-row detailed gameres asset map is mirrored in four parseable CSV parts: [Part 1](DARKWAR_GAMERES_GAMEPLAY_ASSET_BUNDLE_MAP_PART_01_OF_04_2026-10-30.csv), [Part 2](DARKWAR_GAMERES_GAMEPLAY_ASSET_BUNDLE_MAP_PART_02_OF_04_2026-10-30.csv), [Part 3](DARKWAR_GAMERES_GAMEPLAY_ASSET_BUNDLE_MAP_PART_03_OF_04_2026-10-30.csv), and [Part 4](DARKWAR_GAMERES_GAMEPLAY_ASSET_BUNDLE_MAP_PART_04_OF_04_2026-10-30.csv). Each part repeats the same header; concatenate only the data rows (skip headers after Part 1) to reconstruct the original row sequence.
