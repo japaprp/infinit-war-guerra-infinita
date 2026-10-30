@@ -6,7 +6,8 @@
 1. [Manifest and report crosswalk](crosswalk-findings-2026-10-30.md) — reconciled dataset grains, counts, discrepancies and canonical join strategy.
 2. [Source and manifest register](source-register.md) — tells you which source controls each question and which files are historical.
 3. [Metadata manifests README](../data/manifests/README.md) — links to the mirrored CSV files.
-4. [Verified engineering handoff](handoff-2026-10-30.md) — last verified state, safety gate and next tasks.
+4. [Direct S21 package/cache audit](phone-audit-2026-10-30.md) — current installed split APK inventory, 311 cached bundles, SHA-256 and version-marker reconciliation.
+5. [Verified engineering handoff](handoff-2026-10-30.md) — last verified state, safety gate and next tasks.
 
 ## Project boundary
 - Dark War: Survival is the reference subject only.
@@ -16,6 +17,7 @@
 ## Evidence documents
 - [Consolidated technical findings](findings-2026-10-30.md) — architecture, client-side system inventory, version markers, limits.
 - [Bundle coverage and reconciliation](coverage-2026-10-30.md) — APK/cache union, integrity status, unmapped records.
+- [Direct S21 package/cache audit](phone-audit-2026-10-30.md) — fresh read-only check against the currently installed five APK splits and external cache.
 - [Visual evidence catalog](../index.md) — screenshot-derived observations.
 - [Data dictionary](../data-dictionary.md) — structured observations.
 - [Chips and resonance notes](../../docs/sistemas/chips_ressonancia.md) — early original-game design notes; values remain reported observations unless independently validated.
