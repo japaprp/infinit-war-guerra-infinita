@@ -236,9 +236,13 @@
         "returns": 1
       }
     ],
-    "implementationModuleFound": false,
-    "implementationStatus": "BLOCKED_NOT_EXPORTED",
-    "notOneOfSevenLevelupAccessors": true
+    "implementationModuleFound": true,
+    "implementationStatus": "PASS_STATIC_PAIRED_DECODE",
+    "notOneOfSevenLevelupAccessors": true,
+    "implementationPath": "validation-staging/hero-utils-base/HeroUtils.bytes; tools/experiments/heroutils-pair-input/HeroUtils_5_5.bytes",
+    "implementationFunctionIndex": 169,
+    "callbackFunctionIndex": 170,
+    "output": "captured list of hero table keys after static gates"
   },
   "accessorLiteralScan": {
     "GetExp": 0,
@@ -251,7 +255,7 @@
     "limitation": "Dynamic aliases and function references remain possible."
   },
   "memory": {
-    "freeMB": 834.7,
+    "freeMB": 747.6,
     "minimumMB": 875,
     "datatableExtraction": "BLOCKED"
   },
@@ -264,7 +268,7 @@
     "classFactory": "PASS",
     "datacenterRegistration": "BLOCKED",
     "getHeroTemplateListCallers": "PASS_3_CALLSITES_BOTH_VERSIONS",
-    "getHeroTemplateListImplementation": "BLOCKED",
+    "getHeroTemplateListImplementation": "PASS_STATIC_PAIRED_DECODE",
     "datatableBase": "NOT_RUN",
     "datatableLua55": "NOT_RUN",
     "physicalTableComparison": "NOT_RUN"
