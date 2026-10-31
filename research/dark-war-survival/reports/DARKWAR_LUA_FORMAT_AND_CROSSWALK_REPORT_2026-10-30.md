@@ -130,23 +130,25 @@ Exact prerequisites, upgrade costs, research bonuses, hero/equipment formulas, s
 
 ## 6. Next safe steps
 
-1. Validate B/C/k operands, instruction formats and aliases for the empirical Lua 5.5-to-5.4 opcode crosswalk.
-2. Validate signed/unsigned jump offsets, branch destinations, constant-pool indices, upvalue references and prototype references.
-3. Build a separate experimental Lua 5.5 disassembler only after those checks pass; keep the stable structural parser unchanged.
-4. Use the validated disassembler to confirm real `GetTableData` callsites and associate them with the DataTable asset map.
-5. When free RAM reaches the established gate, export one smallest relevant DataTable bundle at a time; start with cached building, then hero/equipment and season bundles.
-6. Only after callsite and table validation, document numeric construction costs/upgrades, hero stats/skills, equipment bonuses, season phases/rewards and event schedules.
+1. Establish true function identity across Lua 5.4/5.5 variants using stronger evidence than function index and line range (normalized constant/string fingerprints and nested-prototype structure).
+2. Independently validate the Lua 5.5 instruction encoding and operand layout against byte-level evidence; do not infer semantics from a numeric ID alone.
+3. Classify the 38 non-stock Lua 5.5 IDs by module/function frequency, operand constraints, adjacency patterns and repeated bytecode motifs.
+4. Only after opcode identity and operand formats are validated, build a separate disassembler and validate jumps, constants, upvalues and prototype references.
+5. Resume DataTable and `GetTableData` callsite correlation only after the disassembly layer is trustworthy.
+6. When free RAM reaches the established gate, export one smallest relevant DataTable bundle at a time; start with cached building, then hero/equipment and season bundles.
 
 ## 7. Safety and publication boundary
 
 Only derived metadata, validation reports and sanitized scripts are suitable for the public research branch. Do not upload APKs, original Unity bundles, extracted binary payloads, models, textures, audio, account/session data, tokens, private configuration or local absolute paths. No merge, deploy, default-branch update or deletion was performed.
 
-## 8. Follow-up opcode crosswalk (2026-10-30)
+## 8. Opcode inventory correction (2026-10-30)
 
-The 66-module follow-up identified 33 Lua 5.4 and 33 Lua 5.5 modules. Paired function analysis aligned 910 functions and 25,920 instruction positions. A deterministic empirical crosswalk mapped 100 observed Lua 5.5 opcode IDs to Lua 5.4 opcode IDs/names with 100% per-ID purity and zero conflicts. A separate holdout of 10 module keys achieved 10,128/10,128 correct mapped positions (100% accuracy; 99.91% coverage, with nine rare-ID positions unseen during training).
+The first empirical Lua 5.5-to-5.4 crosswalk is **RETRACTED**. Its function pairs were inferred from module name, function index, line range and instruction count; direct sequence inspection showed that these are not sufficient to establish function identity or position-wise semantic correspondence. The old CSV is now explicitly flagged as invalid and retained only for audit.
 
-The mapped A-register semantics produced 7/31,286 out-of-range cases (0.0224%), all `RETURN`, matching the Lua 5.4 baseline of 7/31,246 (0.0220%), also all `RETURN`. This is strong validation of the empirical mapping, but B/C/k operands, jump targets, constants, upvalues, prototypes and runtime behavior remain NOT RUN.
+Corrected inventory: the 66-module structural parser passes (33 Lua 5.4 + 33 Lua 5.5). Lua 5.4 has 36,480/36,480 opcode IDs inside the official 0–82 range. Lua 5.5 has 14,862/36,530 IDs outside the official 0–84 range: 38 distinct non-stock IDs across 30 modules. Among the Lua 5.5 instructions whose IDs do fall in the stock range, 1,191/14,576 checked A-register operands are out of range (8.171%), concentrated in stock-name IDs `BXOR` and `IDIV`. Stock Lua 5.5 semantics therefore cannot yet be applied blindly.
 
-Detailed evidence: `DARKWAR_LUA_OPCODE_CROSSWALK_VALIDATION_2026-10-30.md` and `LUA_OPCODE_CROSSWALK_55_TO_54_2026-10-30.csv` in the research branch.
+Two isolated alignment variants each caused all 33 Lua 5.5 files to fail structural parsing; the stable parser and original inputs were not changed. The one-byte alignment bias remains required for the current structural parse, while the opcode encoding and operand layout remain unresolved.
+
+Detailed evidence: `DARKWAR_LUA_OPCODE_CROSSWALK_VALIDATION_2026-10-30.md`, `LUA55_NONSTOCK_OPCODE_ID_PROFILE_2026-10-30.csv`, and the explicitly retracted `LUA_OPCODE_CROSSWALK_55_TO_54_2026-10-30.csv`.
 
 [executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]
