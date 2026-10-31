@@ -87,7 +87,38 @@ A função correspondente foi localizada na linha-fonte 3163, função 136, com 
 Raw words Lua 5.5:
 `00000062;01000067;0200002e;00018179;02030005;00000050;8000012b;040000fd;050100fb;00020091;040000be;060100fb;00020091;000100a8`
 
-**Limite:** a polaridade acima foi validada somente para o bytecode Lua 5.4. A variante 5.5 usa layout/opcodes diferentes; seu fluxo de controle ainda exige decoder específico e validação própria. Não transportar a conclusão 5.4 para 5.5 sem esse teste.
+### Validação independente do fluxo de controle — Lua 5.5
+
+O decoder específico foi criado em `tools/experiments/decode-lua55-control-flow-independent.js`. Ele lê as palavras brutas da função 136, extrai o opcode ID de 7 bits e os campos iABC/iJ diretamente, e resolve os nomes semânticos somente pelo crosswalk empírico previamente validado. Não importa nem executa o parser de chunk, o exportador do crosswalk ou o validador existente.
+
+Os 12 IDs brutos distintos presentes na função foram todos resolvidos com confiança HIGH, zero erros e zero IDs não vistos no holdout:
+- `98 → GETTABUP`
+- `103 → GETFIELD`
+- `46 → SELF`
+- `121 → LOADK`
+- `5 → CALL`
+- `80 → TEST`
+- `43 → JMP`
+- `125 → GETTABUP`
+- `123 → GETFIELD`
+- `17 → RETURN1`
+- `62 → GETTABUP`
+- `40 → RETURN0`
+
+Resultado:
+- PC 5, word `00000050`, ID bruto 80 → `TEST`, A=0, k=0, pula a próxima instrução para PC 7 quando a condição difere de k.
+- PC 6, word `8000012b`, ID bruto 43 → `JMP`, sJ=+3, destino PC 10.
+- PC 7–9 retorna `TableName.Army_B`.
+- PC 10–12 retorna `TableName.Army`.
+- PC 13 é `RETURN0`.
+
+Evidência:
+- Resultado JSON local: `validation-reports/PVEUTIL_GETARMYXMLNAME_LUA55_INDEPENDENT_JUMP_DECODE_2026-10-31.json`
+- Status: `PASS_INDEPENDENT_LUA55_CONTROL_FLOW_DECODE`
+- Script SHA-256: `C66913A841BB53C3F041A889BA474BC4E43AFC120C3B9E89531D8A7C27CD2CF8`
+- JSON SHA-256: `3895DB749C43D47E0852DC9CC97299048E0D5848C0DDC051F883040085523B8C`
+
+O resultado Lua 5.5 confirma a mesma topologia e polaridade observadas em Lua 5.4: `true → Army_B`; `false/nil → Army`. A conclusão semântica depende do crosswalk empírico Lua 5.5→5.4, que foi validado em 850 pares únicos, 30 módulos, holdout com 9.877 posições cobertas e zero divergências, além de invariantes independentes de operandos e fluxo. Isso ainda é análise estática, não execução do cliente nem validação do valor remoto do switch.
 
 ## Validações
 
@@ -99,7 +130,9 @@ Raw words Lua 5.5:
 | Semântica de TEST/JMP confrontada com Lua 5.4.9 oficial | PASS |
 | Polaridade Lua 5.4: true → Army_B; false → Army | PASS |
 | Correspondência estrutural Lua 5.5 (mesma linha, 14 instruções, 7 constantes) | PASS |
-| Decoder semântico do fluxo de controle Lua 5.5 | NOT RUN |
+| Decoder independente Lua 5.5 com crosswalk empírico: PC 6 → PC 10 | PASS |
+| Polaridade Lua 5.5: true → Army_B; false → Army | PASS — baseada no crosswalk validado |
+| Valor ativo de `army_xml_use_b` no servidor | BLOCKED — não inferível do bytecode cliente |
 | Valor ativo de `army_xml_use_b` no servidor | BLOCKED — não inferível do bytecode cliente |
 
 ## Impacto para Guerra Infinita
@@ -111,8 +144,7 @@ Raw words Lua 5.5:
 
 ## Próximas etapas
 
-1. Criar e validar decoder independente para o layout Lua 5.5, começando por funções simples e comparando com o crosswalk já levantado.
-2. Aplicar a mesma cadeia de closure/root assignment aos seletores `GetABTestTableName`, `GetHeroXmlName`, `GetHeroLevelUpXmlName`, `GetLwHeroTableName` e `GetHeroCampXmlName`.
+1. Aplicar a mesma cadeia de closure/root assignment aos seletores `GetABTestTableName`, `GetHeroXmlName`, `GetHeroLevelUpXmlName`, `GetLwHeroTableName` e `GetHeroCampXmlName`.
 3. Validar individualmente a polaridade de cada seletor; não presumir que todos usam o mesmo padrão de branches.
 4. Cruzar os nomes com DataTable e assets presentes.
 5. Só então traduzir as regras confirmadas para testes e especificações de Guerra Infinita.
