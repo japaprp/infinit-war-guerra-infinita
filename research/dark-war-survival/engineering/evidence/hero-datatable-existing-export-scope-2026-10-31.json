@@ -23,5 +23,28 @@
     "assetRipperInstances": "1 observed in process listing",
     "currentFreeRamMeasurement": "NOT RUN — previous measured value 762.9 MB was below the 875 MB safety threshold"
   },
-  "nextStep": "Recheck free RAM using a read-only system query; when at least 875 MB is available, load one DataTable bundle only, export primary content, then verify exact TextAsset paths, sizes and SHA-256 before decoding."
+  "nextStep": "Recheck free RAM using a read-only system query; when at least 875 MB is available, load one DataTable bundle only, export primary content, then verify exact TextAsset paths, sizes and SHA-256 before decoding.",
+  "historicalBundleTest": {
+    "bundle": "datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",
+    "log": "tools/assetbundle-wrapper-test/assetripper-test.log",
+    "observed": "Import and processing recorded; log then resets data and starts the next Lua bundle. No matching export completion recorded in that log segment.",
+    "existingTextAssets": [
+      {
+        "path": "tools/assetbundle-wrapper-test/lw_buff.bytes",
+        "bytes": 23807
+      },
+      {
+        "path": "tools/assetbundle-wrapper-test/lw_buff_B.bytes",
+        "bytes": 23809
+      }
+    ],
+    "missingHeroTextAssets": [
+      "lw_hero.bytes",
+      "lw_hero_B.bytes"
+    ],
+    "testBundleBytes": 540907,
+    "manifestOriginalBytes": 540915,
+    "hashOfTestBundle": "NOT RUN",
+    "conclusion": "Historical LW bundle processing and two buff TextAssets are evidenced; export provenance for those files is not linked conclusively, and LW hero table exports remain unproven."
+  }
 }
