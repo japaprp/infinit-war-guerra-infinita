@@ -41,6 +41,26 @@ Conclusion: the client selects between the NewHeroesB and NewHeroes table-name c
 
 Conclusion: the client contains a switch-controlled selection between LW_Hero_B and LW_Hero; the additional guard remains explicitly unresolved.
 
+### HeroLevelUpTemplateManager.GetTableName()
+
+- Function index: 5
+- Debug lines: 18–28
+- Instruction count: 20 in both Lua variants
+- Lua 5.4 source module SHA-256: 9b1ff70670b820bb4fc3f59cd10adbb8a397ee3e8efab3f1811fc35be9652b42
+- Lua 5.5 source module SHA-256: 1e9e37ca404e97d3e387855f1b40eca102eb2ad5d6412b939d46be496f78a72c
+- Both module variants parse successfully: 13 functions, 155 instructions, 56 constants per variant.
+- The 20-instruction sequence in Lua 5.5 maps instruction-for-instruction to the Lua 5.4 sequence using the accepted opcode crosswalk.
+
+Confirmed behavior:
+
+1. Read self.useTableName.
+2. If the field is already non-nil, return the cached value.
+3. Otherwise call LuaEntry.DataConfig.CheckSwitch("ABtest_heroes_levelup").
+4. If the switch is true, assign TableName.NewHeroesLevelUp_B to self.useTableName; otherwise assign TableName.NewHeroesLevelUp.
+5. Return self.useTableName.
+
+This is a lazy table-name cache, not merely a direct selector. The same manager exposes accessors for experience, attack, defense, army count, and breakthrough requirements, which makes this selector relevant to hero progression data.
+
 ## Additional original helper bundles recovered
 
 Four utility bundles were copied read-only from /sdcard/Android/data/com.readygo.dark.gp/files/AssetBundles/ into Selected_Bundles/Additional_Helper_Lua_Cache_2026-10-31/.
@@ -60,9 +80,12 @@ For the first two utility bundles, the original Lua index maps PveUtil.bytes to 
 - PASS — Lua 5.4 HeroUtils.bytes full structural parse, 1/1.
 - PASS — Lua 5.5 HeroUtils.bytes full structural parse, 1/1.
 - PASS — Root-prototype closure assignments map both helper names to functions 106 and 107 in both variants.
-- PASS — Static instruction traces recover both CheckSwitch calls and both pairs of table-name return expressions.
+- PASS — Static instruction traces recover both HeroUtils CheckSwitch calls and both pairs of table-name return expressions.
+- PASS — HeroLevelUpTemplateManager Lua 5.4 and 5.5 modules each parse fully, 1/1.
+- PASS — HeroLevelUpTemplateManager.GetTableName maps to the same 20-instruction sequence in Lua 5.4 and Lua 5.5.
+- PASS — Static disassembly confirms the useTableName override, lazy cache, ABtest_heroes_levelup switch, and NewHeroesLevelUp_B/NewHeroesLevelUp return values.
 - PASS — Four utility bundle pulls; each local SHA-256 exactly matches adb shell sha256sum on the phone.
-- BLOCKED — Export PveUtil.bytes from the two utility bundles. Current free RAM was approximately 484 MB; the previously established AssetRipper safety gate is 875–975 MB. AssetRipper was not started.
+- BLOCKED — Export PveUtil.bytes from the two utility bundles. Current free RAM was approximately 383 MB at the latest check; the previously established AssetRipper safety gate is 875–975 MB. AssetRipper was not started.
 - BLOCKED — Resolve the additional TEST R0 guard in GetLwHeroTableName.
 - NOT RUN — Runtime switch values, server-selected table variant, dynamic execution/reachability, and semantic validation against live server responses.
 
@@ -71,7 +94,7 @@ For the first two utility bundles, the original Lua index maps PveUtil.bytes to 
 1. Wait until free RAM reaches the established 875–975 MB gate before opening AssetRipper.
 2. Export only the two utility bundles containing PveUtil (base and 55 variants); preserve the original bundles and record hashes before/after export.
 3. Parse both PveUtil.bytes files and trace GetArmyXmlName() to the exact TableName return values.
-4. Trace HeroLevelUpTemplateManager.GetTableName() and connect its result to the DataTable asset index.
+4. Correlate all three resolved selectors with the DataTable asset index and trace their callers.
 5. Cross-check all resolved table names against the original DataTable bundle exports; keep dynamic or unresolved values marked as such.
 
 No merge, deployment, publication of game binaries, account action, or external game release was performed.
