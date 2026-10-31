@@ -26,5 +26,45 @@
     "modules": "Arena modules"
   },
   "limitation": "Literal constant search cannot exclude function references, runtime aliases, reflection, constructed keys, missing modules, or generic manager access.",
-  "conclusion": "No external literal consumer or alias identified in this inventory."
+  "conclusion": "No external literal consumer or alias identified in this inventory.",
+  "managerRootExports": {
+    "versions": [
+      "5.4",
+      "5.5"
+    ],
+    "rootFunctionIndex": 1,
+    "exportedStrings": [
+      "BaseClass",
+      "HeroLevelUpTemplateManager",
+      "__init",
+      "__delete",
+      "Startup",
+      "GetTableName",
+      "GetNeedMainLv",
+      "GetExp",
+      "GetAtk",
+      "GetDef",
+      "GetArmyNum",
+      "GetBreakRequire",
+      "GetBreakRequireRank",
+      "GetBreakRequireBase"
+    ],
+    "sevenAccessorsDeclared": true,
+    "externalCallerProven": false
+  },
+  "adjacentUiPath": {
+    "module": "UIHeroListCtrl",
+    "version": "5.4 and 5.5",
+    "functionIndex": 20,
+    "lineDefined": 373,
+    "constants": [
+      "DataCenter",
+      "HeroDataManager",
+      "GetHeroTemplateList",
+      "HeroUtils",
+      "GetHeroAttr"
+    ],
+    "conclusion": "UI path retrieves hero template list and hero attributes via HeroDataManager/HeroUtils; no call to the seven HeroLevelUpTemplateManager accessors is demonstrated."
+  },
+  "nextIndirectTarget": "Find DataCenter/BaseClass bootstrap and dynamic manager registration; trace whether HeroLevelUpTemplateManager is attached to DataCenter and how generic accessors are called."
 }
