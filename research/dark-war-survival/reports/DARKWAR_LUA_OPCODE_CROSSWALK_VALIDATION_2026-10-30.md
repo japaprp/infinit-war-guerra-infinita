@@ -68,6 +68,7 @@ A bit-8 scan was also tested. It is not a valid alternative opcode extraction: i
 
 - `LUA_OPCODE_CROSSWALK_55_TO_54_2026-10-30.csv`: retained as historical evidence only; invalid for semantic use.
 - `LUA55_NONSTOCK_OPCODE_ID_PROFILE_2026-10-30.csv`: current frequency/module/operand profile for non-stock Lua 5.5 IDs.
+- `LUA55_NONSTOCK_OPCODE_ADJACENCY_2026-10-30.csv`: preceding/following opcode frequency profile for the 38 non-stock IDs.
 - `LUA_OPCODE_INVENTORY_RAW_MODULES_2026-10-30-functions.csv`: per-function metadata, raw opcode IDs, and raw instruction words.
 - `LUA_OPCODE_INVENTORY_RAW_MODULES_2026-10-30-files.csv`: per-module parser and opcode summaries.
 - Stable structural parser: `tools/parse-lua-chunks.js` remains unchanged.
