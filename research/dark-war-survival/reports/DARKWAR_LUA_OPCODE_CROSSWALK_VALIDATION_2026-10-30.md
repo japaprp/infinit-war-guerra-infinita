@@ -59,7 +59,8 @@ The following checks were applied to mapped instructions using Lua 5.4 opcode fi
 
 | Invariant | Checked | Invalid |
 |---|---:|---:|
-| A-register bounds | 22,714 | 0 |
+| Selected A/B/C register operands and register ranges | 33,558 | 0 |
+| A-register bounds (subset of the row above) | 22,714 | 0 |
 | Constant-pool references | 13,133 | 0 |
 | Upvalue references | 3,722 | 0 |
 | Child-prototype references | 1,085 | 0 |
@@ -71,7 +72,7 @@ The following checks were applied to mapped instructions using Lua 5.4 opcode fi
 | TFORCALL followed by TFORLOOP with same A | 279 | 0 |
 | JMP/FORLOOP/FORPREP/TFORLOOP targets inside function | 3,940 | 0 |
 
-No mapped A-register, constant, upvalue, prototype, skip-pair, generic-for sequence, or tested jump-target violation was observed.
+No mapped selected register-operand, constant, upvalue, prototype, skip-pair, generic-for sequence, or tested jump-target violation was observed. One useful format invariant emerged: all 2,522 mapped `SELF` instructions have `k=0`, and their C operand is a valid constant-pool index (2,522/2,522), not a register index. This is a game-specific fixed constant-key form; the generic stock `RKC(C)` interpretation must not be applied to these `SELF` variants.
 
 The mapping also explains the earlier apparent opcode anomaly: stock Lua 5.5 names are not a reliable direct label for the game's raw opcode IDs. The new mapping is empirical; the stock Lua 5.5 name column in the CSV is shown only as a reference, not as the game's semantic name.
 
@@ -113,8 +114,9 @@ Therefore, this is a **high-confidence static crosswalk**, not yet a complete or
 ## Artifacts
 
 - `LUA_OPCODE_CROSSWALK_55_TO_54_FINGERPRINT_V1_2026-10-30.csv` — accepted 97-ID mapping with occurrence, module, holdout and operand-validation evidence.
-- `LUA_OPCODE_FINGERPRINT_CROSSWALK_VALIDATION_2026-10-30.json` — machine-readable validation totals.
-- `LUA_FUNCTION_FINGERPRINT_INVENTORY_2026-10-30-functions.csv` — per-function fingerprints, metadata and raw instruction sequences.
+- `LUA_OPCODE_FINGERPRINT_CROSSWALK_VALIDATION_2026-10-30.json` — machine-readable crosswalk, operand and control-flow totals.
+- `LUA_REGISTER_OPERAND_VALIDATION_2026-10-30.json` — selected B/C register and range validation, including the fixed constant-key `SELF` finding.
+- `LUA_FUNCTION_FINGERPRINT_INVENTORY_2026-10-30-functions.csv` — local derived evidence artifact with per-function fingerprints, metadata and raw instruction sequences; regenerable from the original raw modules with the published parser, not copied to the branch because it is a large generated inventory.
 - `LUA_OPCODE_CROSSWALK_55_TO_54_2026-10-30.csv` — earlier invalid mapping, flagged RETRACTED; do not use.
 - `LUA55_NONSTOCK_OPCODE_ID_PROFILE_2026-10-30.csv` and `LUA55_NONSTOCK_OPCODE_ADJACENCY_2026-10-30.csv` — earlier raw-ID frequency/adjacency profiles; useful as historical diagnostics only.
 - Stable structural parser `tools/parse-lua-chunks.js` remains unchanged. The fingerprint and validation scripts are isolated under `tools/experiments/`.
