@@ -109,3 +109,9 @@ Artefatos reproduzíveis:
 
 - [Script de mapeamento e decodificação](../tools/analyze-heroutils-selectors.js)
 - [Evidência JSON compacta](./evidence/heroutils-selector-root-mapping-2026-10-31.json)
+
+## Referências estáticas adicionais para LW_Hero
+
+Uma busca literal nas constantes dos inventários Lua disponíveis encontrou `lw_hero`, `LW_Hero` e `LW_Hero_B` dentro do próprio `HeroUtils` nas duas versões. Não foram encontrados outros módulos com essas constantes nos inventários pesquisados, e o scanner de call sites também não encontrou chamada estática para `GetLwHeroTableName`.
+
+A conclusão permitida é limitada: **não há consumidor estático identificado no conjunto de módulos indexados**. Isso não prova que o helper seja código morto; chamadas dinâmicas, reflexão, código não indexado ou caminhos de execução indiretos continuam possíveis. O vínculo físico com os arquivos `lw_hero.bytes` e `lw_hero_B.bytes` permanece pendente de exportação e comparação dos DataTables.
