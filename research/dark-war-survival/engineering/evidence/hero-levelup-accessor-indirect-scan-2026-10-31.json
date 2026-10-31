@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-31",
+  "scope": "Available Lua 5.4/5.5 constants inventory excluding HeroLevelUpTemplateManager module",
+  "exactAccessorHits": {
+    "GetExp": 0,
+    "GetAtk": 0,
+    "GetDef": 0,
+    "GetArmyNum": 0,
+    "GetBreakRequire": 0,
+    "GetBreakRequireRank": 0,
+    "GetBreakRequireBase": 0
+  },
+  "relatedTokenHits": {
+    "HeroLevelUp": 0,
+    "HeroLevelUpTemplateManager": 0,
+    "LevelUpTemplate": 0,
+    "lv_attr_atk": 0,
+    "lv_attr_def": 0,
+    "break_require_base": 0,
+    "break_require_rank": 0,
+    "army_num": 0
+  },
+  "substringFalsePositives": {
+    "GetDef": 6,
+    "exactSymbolMatches": 0,
+    "modules": "Arena modules"
+  },
+  "limitation": "Literal constant search cannot exclude function references, runtime aliases, reflection, constructed keys, missing modules, or generic manager access.",
+  "conclusion": "No external literal consumer or alias identified in this inventory."
+}
