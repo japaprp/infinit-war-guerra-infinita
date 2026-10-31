@@ -100,3 +100,14 @@ For the first two utility bundles, the original Lua index maps PveUtil.bytes to 
 No merge, deployment, publication of game binaries, account action, or external game release was performed.
 
 [executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]
+
+[executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]
+
+## Retomada — verificação operacional
+
+- PASS — Computador Windows reconectado e consulta de memória concluída.
+- BLOCKED — Memória livre medida nesta retomada: 569,780 KB (aproximadamente 556.4 MiB), ainda abaixo da faixa de segurança de 875–975 MB definida para AssetRipper.
+- PASS — Busca por arquivo exportado `PveUtil.bytes` em DarkWar_Analysis_Core concluída: nenhum arquivo encontrado. Isso confirma que a exportação ainda não ocorreu; não significa ausência do módulo nos bundles originais.
+- NOT RUN — AssetRipper permanece fechado. Nenhum bundle original foi alterado nesta retomada.
+
+Próxima ação segura: aguardar a memória livre atingir pelo menos 875 MB; então exportar somente os dois bundles utilitários previamente identificados como contendo PveUtil e validar hashes antes/depois.
