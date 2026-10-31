@@ -102,3 +102,13 @@ A implementação do helper está agora **PASS — encontrada e pareada**. O reg
 - **NOT RUN** — extração física de `aps_new_heroes` / variantes B.
 
 Nenhum bundle foi carregado/exportado nesta rodada. Nenhum original foi modificado; sem merge, deploy ou publicação.
+
+
+## 9. Evidência adicional do bootstrap/BaseClass
+
+- A busca exata por BaseClass no inventário de constantes encontrou 30 nomes distintos de classes/manager em 30 pares módulo-versão. O padrão é compatível com uma factory global comum, mas não contém a implementação da factory.
+- A busca no manifesto Lua exportado não encontrou asset BaseClass.bytes, LuaEntry.bytes ou um módulo central DataCenter.bytes; os caminhos encontrados para HeroUtils são os dois assets pareados já analisados.
+- A busca no manifesto completo de bundles não encontrou candidatos nomeados lua_scripts_common, lua_scripts_base, lua_scripts_core, lua_scripts_entry ou lua_scripts_framework. Os bundles Lua listados estão agrupados principalmente em DataCenter, Scene e UI.
+- O root de HeroLevelUpTemplateManager chama BaseClass com o nome HeroLevelUpTemplateManager, mas não atribui a classe diretamente a DataCenter. A publicação deve ocorrer em loader/factory externo ao conjunto Lua exportado ou em camada de runtime; isso continua como hipótese, não prova.
+
+Estado do bootstrap: classe criada por BaseClass — PASS; mecanismo que publica a classe em DataCenter — BLOCKED; execução dinâmica — NOT RUN.
