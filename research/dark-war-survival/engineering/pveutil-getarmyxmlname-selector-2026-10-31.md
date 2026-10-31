@@ -117,4 +117,4 @@ Especificação técnica segura neste estágio:
 
 ## Limites
 
-Esta análise é estática e baseada em bytecode cliente exportado. Ela não comprova a configuração ativa no servidor, a resposta remota de `CheckSwitch), nem quais tabelas foram servidas a uma conta específica em runtime.
+Esta análise é estática e baseada em bytecode cliente exportado. Ela não comprova a configuração ativa no servidor, a resposta remota de `CheckSwitch`, nem quais tabelas foram servidas a uma conta específica em runtime.
