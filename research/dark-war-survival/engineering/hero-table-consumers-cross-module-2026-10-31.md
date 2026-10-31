@@ -47,3 +47,7 @@ Não inferir o destino da chamada: o retorno pode alimentar outro helper, ser ar
 4. Manter a exportação bloqueada até a RAM livre alcançar 875 MB. Medição nesta rodada: 420,2 MB.
 
 Nenhuma alteração de gameplay, merge, deploy ou exclusão foi realizada.
+
+## Atualização posterior: HeroWeaponManager
+
+O rastreamento específico da função 6 (linhas 37–58) encontrou consumo indireto da tabela: ela chama `HeroUtils.GetHeroXmlName()` e passa o nome retornado, junto com uma closure, a `LocalController.instance.visitTable`. A closure (função 7, linhas 42–53) filtra registros por `HeroWeaponUtil.CheckShowServer` e `CheckShowDays` e insere os aprovados em `heroList`. Portanto, o retorno do seletor é efetivamente consumido mesmo sem chamada direta a `GetTableData` dentro da função 6. Evidência: [HeroEquip e HeroWeapon — rastreamento de argumentos e consumo indireto](./hero-equip-and-weapon-table-argument-trace-2026-10-31.md).
