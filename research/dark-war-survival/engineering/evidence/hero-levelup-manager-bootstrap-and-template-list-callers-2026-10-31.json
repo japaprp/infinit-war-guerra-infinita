@@ -313,10 +313,21 @@
       ]
     },
     "datacenterPublication": "BLOCKED_NOT_IN_EXPORTED_LUA_SET",
-    "inference": "BaseClass is a shared global factory used by 30 manager/controller classes; implementation/registration likely supplied by loader or runtime outside exported Lua assets, not proven."
+    "inference": "BaseClass is a shared global factory used by 30 manager/controller classes; implementation/registration likely supplied by loader or runtime outside exported Lua assets, not proven.",
+    "nativeArtifacts": {
+      "globalMetadataFound": false,
+      "libil2cppFound": false,
+      "gameAssemblyFound": false,
+      "assemblyCSharpFound": false,
+      "apkLocalCopyFound": false,
+      "apkOneDrivePlaceholderFound": true,
+      "apkSizeBytes": 2082044905,
+      "rehydrated": false
+    },
+    "nativeInspection": "BLOCKED_NO_LOCAL_NATIVE_METADATA_OR_APK_BYTES"
   },
   "memory": {
-    "freeMB": 736.9,
+    "freeMB": 763,
     "thresholdMB": 875,
     "datatableExtraction": "BLOCKED",
     "assetRipperProcesses": 1
@@ -341,3 +352,5 @@
     "deploy": false
   }
 }
+
+[executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]
