@@ -1,0 +1,309 @@
+[Reading 305 lines from start (total: 305 lines, 0 remaining)]
+
+{
+  "status": "PASS_HERO_DATATABLE_BUNDLE_PRECHECK",
+  "sourceFiles": {
+    "assetMap": "44183401d262b2e67b4c19622931bffdf64b2393bc56dfefa05ac45cd25d4903",
+    "bundleManifest": "eb7cf381d9479d8a12cb2d7a1e628516ee76e426c71e41083177fd91e227e683"
+  },
+  "bundles": [
+    {
+      "bundle": "datatable_config_luatxt_aps_859d1e7c0543b40260b362d100ec2579.bundle",
+      "source": "S21-AssetBundles-cache",
+      "bytes": 946250,
+      "actualSha256": "CDF6955190BABA25D86C26F74F7FD3A38E96873F46BAA43B88432AD5D20D3819",
+      "manifestSha256": "CDF6955190BABA25D86C26F74F7FD3A38E96873F46BAA43B88432AD5D20D3819",
+      "manifestStatus": "PASS",
+      "localPath": "All_Datatable_Cached_2026-10-30/datatable_config_luatxt_aps_859d1e7c0543b40260b362d100ec2579.bundle",
+      "hashCheck": "PASS"
+    },
+    {
+      "bundle": "datatable_config_luatxt_55_aps_3b5ee2fd1210e98af73c5bc393f57784.bundle",
+      "source": "S21-AssetBundles-cache",
+      "bytes": 1960142,
+      "actualSha256": "32999D6EF944A751141123C39687A91F1E30CFCD5A5C9B5B6A751980CD9F8BAE",
+      "manifestSha256": "32999D6EF944A751141123C39687A91F1E30CFCD5A5C9B5B6A751980CD9F8BAE",
+      "manifestStatus": "PASS",
+      "localPath": "All_Datatable_Cached_2026-10-30/datatable_config_luatxt_55_aps_3b5ee2fd1210e98af73c5bc393f57784.bundle",
+      "hashCheck": "PASS"
+    },
+    {
+      "bundle": "datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",
+      "source": "installed-split-APK",
+      "bytes": 540915,
+      "actualSha256": "6F4FE199962197F5890BCCD03A3B029EA3784524525B067285C0A1C908DD900F",
+      "manifestSha256": "6F4FE199962197F5890BCCD03A3B029EA3784524525B067285C0A1C908DD900F",
+      "manifestStatus": "PASS",
+      "localPath": "APK_Packaged_Datatable_2026-10-30/datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",
+      "hashCheck": "PASS"
+    },
+    {
+      "bundle": "datatable_config_luatxt_55_lw_572068728368e9a34e2bcaba2485f8af.bundle",
+      "source": "installed-split-APK",
+      "bytes": 829425,
+      "actualSha256": "62C19DB51CFBC2948F11B4AC4973BEF43010EAB9533E2F29B400BFDFD7D6B2D0",
+      "manifestSha256": "62C19DB51CFBC2948F11B4AC4973BEF43010EAB9533E2F29B400BFDFD7D6B2D0",
+      "manifestStatus": "PASS",
+      "localPath": "APK_Packaged_Datatable_2026-10-30/datatable_config_luatxt_55_lw_572068728368e9a34e2bcaba2485f8af.bundle",
+      "hashCheck": "PASS"
+    },
+    {
+      "bundle": "datatable_config_luatxt_h_6a1d2a950c996f15a938acebcebc598b.bundle",
+      "source": "installed-split-APK",
+      "bytes": 1125059,
+      "actualSha256": "E5515AD0044FE7CB4C2FC0831B975D5980F6256A84A1792C993AEAF3AD346749",
+      "manifestSha256": "E5515AD0044FE7CB4C2FC0831B975D5980F6256A84A1792C993AEAF3AD346749",
+      "manifestStatus": "PASS",
+      "localPath": "APK_Packaged_Datatable_2026-10-30/datatable_config_luatxt_h_6a1d2a950c996f15a938acebcebc598b.bundle",
+      "hashCheck": "PASS"
+    },
+    {
+      "bundle": "datatable_config_luatxt_55_h_3241e39d538fe22e815569b43561d206.bundle",
+      "source": "installed-split-APK",
+      "bytes": 1235771,
+      "actualSha256": "59633C228C7BD670407CFC35168E710505EE37219A8D655C290F93D901DACB4D",
+      "manifestSha256": "59633C228C7BD670407CFC35168E710505EE37219A8D655C290F93D901DACB4D",
+      "manifestStatus": "PASS",
+      "localPath": "APK_Packaged_Datatable_2026-10-30/datatable_config_luatxt_55_h_3241e39d538fe22e815569b43561d206.bundle",
+      "hashCheck": "PASS"
+    }
+  ],
+  "assets": [
+    {
+      "assetIndex": 11,
+      "assetPath": "0/aps_new_heroes.bytes",
+      "assetType": 0,
+      "bundleIndex": 0,
+      "bundle": "datatable_config_luatxt_aps_859d1e7c0543b40260b362d100ec2579.bundle",
+      "cachedOnS21": "YES"
+    },
+    {
+      "assetIndex": 255,
+      "assetPath": "0/heroes_levelup.bytes",
+      "assetType": 11,
+      "bundleIndex": 11,
+      "bundle": "datatable_config_luatxt_h_6a1d2a950c996f15a938acebcebc598b.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 292,
+      "assetPath": "0/lw_hero.bytes",
+      "assetType": 14,
+      "bundleIndex": 14,
+      "bundle": "datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 293,
+      "assetPath": "0/lw_hero_B.bytes",
+      "assetType": 14,
+      "bundleIndex": 14,
+      "bundle": "datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 294,
+      "assetPath": "0/lw_hero_appearance.bytes",
+      "assetType": 14,
+      "bundleIndex": 14,
+      "bundle": "datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 295,
+      "assetPath": "0/lw_hero_appearance_B.bytes",
+      "assetType": 14,
+      "bundleIndex": 14,
+      "bundle": "datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 296,
+      "assetPath": "0/lw_hero_effect.bytes",
+      "assetType": 14,
+      "bundleIndex": 14,
+      "bundle": "datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 297,
+      "assetPath": "0/lw_hero_effect_B.bytes",
+      "assetType": 14,
+      "bundleIndex": 14,
+      "bundle": "datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 298,
+      "assetPath": "0/lw_hero_skill.bytes",
+      "assetType": 14,
+      "bundleIndex": 14,
+      "bundle": "datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 299,
+      "assetPath": "0/lw_hero_skill_B.bytes",
+      "assetType": 14,
+      "bundleIndex": 14,
+      "bundle": "datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 300,
+      "assetPath": "0/lw_hero_skill_effect.bytes",
+      "assetType": 14,
+      "bundleIndex": 14,
+      "bundle": "datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 301,
+      "assetPath": "0/lw_hero_skill_effect_B.bytes",
+      "assetType": 14,
+      "bundleIndex": 14,
+      "bundle": "datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 480,
+      "assetPath": "1/aps_new_heroes.bytes",
+      "assetType": 26,
+      "bundleIndex": 26,
+      "bundle": "datatable_config_luatxt_55_aps_3b5ee2fd1210e98af73c5bc393f57784.bundle",
+      "cachedOnS21": "YES"
+    },
+    {
+      "assetIndex": 724,
+      "assetPath": "1/heroes_levelup.bytes",
+      "assetType": 37,
+      "bundleIndex": 37,
+      "bundle": "datatable_config_luatxt_55_h_3241e39d538fe22e815569b43561d206.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 761,
+      "assetPath": "1/lw_hero.bytes",
+      "assetType": 40,
+      "bundleIndex": 40,
+      "bundle": "datatable_config_luatxt_55_lw_572068728368e9a34e2bcaba2485f8af.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 762,
+      "assetPath": "1/lw_hero_B.bytes",
+      "assetType": 40,
+      "bundleIndex": 40,
+      "bundle": "datatable_config_luatxt_55_lw_572068728368e9a34e2bcaba2485f8af.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 763,
+      "assetPath": "1/lw_hero_appearance.bytes",
+      "assetType": 40,
+      "bundleIndex": 40,
+      "bundle": "datatable_config_luatxt_55_lw_572068728368e9a34e2bcaba2485f8af.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 764,
+      "assetPath": "1/lw_hero_appearance_B.bytes",
+      "assetType": 40,
+      "bundleIndex": 40,
+      "bundle": "datatable_config_luatxt_55_lw_572068728368e9a34e2bcaba2485f8af.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 765,
+      "assetPath": "1/lw_hero_effect.bytes",
+      "assetType": 40,
+      "bundleIndex": 40,
+      "bundle": "datatable_config_luatxt_55_lw_572068728368e9a34e2bcaba2485f8af.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 766,
+      "assetPath": "1/lw_hero_effect_B.bytes",
+      "assetType": 40,
+      "bundleIndex": 40,
+      "bundle": "datatable_config_luatxt_55_lw_572068728368e9a34e2bcaba2485f8af.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 767,
+      "assetPath": "1/lw_hero_skill.bytes",
+      "assetType": 40,
+      "bundleIndex": 40,
+      "bundle": "datatable_config_luatxt_55_lw_572068728368e9a34e2bcaba2485f8af.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 768,
+      "assetPath": "1/lw_hero_skill_B.bytes",
+      "assetType": 40,
+      "bundleIndex": 40,
+      "bundle": "datatable_config_luatxt_55_lw_572068728368e9a34e2bcaba2485f8af.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 769,
+      "assetPath": "1/lw_hero_skill_effect.bytes",
+      "assetType": 40,
+      "bundleIndex": 40,
+      "bundle": "datatable_config_luatxt_55_lw_572068728368e9a34e2bcaba2485f8af.bundle",
+      "cachedOnS21": "NO"
+    },
+    {
+      "assetIndex": 770,
+      "assetPath": "1/lw_hero_skill_effect_B.bytes",
+      "assetType": 40,
+      "bundleIndex": 40,
+      "bundle": "datatable_config_luatxt_55_lw_572068728368e9a34e2bcaba2485f8af.bundle",
+      "cachedOnS21": "NO"
+    }
+  ],
+  "checks": {
+    "sixOfSixBundleFilesPresent": true,
+    "sixOfSixSizesMatchManifest": true,
+    "sixOfSixSha256MatchManifest": true,
+    "baseAndLua55AssetsMappedForAllFourCoreTableNames": true,
+    "individualTextAssetExportsFoundInTargetedExportDirectories": false
+  },
+  "exportSearch": {
+    "directories": [
+      "UnityGameSubset",
+      "UnityGameSubset_WithCAB",
+      "validation-staging"
+    ],
+    "patterns": [
+      "aps_new_heroes.bytes",
+      "heroes_levelup.bytes",
+      "lw_hero.bytes",
+      "lw_hero_B.bytes",
+      "lw_hero_appearance.bytes",
+      "lw_hero_appearance_B.bytes",
+      "lw_hero_effect.bytes",
+      "lw_hero_effect_B.bytes",
+      "lw_hero_skill.bytes",
+      "lw_hero_skill_B.bytes",
+      "lw_hero_skill_effect.bytes",
+      "lw_hero_skill_effect_B.bytes"
+    ],
+    "results": "No matching individual DataTable .bytes files found in the targeted export directories."
+  },
+  "nextAction": {
+    "status": "BLOCKED_BY_MEMORY_MARGIN",
+    "freeRamMbAtPrecheck": 762.9,
+    "minimumFreeRamMb": 875,
+    "assetRipperLoadsPerformed": 0,
+    "plan": "After free RAM recovers above 875 MB, load and export one relevant DataTable bundle at a time, verify every export against its manifest mapping, and compare base/Lua 5.5 and A/B table records."
+  },
+  "caveats": [
+    "The asset path aps_new_heroes.bytes is mapped, but no separate aps_new_heroes_B.bytes row exists in this asset map. The relationship between TableName.NewHeroesB and the physical asset/table name remains to be confirmed by extraction.",
+    "heroes_levelup.bytes is mapped for both versions, but no separate *_B.bytes asset path appears in the map; inspect table content after extraction.",
+    "lw_hero.bytes and lw_hero_B.bytes are both explicitly mapped for both versions, but their row contents have not yet been compared.",
+    "A bundle hash PASS proves the selected local bundle matches the existing manifest; it does not prove an individual TextAsset has been exported or decoded."
+  ]
+}
+
+[executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]
