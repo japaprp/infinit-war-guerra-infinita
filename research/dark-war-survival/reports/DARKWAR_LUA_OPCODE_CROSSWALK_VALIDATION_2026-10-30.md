@@ -51,6 +51,18 @@ A deterministic module split was used: the first 20 sorted module keys for train
 
 The six uncovered positions are not counted as correct; they are explicitly recorded as unseen. No holdout mismatch occurred.
 
+## Remaining unmapped instructions
+
+The 137 instructions not covered by the accepted crosswalk are concentrated in only **three raw IDs**, across 13 modules:
+
+| Raw Lua 5.5 ID | Stock-name reference only | Occurrences | Modules | Functions | Stock interpretation check |
+|---:|---|---:|---:|---:|---|
+| 22 | ADDK | 68 | 13 | 58 | Fails stock ADDK operand checks: B is outside maxStack in 18 cases and C is outside the constant pool in 1 case |
+| 73 | FORLOOP | 68 | 13 | 58 | Fails stock FORLOOP target check: 27/68 backward targets fall outside the function |
+| 59 | LE | 1 | 1 | 1 | One sample has A=14 and C=128, inconsistent with stock LE's test/register layout |
+
+These stock names are only reference labels; none of the three IDs has been assigned a semantic meaning. The two frequent IDs appear in the same broad module families but their stock operand interpretations fail. The single ID 59 remains a one-occurrence anomaly. All 137 positions therefore remain **BLOCKED**, not silently mapped.
+
 ## Independent operand and structural validation
 
 The full-corpus crosswalk maps **36,393 of 36,530 Lua 5.5 instructions (99.625%)**. The remaining 137 positions use IDs not represented in the accepted fingerprint-paired mapping and remain unmapped.
@@ -118,7 +130,8 @@ Therefore, this is a **high-confidence static crosswalk**, not yet a complete or
 - `LUA_REGISTER_OPERAND_VALIDATION_2026-10-30.json` — selected B/C register and range validation, including the fixed constant-key `SELF` finding.
 - `LUA_FUNCTION_FINGERPRINT_INVENTORY_2026-10-30-functions.csv` — local derived evidence artifact with per-function fingerprints, metadata and raw instruction sequences; regenerable from the original raw modules with the published parser, not copied to the branch because it is a large generated inventory.
 - `LUA_OPCODE_CROSSWALK_55_TO_54_2026-10-30.csv` — earlier invalid mapping, flagged RETRACTED; do not use.
-- `LUA55_NONSTOCK_OPCODE_ID_PROFILE_2026-10-30.csv` and `LUA55_NONSTOCK_OPCODE_ADJACENCY_2026-10-30.csv` — earlier raw-ID frequency/adjacency profiles; useful as historical diagnostics only.
+- `LUA55_NONSTOCK_OPCODE_ID_PROFILE_2026-10-30.csv` and `LUA55_NONSTOCK_OPCODE_ADJACENCY_2026-10-30.csv` — raw-ID frequency/adjacency diagnostics.
+- `LUA55_UNMAPPED_OPCODE_ID_PROFILE_2026-10-30.csv` — exact remaining 137 instruction positions across raw IDs 22, 73 and 59.
 - Stable structural parser `tools/parse-lua-chunks.js` remains unchanged. The fingerprint and validation scripts are isolated under `tools/experiments/`.
 
 ## Next safe steps
