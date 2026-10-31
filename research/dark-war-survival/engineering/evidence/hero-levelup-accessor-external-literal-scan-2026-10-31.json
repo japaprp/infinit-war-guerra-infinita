@@ -1,0 +1,34 @@
+[
+  {
+    "symbol": "GetExp",
+    "externalLiteralHits": []
+  },
+  {
+    "symbol": "GetAtk",
+    "externalLiteralHits": []
+  },
+  {
+    "symbol": "GetDef",
+    "externalLiteralHits": []
+  },
+  {
+    "symbol": "GetArmyNum",
+    "externalLiteralHits": []
+  },
+  {
+    "symbol": "GetBreakRequire",
+    "externalLiteralHits": []
+  },
+  {
+    "symbol": "GetBreakRequireRank",
+    "externalLiteralHits": []
+  },
+  {
+    "symbol": "GetBreakRequireBase",
+    "externalLiteralHits": []
+  },
+  {
+    "symbol": "HeroLevelUpTemplateManager/HeroLevelUp",
+    "externalLiteralHits": []
+  }
+]

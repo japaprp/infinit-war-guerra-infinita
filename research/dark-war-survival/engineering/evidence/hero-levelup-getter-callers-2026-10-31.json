@@ -1,0 +1,8 @@
+{
+  "staticDirectCallRows": 2,
+  "distinctFunctions": 2,
+  "modules": 1,
+  "withResolvedArgs": 2,
+  "corrected": true,
+  "argumentMeaning": "loop control variable i, iterating from 1 to HeroMaxLevel"
+}

@@ -1,0 +1,84 @@
+{
+  "status": "PASS_CROSS_MODULE_HERO_TABLE_CONSUMER_TRACE",
+  "source": "validation-reports/DARKWAR_GETTABLEDATA_CALL_ARGUMENTS_2026-10-30.csv",
+  "relatedSource": "validation-reports/HERO_SELECTOR_CALLSITES_2026-10-31.json",
+  "totalDirectGetTableDataFlows": 18,
+  "perVersion": {
+    "lua54": 9,
+    "lua55": 9
+  },
+  "flows": [
+    {
+      "module": "HeroDataManager",
+      "line": 609,
+      "key": "heroId",
+      "field": "camp"
+    },
+    {
+      "module": "HeroDataManager",
+      "line": 638,
+      "key": "element from typeHeroes",
+      "field": "camp"
+    },
+    {
+      "module": "HeroEquipManager",
+      "line": 252,
+      "key": "R3",
+      "field": "camp"
+    },
+    {
+      "module": "HeroEquipManager",
+      "line": 377,
+      "key": "R1",
+      "field": "camp"
+    },
+    {
+      "module": "HeroEquipManager",
+      "line": 390,
+      "key": "R1",
+      "field": "camp"
+    },
+    {
+      "module": "UIHeroListCtrl",
+      "line": 282,
+      "key": "tonumber(first record heroId)",
+      "field": "order"
+    },
+    {
+      "module": "UIHeroListCtrl",
+      "line": 282,
+      "key": "tonumber(second record heroId)",
+      "field": "order"
+    },
+    {
+      "module": "UIWorldCupActListPanelCtrl",
+      "line": 12,
+      "key": "HeroEvolveActivityManager.GetToHeroId()",
+      "field": "rarity"
+    },
+    {
+      "module": "UIWorldCupActListPanelCtrl",
+      "line": 12,
+      "key": "HeroEvolveActivityManager.GetToHeroId()",
+      "field": "desc"
+    }
+  ],
+  "mirroredInLua54And55": true,
+  "heroWeaponManager": {
+    "getHeroXmlNameCallsiteCount": 1,
+    "functionIndex": 6,
+    "line": 37,
+    "directGetTableDataTrace": "NOT FOUND IN CURRENT CALL_ARGUMENTS INVENTORY",
+    "destinationOfSelectorResult": "UNKNOWN"
+  },
+  "memory": {
+    "freeRamMB": 420.2,
+    "assetRipperThresholdMB": 875,
+    "assetRipperLoad": "BLOCKED"
+  },
+  "caveats": [
+    "Call argument report is static register-flow reconstruction, not runtime tracing.",
+    "R1 and R3 argument semantics are not inferred from register names alone.",
+    "Physical table schemas and rows remain unexported/unverified."
+  ]
+}

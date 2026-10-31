@@ -1,0 +1,12 @@
+{
+  "mappedOpcodeIds": 97,
+  "functions": 1118,
+  "registerOperandChecks": 33558,
+  "invalid": 0,
+  "invalidByKind": {},
+  "invalidByOpcode": {},
+  "selfKeyConstantChecks": 2522,
+  "selfKeyConstantInvalid": 0,
+  "selfKZero": 2522,
+  "selfKNonzero": 0
+}

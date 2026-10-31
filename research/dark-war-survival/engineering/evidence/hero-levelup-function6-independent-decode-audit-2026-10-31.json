@@ -1,0 +1,118 @@
+{
+  "date": "2026-10-31",
+  "project": "Dark War: Survival reverse engineering for Guerra Infinita reconstruction",
+  "target": "HeroLevelUpTemplateManager function 6, lines 30-39",
+  "status": "BLOCKED_ARGUMENT_NOT_INDEPENDENTLY_VALIDATED",
+  "versions": {
+    "5.4": {
+      "functionIndex": 6,
+      "lineDefined": 30,
+      "lastLineDefined": 39,
+      "numParams": 1,
+      "maxStackSize": 9,
+      "instructionCount": 17,
+      "sha256": "9b1ff70670b820bb4fc3f59cd10adbb8a397ee3e8efab3f1811fc35be9652b42",
+      "instructionWords": [
+        "0000008b",
+        "0101008e",
+        "0201008e",
+        "80000101",
+        "0300018b",
+        "80000201",
+        "0003014a",
+        "04008314",
+        "00050400",
+        "02030344",
+        "000600ba",
+        "80000038",
+        "00020348",
+        "00038149",
+        "0300010b",
+        "00020148",
+        "00010147"
+      ],
+      "argumentCandidate": "R5",
+      "argumentValidation": "NOT_INDEPENDENTLY_VALIDATED"
+    },
+    "5.5": {
+      "functionIndex": 6,
+      "lineDefined": 30,
+      "lastLineDefined": 39,
+      "numParams": 1,
+      "maxStackSize": 8,
+      "instructionCount": 17,
+      "sha256": "1e9e37ca404e97d3e387855f1b40eca102eb2ad5d6412b939d46be496f78a72c",
+      "instructionWords": [
+        "000000fd",
+        "010100fb",
+        "020100e7",
+        "8000015a",
+        "030001e2",
+        "8000025a",
+        "00030149",
+        "040002ae",
+        "000403d6",
+        "02030285",
+        "00050082",
+        "8000002b",
+        "00020291",
+        "00038116",
+        "0300013e",
+        "00020111",
+        "00010128"
+      ],
+      "argumentCandidate": "1",
+      "argumentValidation": "NOT_INDEPENDENTLY_VALIDATED",
+      "crosswalkGaps": [
+        {
+          "pc": 6,
+          "opcodeId": 73,
+          "word": "00030149",
+          "confidence": "UNMAPPED"
+        },
+        {
+          "pc": 8,
+          "opcodeId": 86,
+          "word": "000403d6",
+          "candidate": "MOVE",
+          "confidence": "MEDIUM"
+        },
+        {
+          "pc": 13,
+          "opcodeId": 22,
+          "word": "00038116",
+          "confidence": "UNMAPPED"
+        }
+      ]
+    }
+  },
+  "constants": [
+    "DataCenter",
+    "BuildManager",
+    "MainLv",
+    "HeroMaxLevel",
+    "GetBreakRequireBase"
+  ],
+  "decoderAudit": {
+    "lua54Script": "tools/experiments/decode-lua54-control-flow-independent.js",
+    "lua55Script": "tools/experiments/decode-lua55-control-flow-independent.js",
+    "finding": "Both scripts hardcode PveUtil line 3163 and TEST/JMP path assertions; neither is a generic HeroLevelUpTemplateManager decoder."
+  },
+  "validations": {
+    "inventoryRead": "PASS",
+    "functionLocatedBothVersions": "PASS",
+    "crosswalkCoverageAudit": "PASS",
+    "lua55FullFunctionDecode": "FAIL",
+    "argumentEquivalence": "BLOCKED",
+    "datatableExport": "NOT_RUN",
+    "originalClientRuntime": "NOT_RUN"
+  },
+  "safety": {
+    "readOnly": true,
+    "bundlesLoaded": false,
+    "bundlesExported": false,
+    "originalsModified": false,
+    "merge": false,
+    "deploy": false
+  }
+}

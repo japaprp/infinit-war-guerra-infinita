@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-30",
+  "inputKind": "directory",
+  "filesScanned": 66,
+  "filesPassed": 66,
+  "filesFailed": 0,
+  "byVersion": {
+    "5.4": {
+      "files": 33,
+      "functions": 1118,
+      "instructions": 36480,
+      "constants": 11015,
+      "strings": 17328
+    },
+    "5.5": {
+      "files": 33,
+      "functions": 1118,
+      "instructions": 36530,
+      "constants": 11000,
+      "strings": 18056
+    }
+  },
+  "totalFunctions": 2236,
+  "totalInstructions": 73010,
+  "totalConstants": 22015,
+  "totalStrings": 35384,
+  "byBundle": [
+    {
+      "bundle": "",
+      "files": 66,
+      "lua54": 33,
+      "lua55": 33,
+      "functions": 2236,
+      "instructions": 73010,
+      "constants": 22015
+    }
+  ],
+  "tableCandidateStringRows": 526,
+  "failures": [],
+  "status": "PASS"
+}
+
+[executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]

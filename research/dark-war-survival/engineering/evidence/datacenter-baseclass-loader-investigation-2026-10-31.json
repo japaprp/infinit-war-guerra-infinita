@@ -1,0 +1,71 @@
+{
+  "date": "2026-10-31",
+  "project": "Dark War: Survival reverse engineering reference for Guerra Infinita reconstruction",
+  "result": "PASS_BUNDLE_OWNERSHIP_BLOCKED_RUNTIME_REGISTRATION",
+  "managerAssets": {
+    "lua54": {
+      "bundleFamily": "lua_scripts_datacenter_h",
+      "assetPath": "Assets/Main/LuaTxt/DataCenter/HeroLevelUpTemplateManager/HeroLevelUpTemplateManager.bytes",
+      "sha256": "9B1FF70670B820BB4FC3F59CD10ADBB8A397EE3E8EFAB3F1811FC35BE9652B42",
+      "matchesStagingInput": true
+    },
+    "lua55": {
+      "bundleFamily": "lua_scripts_datacenter_55_h",
+      "assetPath": "Assets/Main/LuaTxt_55/DataCenter/HeroLevelUpTemplateManager/HeroLevelUpTemplateManager.bytes",
+      "sha256": "1E9E37CA404E97D3E387855F1B40ECA102EB2AD5D6412B939D46BE496F78A72C",
+      "matchesStagingInput": true
+    }
+  },
+  "datacenterFamilyScan": {
+    "wrapperDirectories": 12,
+    "byteAssetsScanned": 1250,
+    "assetsContainingBaseClassLiteral": 1167,
+    "implementationPatternsFound": 0,
+    "explicitDataCenterInitializationPatternsFound": 0,
+    "directHeroLevelUpTemplateManagerAssignmentFound": 0,
+    "dllFilesInLocalAnalysisCollection": 0
+  },
+  "registration": {
+    "baseClassFactoryCallConfirmed": true,
+    "baseClassImplementation": "BLOCKED",
+    "dataCenterPublication": "BLOCKED",
+    "runtimeObservation": "NOT RUN"
+  },
+  "datatables": {
+    "heroesLevelupBase": {
+      "bundle": "datatable_config_luatxt_h_6a1d2a950c996f15a938acebcebc598b.bundle",
+      "localSelectedBundlePresent": false,
+      "status": "NOT RUN"
+    },
+    "heroesLevelupLua55": {
+      "bundle": "datatable_config_luatxt_55_h_3241e39d538fe22e815569b43561d206.bundle",
+      "localSelectedBundlePresent": false,
+      "status": "NOT RUN"
+    },
+    "apsNewHeroesBase": {
+      "bundle": "datatable_config_luatxt_aps_859d1e7c0543b40260b362d100ec2579.bundle",
+      "cachedOnS21": true,
+      "physicalAnalysis": "DEFERRED"
+    },
+    "apsNewHeroesLua55": {
+      "bundle": "datatable_config_luatxt_55_aps_3b5ee2fd1210e98af73c5bc393f57784.bundle",
+      "cachedOnS21": true,
+      "physicalAnalysis": "DEFERRED"
+    }
+  },
+  "memory": {
+    "freeMB": 546.1,
+    "totalMB": 3767.5,
+    "requiredFreeMB": 875,
+    "assetRipperInstances": 1,
+    "loadingNewBundles": "BLOCKED"
+  },
+  "safety": {
+    "originalFilesModified": false,
+    "newBundlesLoaded": false,
+    "merge": false,
+    "deploy": false,
+    "deletion": false,
+    "secretOrPermissionChanges": false
+  }
+}

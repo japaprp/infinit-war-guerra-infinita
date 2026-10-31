@@ -1,0 +1,27 @@
+[Reading 23 lines from start (total: 23 lines, 0 remaining)]
+
+﻿const fs=require("fs"),path=require("path"),crypto=require("crypto");
+const [assetMapCsv,manifestCsv,bundleRoot,out]=process.argv.slice(2);
+if(!assetMapCsv||!manifestCsv||!bundleRoot||!out)throw Error("Usage: node precheck-hero-datatable-bundles.js <asset-map.csv> <manifest.csv> <Selected_Bundles> <out.json>");
+function parseLine(line){const a=[];let s="",q=false;for(let i=0;i<line.length;i++){const c=line[i];if(q){if(c==='"'&&line[i+1]==='"'){s+='"';i++;}else if(c==='"')q=false;else s+=c;}else if(c==='"')q=true;else if(c===','){a.push(s);s="";}else s+=c;}a.push(s);return a;}
+function csv(file){const l=fs.readFileSync(file,"utf8").replace(/^\uFEFF/,"").trimEnd().split(/\r?\n/),h=parseLine(l.shift());return l.map(x=>{const v=parseLine(x);return Object.fromEntries(h.map((k,i)=>[k,v[i]??""]));});}
+const assets=csv(assetMapCsv),manifest=csv(manifestCsv);
+const bundleDefs=[
+ {bundle:"datatable_config_luatxt_aps_859d1e7c0543b40260b362d100ec2579.bundle",folder:"All_Datatable_Cached_2026-10-30"},
+ {bundle:"datatable_config_luatxt_55_aps_3b5ee2fd1210e98af73c5bc393f57784.bundle",folder:"All_Datatable_Cached_2026-10-30"},
+ {bundle:"datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle",folder:"APK_Packaged_Datatable_2026-10-30"},
+ {bundle:"datatable_config_luatxt_55_lw_572068728368e9a34e2bcaba2485f8af.bundle",folder:"APK_Packaged_Datatable_2026-10-30"},
+ {bundle:"datatable_config_luatxt_h_6a1d2a950c996f15a938acebcebc598b.bundle",folder:"APK_Packaged_Datatable_2026-10-30"},
+ {bundle:"datatable_config_luatxt_55_h_3241e39d538fe22e815569b43561d206.bundle",folder:"APK_Packaged_Datatable_2026-10-30"}
+];
+const bundles=bundleDefs.map(d=>{const file=path.join(bundleRoot,d.folder,d.bundle),m=manifest.find(x=>x.File===d.bundle);if(!fs.existsSync(file)||!m)throw Error("Missing local bundle or manifest row: "+d.bundle);const stat=fs.statSync(file),hash=crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex").toUpperCase();if(hash!==String(m.SHA256).toUpperCase()||stat.size!==Number(m.Bytes))throw Error("Hash/size mismatch "+d.bundle);return {bundle:d.bundle,source:m.Source,bytes:stat.size,actualSha256:hash,manifestSha256:m.SHA256,manifestStatus:m.SizeMatch,localPath:path.relative(bundleRoot,file).replace(/\\/g,"/"),hashCheck:"PASS"};});
+const targetNames=["aps_new_heroes.bytes","heroes_levelup.bytes","lw_hero.bytes","lw_hero_B.bytes","lw_hero_appearance.bytes","lw_hero_appearance_B.bytes","lw_hero_effect.bytes","lw_hero_effect_B.bytes","lw_hero_skill.bytes","lw_hero_skill_B.bytes","lw_hero_skill_effect.bytes","lw_hero_skill_effect_B.bytes"];
+const relevantAssets=assets.filter(x=>targetNames.includes(String(x.AssetPath).split("/").pop())).map(x=>({assetIndex:Number(x.AssetIndex),assetPath:x.AssetPath,assetType:Number(x.AssetType),bundleIndex:Number(x.BundleIndex),bundle:x.BundleName,cachedOnS21:x.CachedOnS21}));
+for(const name of ["aps_new_heroes.bytes","heroes_levelup.bytes","lw_hero.bytes","lw_hero_B.bytes"])for(const version of ["0/","1/"])if(!relevantAssets.some(x=>x.assetPath===version+name))throw Error("Expected asset map row missing: "+version+name);
+const byBundle=new Map(bundles.map(x=>[x.bundle,x]));
+for(const a of relevantAssets)if(!byBundle.has(a.bundle))throw Error("Relevant asset points to bundle outside selected six: "+a.bundle);
+const report={status:"PASS_HERO_DATATABLE_BUNDLE_PRECHECK",sourceFiles:{assetMap:crypto.createHash("sha256").update(fs.readFileSync(assetMapCsv)).digest("hex"),bundleManifest:crypto.createHash("sha256").update(fs.readFileSync(manifestCsv)).digest("hex")},bundles,assets:relevantAssets,checks:{sixOfSixBundleFilesPresent:true,sixOfSixSizesMatchManifest:true,sixOfSixSha256MatchManifest:true,baseAndLua55AssetsMappedForAllFourCoreTableNames:true,individualTextAssetExportsFoundInTargetedExportDirectories:false},exportSearch:{directories:["UnityGameSubset","UnityGameSubset_WithCAB","validation-staging"],patterns:targetNames,results:"No matching individual DataTable .bytes files found in the targeted export directories."},nextAction:{status:"BLOCKED_BY_MEMORY_MARGIN",freeRamMbAtPrecheck:762.9,minimumFreeRamMb:875,assetRipperLoadsPerformed:0,plan:"After free RAM recovers above 875 MB, load and export one relevant DataTable bundle at a time, verify every export against its manifest mapping, and compare base/Lua 5.5 and A/B table records."},caveats:["The asset path aps_new_heroes.bytes is mapped, but no separate aps_new_heroes_B.bytes row exists in this asset map. The relationship between TableName.NewHeroesB and the physical asset/table name remains to be confirmed by extraction.","heroes_levelup.bytes is mapped for both versions, but no separate *_B.bytes asset path appears in the map; inspect table content after extraction.","lw_hero.bytes and lw_hero_B.bytes are both explicitly mapped for both versions, but their row contents have not yet been compared.","A bundle hash PASS proves the selected local bundle matches the existing manifest; it does not prove an individual TextAsset has been exported or decoded."]};
+fs.writeFileSync(out,JSON.stringify(report,null,2)+"\n");console.log(JSON.stringify({status:report.status,bundles:bundles.map(x=>({bundle:x.bundle,bytes:x.bytes,hashCheck:x.hashCheck,source:x.source})),assetRows:relevantAssets.length,individualExportsFound:false,nextAction:report.nextAction},null,2));
+
+
+[executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]

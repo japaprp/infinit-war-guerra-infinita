@@ -1,0 +1,77 @@
+{
+  "status": "PASS_INDEPENDENT_LUA55_CONTROL_FLOW_DECODE",
+  "source": {
+    "module": "PveUtil",
+    "luaVersion": "5.5",
+    "functionIndex": 136,
+    "lineDefined": 3163,
+    "instructionCount": 14,
+    "sha256": "3ac2041fbf8f4a55f5f59f47c42ca2df9e6c511f72d8e9e47cca2be4d9d9e247"
+  },
+  "method": "Raw instruction words decoded independently; raw opcode IDs resolved through the validated empirical fingerprint crosswalk. No Lua parser or crosswalk generator imported.",
+  "rawOpcodeIds": [
+    98,
+    103,
+    46,
+    121,
+    5,
+    80,
+    43,
+    125,
+    123,
+    17,
+    62,
+    40
+  ],
+  "mappedSemantics": [
+    "GETTABUP",
+    "GETFIELD",
+    "SELF",
+    "LOADK",
+    "CALL",
+    "TEST",
+    "JMP",
+    "GETTABUP",
+    "GETFIELD",
+    "RETURN1",
+    "GETTABUP",
+    "GETFIELD",
+    "RETURN1",
+    "RETURN0"
+  ],
+  "crosswalk": {
+    "mappedIdsConfidence": "HIGH",
+    "holdoutWrong": 0,
+    "holdoutUnseen": 0,
+    "perIdPurityPct": 100
+  },
+  "controlFlow": {
+    "testPc": 5,
+    "testWord": "00000050",
+    "testRawOpcodeId": 80,
+    "testSemanticOpcode": "TEST",
+    "A": 0,
+    "k": 0,
+    "skipNextInstructionTarget": 7,
+    "jumpPc": 6,
+    "jumpWord": "8000012b",
+    "jumpRawOpcodeId": 43,
+    "jumpSemanticOpcode": "JMP",
+    "signedJumpOffset": 3,
+    "jumpTarget": 10
+  },
+  "branchInterpretation": {
+    "switchTrue": {
+      "nextPc": 7,
+      "returnAtPc": 9,
+      "returnConstant": "Army_B"
+    },
+    "switchFalse": {
+      "jumpTarget": 10,
+      "returnAtPc": 12,
+      "returnConstant": "Army"
+    }
+  },
+  "scriptSha256": "C66913A841BB53C3F041A889BA474BC4E43AFC120C3B9E89531D8A7C27CD2CF8",
+  "localReportSha256": "3895DB749C43D47E0852DC9CC97299048E0D5848C0DDC051F883040085523B8C"
+}
