@@ -133,8 +133,19 @@
       "LuaEntry": false
     },
     "classCreation": "PASS",
-    "datacenterPublication": "BLOCKED",
-    "inference": "A central loader may publish BaseClass modules into DataCenter by class name; compatible with observed pattern but not proven."
+    "datacenterPublication": "BLOCKED_NOT_IN_EXPORTED_LUA_SET",
+    "inference": "A central loader may publish BaseClass modules into DataCenter by class name; compatible with observed pattern but not proven.",
+    "baseClassLiteralUse": {
+      "distinctClassNames": 30,
+      "moduleVersionPairs": 30,
+      "definitionAssetFound": false
+    },
+    "manifestSearch": {
+      "baseClassAssetFound": false,
+      "luaEntryAssetFound": false,
+      "centralDataCenterAssetFound": false,
+      "commonBaseCoreEntryFrameworkBundleCandidates": 0
+    }
   },
   "getHeroTemplateList": {
     "exactHits": 6,
@@ -255,7 +266,7 @@
     "limitation": "Dynamic aliases and function references remain possible."
   },
   "memory": {
-    "freeMB": 747.6,
+    "freeMB": 774.9,
     "minimumMB": 875,
     "datatableExtraction": "BLOCKED"
   },
