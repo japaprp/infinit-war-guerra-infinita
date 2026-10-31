@@ -70,6 +70,32 @@ Chama `LuaEntry.DataConfig.CheckSwitch("ABtest_lw_hero")` e possui uma segunda c
 
 O nome semântico desse argumento e os valores enviados pelos chamadores ainda não foram identificados. Uma busca exata por `GetLwHeroTableName` no inventário disponível de constantes de funções não encontrou callsite; isso não prova ausência de chamadas dinâmicas ou em módulos ainda não indexados.
 
+## Callsite inventory
+
+A varredura de constantes e instruções no inventário dos módulos Lua disponíveis encontrou:
+
+| Símbolo | Referências em constantes | Call sites estáticos confirmados | Resultado |
+|---|---:|---:|---|
+| `GetHeroXmlName` | 16 | 20 | 10 por versão, em 5 funções caller |
+| `GetArmyXmlName` | 4 | 4 | 2 por versão, em Arena3v3Manager e ArenaManager |
+| `GetLwHeroTableName` | 0 | 0 | Nenhum call site estático indexado |
+| `GetHeroLevelUpXmlName` | 0 | 0 | Nenhum call site estático indexado |
+
+Para os 20 call sites de `GetHeroXmlName`, a sequência confirmada é `GETFIELD` seguida imediatamente por `CALL` no mesmo registrador, com `B=1` (zero argumentos explícitos). Isso confirma que os chamadores indexados não fornecem o parâmetro formal R0; o seletor não lê esse parâmetro. Os 4 call sites de `GetArmyXmlName` também usam zero argumentos explícitos.
+
+Os 10 call sites de `GetHeroXmlName` por versão estão distribuídos em:
+- `HeroDataManager`: funções 43 (linha 609) e 46 (linha 638).
+- `HeroEquipManager`: funções 25 (linha 252), 34 (linha 377) e 35 (linha 390).
+- `HeroWeaponManager`: função 6 (linha 37).
+- `UIHeroListCtrl`: função 15 (linha 282), dois call sites.
+- `UIWorldCupActListPanelCtrl`: função 4 (linha 12), dois call sites.
+
+A ausência de call sites estáticos para `GetLwHeroTableName` não identifica o significado do parâmetro R0 nem prova que a função nunca seja chamada: chamadas dinâmicas e módulos fora do inventário permanecem possíveis.
+
+Artefatos reproduzíveis:
+- [Scanner de call sites](../tools/analyze-hero-selector-callsites.js)
+- [Evidência JSON de call sites](./evidence/hero-selector-callsites-2026-10-31.json)
+
 ## Limites e implicações para Guerra Infinita
 
 1. As variantes B e padrão devem continuar representáveis no modelo de dados.
