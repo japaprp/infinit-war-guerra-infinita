@@ -59,7 +59,9 @@ Busca no inventário de constantes Lua 5.4/5.5, excluindo o módulo que declara 
 
 Busca parcial por `GetDef` encontrou seis strings em módulos Arena, mas nenhuma é igualdade exata com o símbolo `GetDef`; foram excluídas dos hits do acessor. O inventário não revela alias literal, nome de manager ou chave de DataTable relacionada fora do módulo.
 
-**Conclusão limitada:** nenhum consumidor externo literal/alias textual foi identificado no inventário disponível. Ainda não é prova de código morto. Chamadas por referência de função, aliases atribuídos em runtime, reflexão, nomes construídos, módulos ausentes ou acesso via objeto genérico continuam possíveis. Próximo passo: rastrear módulos de bootstrap/registro de DataCenter e referências ao objeto que recebe o manager, em vez de procurar apenas o nome textual do método.
+**Evidência adicional de exportação e caminho de UI:** o protótipo raiz (função 1) de `HeroLevelUpTemplateManager` nas duas versões registra `BaseClass`, `HeroLevelUpTemplateManager`, `__init`, `__delete`, `Startup`, `GetTableName`, `GetNeedMainLv` e os sete acessores. Isso confirma que os acessores são membros exportados da classe/tabela, mas não identifica quem chama esses membros. No caminho de UI, `UIHeroListCtrl` usa `DataCenter.HeroDataManager.GetHeroTemplateList` (função 20, linha 373) e `HeroUtils.GetHeroAttr`; esse é um caminho adjacente de dados de heróis, não uma chamada demonstrada aos sete acessores. O root de `HeroDataManager` lista outros métodos e não expõe literalmente `GetHeroTemplateList` no conjunto de constantes analisado, portanto a resolução pode envolver herança/registro dinâmico e requer investigação separada.
+
+**Conclusão limitada:** nenhum consumidor externo literal/alias textual foi identificado no inventário disponível. Ainda não é prova de código morto. Chamadas por referência de função, aliases atribuídos em runtime, reflexão, nomes construídos, módulos ausentes ou acesso via objeto genérico continuam possíveis. Próximo passo: localizar o bootstrap/registro de DataCenter/BaseClass e demonstrar como o manager é instanciado e publicado.
 
 ## RAM e DataTables
 
