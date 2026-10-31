@@ -2177,7 +2177,7 @@
         "earlyReturn": 132
       },
       "logic": "Call HeroUtils.GetHeroMergeItem(heroKey) -> itemId, requiredCount; if itemId is truthy, read ownedCount; if ownedCount == 0, return without inserting this hero; if ownedCount > 0, continue. The callback does not call IsHeroMergeItemEnough and does not compare requiredCount.",
-      "staticMeaning": "The list callback filters out rows whose merge item has zero owned count; a positive owned count passes this gate; this is distinct from the IsHeroMergeItemEnough helper's required-count comparison."
+      "staticMeaning": "The list callback excludes a hero when its configured merge item has zero owned quantity; any positive owned quantity passes this gate. IsHeroMergeItemEnough separately checks requiredCount <= ownedCount."
     }
   },
   "bootstrap": {
@@ -2189,7 +2189,28 @@
     "apkLocalCopyFound": false,
     "apkOneDrivePlaceholderFound": true,
     "apkSizeBytes": 2082044905,
-    "nativeInspection": "BLOCKED: no local global-metadata.dat, libil2cpp.so, GameAssembly.dll or Assembly-CSharp.dll; APK archive is cloud-only and was not rehydrated."
+    "nativeInspection": "BLOCKED: no local global-metadata.dat, libil2cpp.so, GameAssembly.dll or Assembly-CSharp.dll; APK archive is cloud-only and was not rehydrated.",
+    "datacenterFamilyScan": {
+      "wrapperDirectories": 12,
+      "byteAssetsScanned": 1250,
+      "assetsContainingBaseClassLiteral": 1167,
+      "baseClassImplementationPatternsFound": 0,
+      "explicitDataCenterInitializationPatternsFound": 0,
+      "directHeroLevelUpTemplateManagerAssignmentFound": 0,
+      "dllFilesInLocalAnalysisCollection": 0
+    },
+    "managerModuleAssets": {
+      "lua54": {
+        "bundleFamily": "lua_scripts_datacenter_h",
+        "sha256": "9B1FF70670B820BB4FC3F59CD10ADBB8A397EE3E8EFAB3F1811FC35BE9652B42",
+        "matchesStagingInput": true
+      },
+      "lua55": {
+        "bundleFamily": "lua_scripts_datacenter_55_h",
+        "sha256": "1E9E37CA404E97D3E387855F1B40ECA102EB2AD5D6412B939D46BE496F78A72C",
+        "matchesStagingInput": true
+      }
+    }
   },
   "validation": {
     "pairedFunctions151_152_169_170": "PASS",
@@ -2202,7 +2223,7 @@
     "datatableExtractionLua55": "NOT RUN"
   },
   "memory": {
-    "freeMB": 763,
+    "freeMB": 546.1,
     "requiredMB": 875,
     "assetRipperInstances": 1,
     "datatableExtraction": "BLOCKED"
