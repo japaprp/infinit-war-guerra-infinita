@@ -1,48 +1,40 @@
-# HeroLevelUpTemplateManager — rastreamento de GetBreakRequireBase
+# HeroLevelUpTemplateManager — rastreamento de GetBreakRequireBase (corrigido em 2026-10-31)
 
-**Resultado:** PASS parcial — assinatura, campo físico solicitado e callsite direto identificados; argumento de negócio ainda não resolvido.
+**Resultado:** PASS — assinatura, coluna consultada, callsite e argumento de negócio resolvidos estaticamente nas duas versões.
 
-## 1. Função GetBreakRequireBase
+## 1. Acessor
 
-Inventário de funções e constantes do bundle DataCenter em Lua 5.4 e 5.5:
-- função 13;
-- linhas 71–73;
-- 2 parâmetros incluindo self (portanto, um argumento explícito);
-- constantes: `GetTableData`, `GetTableName`, `break_require_base`.
+A função 13, linhas 71–73, tem dois parâmetros incluindo self (um argumento explícito) e consulta:
 
-A função realiza a consulta:
-```
-GetTableData(self:GetTableName(), R1, "break_require_base")
-```
+`GetTableData(self:GetTableName(), i, "break_require_base")`
 
-Diferentemente dos acessores de atributos e tropas (funções 8–10), ela não constrói nome de coluna por concatenação e não recebe R2/R3.
+## 2. Chamador: GetNeedMainLv
 
-## 2. Callsite direto encontrado
+A função 6, linhas 30–39, é `GetNeedMainLv`. Ela obtém `DataCenter.BuildManager.MainLv`, percorre `i=1..HeroMaxLevel` com passo 1, chama `GetBreakRequireBase(i)` e compara o requisito retornado com o MainLv atual.
 
-A função 6 do mesmo módulo, linhas 30–39, contém a chamada de método cujo nome é constante K4 = `GetBreakRequireBase`.
+| Versão | Registrador da variável de controle | MOVE | CALL | Argumento explícito |
+|---|---|---|---|---|
+| Lua 5.4 | R5 (A+3, A=2) | R8 ← R5 | PC9 A=6 B=3 C=2 | R5 |
+| Lua 5.5 | R4 (A+2, A=2) | R7 ← R4 | PC9 A=5 B=3 C=2 | R4 |
 
-- Lua 5.4: a análise de fluxo de registradores identifica a chamada com receptor R0 e argumento R5.
-- Lua 5.5: a extração atual reporta receptor R0 e valor `1` para o segundo argumento. Como o decodificador/crosswalk ainda não validou de forma independente essa posição na instrução de chamada Lua 5.5, esse valor não é aceito como equivalente ao R5 de Lua 5.4.
+A diferença é consequência da mudança oficial no layout de registradores de loops numéricos entre Lua 5.4 e Lua 5.5. Referências upstream:
+- Lua 5.4.9: https://lua.org/source/5.4/lvm.c.html
+- Lua 5.5.1: https://lua.org/source/5.5/lvm.c.html
 
-A função 6 também referencia `DataCenter.BuildManager.MainLv` e `HeroMaxLevel`; porém, não se conclui que o argumento R5 seja um desses valores sem decodificar integralmente a sequência de instruções e os registradores intermediários.
+**Correção da análise anterior:** o valor literal 1 extraído anteriormente não era o argumento da chamada; era o inicializador do loop. A planilha de callsites foi corrigida para R7=R4 na Lua 5.5. Não usar a interpretação anterior.
 
-## 3. Limites
+## 3. Validações
 
-- Campo solicitado `break_require_base`: confirmado em ambas as versões.
-- Assinatura com um argumento explícito: confirmada em ambas.
-- Callsite direto na função 6: identificado em ambas.
-- Significado semântico do argumento: **UNKNOWN**.
-- Equivalência do argumento no callsite Lua 5.4/5.5: **NOT VALIDATED**.
-- Chamadores externos à função 6: ainda não identificados.
+- PASS — função 13, assinatura e coluna `break_require_base`.
+- PASS — opcode 73=FORPREP, opcode 22=FORLOOP e opcode 86=MOVE no alvo Lua 5.5.
+- PASS — operando B do MOVE: válido em 28/28 pares; no alvo aponta para A+2 da VM Lua 5.5.
+- PASS — argumento Lua 5.4 = R5, variável de controle A+3.
+- PASS — argumento Lua 5.5 = R4, variável de controle A+2.
+- PASS — loop de 1 até HeroMaxLevel, passo 1.
+- NOT RUN — execução dinâmica do cliente e confirmação runtime.
+- BLOCKED — extração física de heroes_levelup, enquanto RAM livre <875 MB.
 
-## 4. Ambiente e próxima etapa
+Relatório detalhado: `hero-levelup-function6-targeted-decode-2026-10-31.md`.
+Evidência reproduzível: `hero-levelup-function6-targeted-decode-2026-10-31.json`.
 
-RAM livre medida nesta rodada: 832,1 MB; limite de 875 MB para iniciar nova carga/exportação. Portanto, a extração de novos bundles permanece bloqueada.
-
-Próxima etapa:
-1. decodificar independentemente os registradores da função 6 nas duas versões, sem inferir pelo crosswalk parcial;
-2. rastrear consumidores externos da função 6 / classe HeroLevelUpTemplateManager;
-3. aplicar a mesma técnica aos acessores GetAtk, GetDef e GetArmyNum;
-4. extrair e validar `heroes_levelup.bytes` quando a memória atingir o limite.
-
-Nenhum bundle foi carregado/exportado nesta rodada. Nenhum arquivo original foi alterado; sem merge, deploy ou mudança de gameplay.
+Nenhum bundle foi carregado/exportado nesta rodada; sem alteração de originais, merge ou deploy.
