@@ -112,3 +112,5 @@ Nenhum bundle foi carregado/exportado nesta rodada. Nenhum original foi modifica
 - O root de HeroLevelUpTemplateManager chama BaseClass com o nome HeroLevelUpTemplateManager, mas não atribui a classe diretamente a DataCenter. A publicação deve ocorrer em loader/factory externo ao conjunto Lua exportado ou em camada de runtime; isso continua como hipótese, não prova.
 
 Estado do bootstrap: classe criada por BaseClass — PASS; mecanismo que publica a classe em DataCenter — BLOCKED; execução dinâmica — NOT RUN.
+
+- Refinamento do manifesto: não há arquivo exato DataCenter.bytes, BaseClass.bytes ou LuaEntry.bytes no export manifest principal. Os dois resultados parecidos são SlgDataCenter.bytes (um Lua 5.4 e um Lua 5.5) sob Assets/SlgEngine/Main/LuaTxt*/DataCenter; não são o bootstrap do DataCenter principal.
