@@ -1,0 +1,113 @@
+{
+  "date": "2026-10-31",
+  "project": "Dark War: Survival reverse engineering for Guerra Infinita",
+  "target": "HeroLevelUpTemplateManager function 6",
+  "decoder": "tools/experiments/decode-herolevelup-function6.js",
+  "decoderIndependentOfPveUtil": true,
+  "functionChunks": {
+    "5.4": {
+      "sha256": "9b1ff70670b820bb4fc3f59cd10adbb8a397ee3e8efab3f1811fc35be9652b42",
+      "functionIndex": 6,
+      "lines": "30-39",
+      "instructions": 17,
+      "argumentStatus": "PASS_STATIC_REGISTER_TRACE",
+      "trace": [
+        {
+          "pc": 6,
+          "op": "FORPREP",
+          "A": 2,
+          "visibleLoopValueRegister": 5
+        },
+        {
+          "pc": 7,
+          "op": "SELF",
+          "A": 6,
+          "B": 0,
+          "C": 4,
+          "k": 1,
+          "method": "GetBreakRequireBase",
+          "receiverRegister": 0,
+          "selfRegister": 7
+        },
+        {
+          "pc": 8,
+          "op": "MOVE",
+          "A": 8,
+          "B": 5
+        },
+        {
+          "pc": 9,
+          "op": "CALL",
+          "A": 6,
+          "B": 3,
+          "C": 2
+        }
+      ],
+      "argumentRegisterAtCall": 8,
+      "argumentSourceRegister": 5,
+      "conclusion": "Explicit argument is the numeric-loop value in R5."
+    },
+    "5.5": {
+      "sha256": "1e9e37ca404e97d3e387855f1b40eca102eb2ad5d6412b939d46be496f78a72c",
+      "functionIndex": 6,
+      "lines": "30-39",
+      "instructions": 17,
+      "argumentStatus": "BLOCKED_REGISTER_MAPPING",
+      "opcodeIssues": [
+        {
+          "pc": 6,
+          "id": 73,
+          "status": "UNMAPPED"
+        },
+        {
+          "pc": 13,
+          "id": 22,
+          "status": "UNMAPPED"
+        },
+        {
+          "pc": 8,
+          "id": 86,
+          "status": "MEDIUM_CONFIDENCE_MOVE_CANDIDATE"
+        }
+      ],
+      "conclusion": "Call structure aligns, but loop and MOVE semantics do not prove the argument register."
+    }
+  },
+  "externalLiteralScan": {
+    "symbols": [
+      "GetExp",
+      "GetAtk",
+      "GetDef",
+      "GetArmyNum",
+      "GetBreakRequire",
+      "GetBreakRequireRank",
+      "GetBreakRequireBase"
+    ],
+    "externalHits": 0,
+    "managerNameExternalHits": 0,
+    "scope": "Full available constants inventory; excludes the defining HeroLevelUpTemplateManager module",
+    "limitation": "Dynamic/aliased/reflection/runtime calls and unindexed modules are not ruled out."
+  },
+  "memory": {
+    "freeMB": 707.1,
+    "requiredMB": 875,
+    "datatableExtraction": "BLOCKED"
+  },
+  "validations": {
+    "dedicatedDecoder": "PASS",
+    "lua54Argument": "PASS",
+    "lua55Argument": "BLOCKED",
+    "externalLiteralScan": "PASS",
+    "datatableBase": "NOT_RUN",
+    "datatableLua55": "NOT_RUN",
+    "physicalDataJoin": "NOT_RUN"
+  },
+  "safety": {
+    "readOnlyAnalysis": true,
+    "originalBundlesModified": false,
+    "bundlesLoadedThisRound": false,
+    "bundlesExportedThisRound": false,
+    "merge": false,
+    "deploy": false
+  }
+}
