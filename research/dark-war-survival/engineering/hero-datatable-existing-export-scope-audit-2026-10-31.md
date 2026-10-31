@@ -40,3 +40,13 @@ A última medição de RAM conhecida, 762,9 MB, estava abaixo do limite de segur
 5. Repetir para a versão correspondente Lua 5.5 e comparar registros/colunas.
 
 A auditoria não alterou arquivos originais, não iniciou exportação nova e não fez alterações no jogo.
+
+## Evidência adicional: teste histórico do bundle LW
+
+Uma revisão mais detalhada encontrou um teste anterior do AssetRipper:
+- `assetripper-test.log` registra o carregamento e o processamento de `datatable_config_luatxt_lw_8903d9fe6f09a2c0c95f2737061ce543.bundle`.
+- O log passa do processamento para `Data was reset` e então inicia outro bundle Lua. Não há no trecho correspondente um evento de exportação que permita ligar inequivocamente os arquivos binários seguintes àquela execução.
+- A pasta de teste contém `lw_buff.bytes` (23.807 bytes) e `lw_buff_B.bytes` (23.809 bytes), mas não contém `lw_hero.bytes` nem `lw_hero_B.bytes`.
+- O arquivo de bundle de teste tem 540.907 bytes; o manifesto do bundle original registrava 540.915 bytes. A diferença de 8 bytes é compatível com a cópia de trabalho sem o prefixo de wrapper UnityRaw, mas o hash desta cópia não foi recalculado nesta etapa.
+
+Portanto, o estado mais preciso é: **houve carregamento/processamento histórico do bundle LW e existem dois TextAssets de buff no diretório de teste; a exportação dos TextAssets de herói LW continua não comprovada**. Não atribuímos os arquivos `lw_buff*` a um bundle/execução específica sem um registro de exportação correspondente.
