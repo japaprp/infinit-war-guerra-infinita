@@ -114,3 +114,13 @@ Nenhum bundle foi carregado/exportado nesta rodada. Nenhum original foi modifica
 Estado do bootstrap: classe criada por BaseClass — PASS; mecanismo que publica a classe em DataCenter — BLOCKED; execução dinâmica — NOT RUN.
 
 - Refinamento do manifesto: não há arquivo exato DataCenter.bytes, BaseClass.bytes ou LuaEntry.bytes no export manifest principal. Os dois resultados parecidos são SlgDataCenter.bytes (um Lua 5.4 e um Lua 5.5) sob Assets/SlgEngine/Main/LuaTxt*/DataCenter; não são o bootstrap do DataCenter principal.
+
+
+## 10. Busca por bootstrap nativo / loader fora dos bundles Lua
+
+- Busca read-only no DarkWar_Analysis_Core e na pasta DarkWar_Audit_APKs não encontrou cópias locais de global-metadata.dat, libil2cpp.so, libil2cpp.dll, GameAssembly.dll, Assembly-CSharp.dll ou Assembly-CSharp-firstpass.dll.
+- Não há APK local na pasta Downloads. O único arquivo localizado é OneDrive\DarkWar_Original_APK_Archive\split_install_time_pack.apk, 2,082,044,905 bytes, presente como placeholder cloud-only.
+- O arquivo não foi reidratado nem copiado; não houve download de 2,08 GB nem extração adicional.
+- Consequência: a busca estática nos bundles Lua exportados continua sem localizar a implementação da factory BaseClass ou o registro do manager em DataCenter. A próxima fonte provável é o bootstrap no IL2CPP/native metadata ou um bundle ainda não exportado; acesso a esses bytes permanece BLOCKED.
+
+**Estado:** BaseClass usada por 30 classes — PASS; definição/loader no conjunto Lua exportado — BLOCKED; inspeção IL2CPP/APK — BLOCKED; execução dinâmica — NOT RUN.
