@@ -1,0 +1,135 @@
+{
+  "status": "PASS_STATIC_HERO_EQUIP_ARGUMENT_AND_WEAPON_INDIRECT_TABLE_TRACE",
+  "sourceHashes": {
+    "functionsCsv": "b06cd1e049068619132ba27b044f429ac2fb4d078bd9302b18f9b43a67456552",
+    "constantsCsv": "b82332aa1399d1e8b29fe913ad07e1c5e2eaa121c805aff7a852eda36d45b079",
+    "lua55CrosswalkCsv": "0d8715d6e62810db4c599ba6be2261f183adef14f9c1fc3c7bad6dde31360fc3"
+  },
+  "heroWeaponManager": {
+    "function6": {
+      "versions": [
+        "5.4",
+        "5.5"
+      ],
+      "lines": [
+        37,
+        58
+      ],
+      "switch": "heroes_exclusive_equip",
+      "selector": "HeroUtils.GetHeroXmlName",
+      "visitTable": "LocalController.instance.visitTable",
+      "callArguments": [
+        "self",
+        "tableName from GetHeroXmlName()",
+        "callback closure"
+      ],
+      "closureChildOrdinal": 0,
+      "callbackFunctionIndex": 7,
+      "callbackLines": [
+        42,
+        53
+      ],
+      "callbackChecks": [
+        "HeroWeaponUtil.CheckShowServer(record)",
+        "HeroWeaponUtil.CheckShowDays(record)"
+      ],
+      "acceptedRecordAction": "table.insert(captured heroList, record)",
+      "consumerType": "INDIRECT_TABLE_ITERATION",
+      "runtimeExecuted": false
+    },
+    "directGetTableDataInFunction6": false
+  },
+  "heroEquipManager": {
+    "function25": {
+      "method": "GetOtherEquipListBySlot",
+      "versions": [
+        "5.4",
+        "5.5"
+      ],
+      "lines": [
+        252,
+        268
+      ],
+      "paramsIncludingSelf": 4,
+      "getTableData": {
+        "tableName": "GetHeroXmlName()",
+        "keyRegister": "R3",
+        "field": "camp"
+      },
+      "registers": {
+        "R3": "heroId/key for camp lookup (strong static inference)",
+        "R2": "slot (record.slot comparison)",
+        "R1": "UNKNOWN optional filter"
+      },
+      "directExternalStaticCallsite": "NOT FOUND IN INDEXED CONSTANT INVENTORY"
+    },
+    "function34": {
+      "method": "HasBetterEquip",
+      "versions": [
+        "5.4",
+        "5.5"
+      ],
+      "lines": [
+        377,
+        388
+      ],
+      "paramsIncludingSelf": 3,
+      "getTableData": {
+        "tableName": "GetHeroXmlName()",
+        "keyRegister": "R1",
+        "field": "camp"
+      },
+      "registers": {
+        "R1": "heroId",
+        "R2": "slot"
+      },
+      "callers": [
+        {
+          "functionIndex": 39,
+          "name": "PosHasRedDot",
+          "line": 435,
+          "call": "self:HasBetterEquip(R1,R2)"
+        },
+        {
+          "functionIndex": 36,
+          "name": "GetSuggestUnEquipUuidListByHeroId",
+          "line": 403,
+          "call": "heroId plus iterated HeroEquipConst.Position slot"
+        }
+      ]
+    },
+    "function35": {
+      "method": "HasEmptyEquipSlotInstall",
+      "versions": [
+        "5.4",
+        "5.5"
+      ],
+      "lines": [
+        390,
+        401
+      ],
+      "paramsIncludingSelf": 3,
+      "getTableData": {
+        "tableName": "GetHeroXmlName()",
+        "keyRegister": "R1",
+        "field": "camp"
+      },
+      "registers": {
+        "R1": "heroId (supported by matching helper flow)",
+        "R2": "slot (supported by matching helper flow)"
+      },
+      "directExternalStaticCallsite": "NOT FOUND IN INDEXED CONSTANT INVENTORY"
+    }
+  },
+  "memory": {
+    "freeRamMB": 699.7,
+    "assetRipperThresholdMB": 875,
+    "newBundleLoad": "BLOCKED"
+  },
+  "limits": [
+    "Static register-flow reconstruction only; no runtime execution.",
+    "Switch server value not observed.",
+    "R1 of GetOtherEquipListBySlot remains unknown.",
+    "No physical DataTable export performed."
+  ]
+}
