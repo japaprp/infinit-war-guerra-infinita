@@ -1,127 +1,86 @@
-# Dark War: Survival — empirical Lua 5.5 to Lua 5.4 opcode crosswalk
+# Dark War: Survival — Lua opcode crosswalk retraction and corrected findings
 
 **Date:** 2026-10-30  
-**Scope:** Static comparison of preserved Lua 5.4 and Lua 5.5 module pairs. This is a research crosswalk, not a production disassembler or runtime validation.
+**Status:** Previous empirical crosswalk RETRACTED. The raw evidence is retained for audit; do not use the old mapping to disassemble or interpret game code.
 
-## Finding
+## Project identity
 
-The game's Lua 5.5 chunk variant does not use the stock Lua 5.5 opcode-name numbering as-is. A stable empirical crosswalk was recovered by aligning corresponding Lua 5.4 and Lua 5.5 functions from the same modules.
+Dark War: Survival is the original game being studied. Guerra Infinita is the planned name for the completed reconstruction of that same project. There is one project and one source of truth; old naming and workspace divisions reflect the earlier lack of access to original game files, not separate products.
 
-The crosswalk maps **100 distinct Lua 5.5 opcode IDs** to Lua 5.4 opcode IDs/names. Every observed Lua 5.5 ID mapped to one Lua 5.4 ID with **100% purity** across the aligned corpus; no conflicting target was observed.
+## Why the previous crosswalk is invalid
 
-This is consistent with a game-specific opcode numbering table, remapping, or instruction-set fork. It does not, by itself, prove a custom virtual machine.
+The previous CSV claimed a 100% stable mapping from Lua 5.5 opcode IDs to Lua 5.4 IDs. That conclusion depended on pairing functions by module name, global function index, line range, and instruction count. Those fields do not establish that two functions are the same function or that their instruction positions are semantically aligned.
 
-## Method
+A direct inspection disproved the pairing assumption. In `ActChampionBattleManager`, function index 1, both variants have line range 0–0 and 157 instructions, but the first 15 opcode IDs differ substantially:
 
-1. Parsed the preserved 66 raw modules: 33 Lua 5.4 and 33 Lua 5.5.
-2. Matched module variants by module name and function index.
-3. Kept only function pairs with identical `lineDefined`, `lastLineDefined`, and `instructionCount`.
-4. Compared the opcode ID at each same instruction position.
-5. Built a Lua 5.5 ID → Lua 5.4 ID crosswalk and measured per-ID consistency.
-6. Performed a deterministic holdout validation using 20 of 30 unique module keys for training and 10 module keys for testing.
-7. Validated A-register bounds using the mapped Lua 5.4 opcode semantics and each function's `maxStackSize`.
+- Lua 5.5 raw IDs: `34,62,1,5,125,121,5,98,88,5,125,121,5,116,116`
+- Lua 5.4 raw IDs: `81,11,3,68,11,3,68,11,3,68,11,3,68,79,79`
 
-## Full aligned corpus
+The function sequences are not positionally equivalent. Therefore, the 910 pairs / 25,920 positions and the earlier holdout accuracy are not valid semantic evidence. The previous 100-ID mapping and all confidence tiers are **RETRACTED**.
 
-| Metric | Result |
-|---|---:|
-| Unique module keys with paired variants | 30 |
-| Aligned function pairs | 910 |
-| Aligned instruction positions | 25,920 |
-| Positions with identical numeric opcode ID in both versions | 211 (0.814%) |
-| Distinct Lua 5.5 IDs mapped | 100 |
-| IDs with more than one target mapping | 0 |
-| Per-ID mapping purity | 100% |
+## Corrected full-corpus opcode inventory
 
-The low same-number rate (0.814%) and the stable crosswalk show that the two versions use substantially different opcode numbering.
+The preserved structural parser was rerun after adding raw instruction-word capture and additional per-function metadata. It completed successfully:
 
-## Holdout validation
+| Metric | Lua 5.4 | Lua 5.5 |
+|---|---:|---:|
+| Raw modules | 33 | 33 |
+| Functions | 1,118 | 1,118 |
+| Instructions | 36,480 | 36,530 |
+| Unknown IDs under the official stock opcode table | 0 | 14,862 |
+| Distinct out-of-stock IDs | 0 | 38 |
 
-| Metric | Result |
-|---|---:|
-| Training module keys | 20 |
-| Holdout module keys | 10 |
-| Training aligned functions | 634 |
-| Training instruction positions | 15,783 |
-| Holdout aligned functions | 276 |
-| Holdout instruction positions | 10,137 |
-| Holdout positions covered by IDs seen in training | 10,128 (99.91%) |
-| Correct mapped positions | 10,128 |
-| Incorrect mapped positions | 0 |
-| Rare IDs not seen in training | 7, 59, 91, 101, 112 (9 positions total) |
+The official Lua 5.4.9 opcode enum has 83 entries (IDs 0–82). The official Lua 5.5.1 opcode enum has 85 entries (IDs 0–84). The Lua 5.5 corpus contains 38 distinct IDs outside that stock range, appearing 14,862 times across 30 of the 33 modules. These are **non-stock opcode IDs** in this corpus; their meanings are not yet established. This alone does not prove a custom VM.
 
-The mapping achieved **100% accuracy on every holdout position whose Lua 5.5 ID appeared in training**. The nine uncovered positions are rare IDs; they were mapped consistently when the full corpus was used.
+## Operand sanity checks
 
-## A-register semantic check
+The A-register bounds check used the official per-opcode A-mode classification, not a blanket assumption that every opcode uses A as a register.
 
-The mapped opcode names were used to determine whether operand A is a register for each instruction. Instructions whose mapped opcode does not use A were excluded. The remaining A values were checked against each function's `maxStackSize`.
+- Lua 5.4: 23,501 A-register operands checked; 0 out of range.
+- Lua 5.5, restricted to stock IDs: 14,576 A-register operands checked; 1,191 out of range (8.171%). The out-of-range observations are concentrated in IDs named `BXOR` (1,167) and `IDIV` (24) under the stock Lua 5.5 table.
 
-| Corpus / interpretation | Checked | Out of range | Rate |
-|---|---:|---:|---:|
-| Lua 5.4, stock opcode names | 31,246 | 7 | 0.0220% |
-| Lua 5.5, empirical crosswalk to Lua 5.4 names | 31,286 | 7 | 0.0224% |
+This discrepancy is a warning that stock Lua 5.5 names/modes cannot yet be applied blindly to the game's 5.5 instruction stream. The 38 non-stock IDs also require independent operand-mode classification.
 
-In both corpora, all seven out-of-range cases were associated with the mapped `RETURN` opcode. This near-identical result is a strong independent consistency check for the crosswalk's A-operand semantics.
+## Alignment experiments
 
-## Example mappings
+Two isolated parser experiments were run against the same 66-module corpus:
 
-| Lua 5.5 ID | Stock Lua 5.5 name | Empirical Lua 5.4 name | Aligned occurrences |
-|---:|---|---|---:|
-| 5 | LOADFALSE | CALL | 2,852 |
-| 43 | BXOR | JMP | 2,378 |
-| 103 | outside stock table | GETFIELD | 1,443 |
-| 109 | outside stock table | SETFIELD | 1,310 |
-| 110 | outside stock table | SELF | 1,262 |
-| 123 | outside stock table | GETFIELD | 1,234 |
-| 125 | outside stock table | GETTABUP | 1,170 |
-| 120 | outside stock table | MOVE | 875 |
-| 40 | IDIV | RETURN0 | 799 |
-| 98 | outside stock table | GETTABUP | 684 |
-| 80 | VARARG | TEST | 666 |
-| 116 | outside stock table | CLOSURE | 658 |
+- Removing the Lua 5.5 one-byte alignment bias caused all 33 Lua 5.5 modules to fail structural parsing; the 33 Lua 5.4 modules still passed.
+- Skipping an additional byte after the current Lua 5.5 alignment also caused all 33 Lua 5.5 modules to fail structural parsing.
 
-Several Lua 5.5 IDs map to the same Lua 5.4 opcode name (for example, IDs 103 and 123 both map to `GETFIELD`). Therefore, this is not a simple one-to-one permutation. It may include specialized aliases or distinct instruction variants. The complete 100-row mapping, occurrence counts, module coverage, holdout evidence, and confidence tier are in the companion CSV.
+Both experiments were isolated copies; the stable parser and raw input corpus were not changed. The existing bias remains required for the current structural parse, but this does not resolve the opcode semantics.
 
-## Interpretation boundary
+A bit-8 scan was also tested. It is not a valid alternative opcode extraction: in the standard instruction layout, bit 8 falls inside the A operand, and the high proportion of values below the stock opcode count is not evidence of opcode IDs.
 
-**Supported:**
+## Current evidence ledger
 
-- The stock Lua 5.5 opcode-name table does not describe the observed game's 5.5 opcode IDs correctly.
-- A deterministic empirical mapping from 100 observed Lua 5.5 IDs to Lua 5.4 opcode IDs/names was recovered from paired functions.
-- The mapping generalizes to a held-out module set with zero mismatches for all IDs seen in training.
-- A-register bounds under the crosswalk match the Lua 5.4 baseline almost exactly.
+- **PASS** — Structural parsing: 66/66 preserved raw modules (33 Lua 5.4, 33 Lua 5.5).
+- **PASS** — Lua 5.4 raw opcode IDs: 36,480/36,480 fall within the official stock 0–82 range.
+- **PASS** — Lua 5.5 raw opcode inventory and frequency profile generated for all 36,530 instructions.
+- **PASS** — Lua 5.5 out-of-stock ID profile: 38 distinct IDs, 14,862 occurrences, 30 modules.
+- **PASS** — Lua 5.4 A-register bounds sanity check: 0/23,501 invalid.
+- **FAIL** — Previous Lua 5.5 → Lua 5.4 crosswalk as semantic evidence; function identity was not established.
+- **FAIL** — Stock Lua 5.5 A-register semantics applied to all recognized stock IDs without resolving 1,191 out-of-range observations.
+- **BLOCKED** — Definitive Lua 5.5 opcode mapping and operand modes.
+- **NOT RUN** — Full B/C/k field validation, jump-target validation, constant/upvalue/prototype reference validation, semantic disassembly, runtime behavior, and confirmed `GetTableData` callsites.
 
-**Not yet proven:**
+## Artifacts and handling
 
-- That every mapped opcode is semantically identical to its Lua 5.4 counterpart in all operand formats and runtime cases.
-- The precise semantics of every alias/specialized ID.
-- B/C/k operand rules, jump offsets, constant indices, upvalue references, and control-flow validity.
-- Runtime behavior or `GetTableData` callsites.
-
-## Validation ledger
-
-- **PASS** — Structural parse of the 66 preserved raw modules (66/66).
-- **PASS** — 910 aligned function pairs and 25,920 aligned instruction positions extracted.
-- **PASS** — 100 observed Lua 5.5 IDs each have one stable Lua 5.4 target in the full aligned corpus; zero conflicts.
-- **PASS** — Holdout: 10,128/10,128 mapped positions correct; 9 positions uncovered because five rare IDs did not appear in training.
-- **PASS** — A-register bounds under the empirical crosswalk: 7/31,286 out of range (0.0224%), matching the Lua 5.4 baseline of 7/31,246 (0.0220%); all cases map to `RETURN`.
-- **NOT RUN** — Full B/C/k operand validation, jump-target validation, constant/upvalue reference validation, semantic disassembly, runtime behavior, and confirmed `GetTableData` callsites.
-
-## Artifacts
-
-- Crosswalk CSV: `validation-reports/LUA_OPCODE_CROSSWALK_55_TO_54_2026-10-30.csv`.
-- Function alignment evidence: `validation-reports/LUA_OPCODE_INVENTORY_RAW_MODULES_2026-10-30-functions.csv` (local research artifact; contains per-function opcode sequences and raw instruction words).
-- Module summary: `validation-reports/LUA_OPCODE_MODULE_SUMMARY_2026-10-30.csv`.
-- Stable parser `tools/parse-lua-chunks.js` remains unchanged. All crosswalk instrumentation lives in the separate experimental script.
+- `LUA_OPCODE_CROSSWALK_55_TO_54_2026-10-30.csv`: retained as historical evidence only; invalid for semantic use.
+- `LUA55_NONSTOCK_OPCODE_ID_PROFILE_2026-10-30.csv`: current frequency/module/operand profile for non-stock Lua 5.5 IDs.
+- `LUA_OPCODE_INVENTORY_RAW_MODULES_2026-10-30-functions.csv`: per-function metadata, raw opcode IDs, and raw instruction words.
+- `LUA_OPCODE_INVENTORY_RAW_MODULES_2026-10-30-files.csv`: per-module parser and opcode summaries.
+- Stable structural parser: `tools/parse-lua-chunks.js` remains unchanged.
+- Experimental inventory parser: `tools/experiments/parse-lua55-opcode-inventory.js`; it is not a production disassembler.
 
 ## Next safe steps
 
-1. Validate B/C/k operands for each mapped opcode using the corresponding Lua 5.4 instruction format, with explicit handling for aliases.
-2. Validate signed/unsigned jump offsets and all control-flow targets.
-3. Validate constant-pool, upvalue, and prototype references.
-4. Only after those checks, build a separate Lua 5.5 disassembler driven by the empirical opcode map.
-5. Use the validated disassembler to locate actual `GetTableData` callsites and connect them to DataTable names.
+1. Establish true function identity across Lua 5.4/5.5 variants using stronger evidence than function index and line range (for example, normalized constant/string fingerprints and nested-prototype structure).
+2. Independently validate the Lua 5.5 instruction encoding and operand layout against byte-level evidence; do not infer semantics from a numeric ID alone.
+3. Classify the 38 non-stock IDs by module/function frequency, operand constraints, adjacency patterns, and any repeated bytecode motifs.
+4. Only after opcode identity and operand formats are validated, build a separate disassembler and validate jumps, constants, upvalues, and prototype references.
+5. Resume DataTable and `GetTableData` callsite correlation only after the disassembly layer is trustworthy.
 
-Publication: this report and `LUA_OPCODE_CROSSWALK_55_TO_54_2026-10-30.csv` were committed to `research/dark-war-survival-captures`. No game modification, runtime injection, account manipulation, merge, deployment, or external release was performed.
+No game modification, runtime injection, account manipulation, merge, deployment, or external game release was performed.
 
 [executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]
