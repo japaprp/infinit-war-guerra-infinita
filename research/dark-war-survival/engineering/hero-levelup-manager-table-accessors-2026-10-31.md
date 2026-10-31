@@ -53,3 +53,12 @@ Assim, o contrato observado é:
 - constante `lv_attr_atk`, `lv_attr_def` ou `army_num` + valor derivado de `R2` → nome de campo calculado.
 
 Isso sugere que o segundo parâmetro explícito escolhe uma variante de coluna, mas seu significado (por exemplo, nível, estágio ou outra dimensão) e a ordem exata da concatenação ainda não estão comprovados. Não codificar essa interpretação até decodificar os operandos e comparar com o esquema real da tabela.
+
+## Atualização: ordem da concatenação dinâmica decodificada
+
+Nas funções 8–10, em Lua 5.4 e 5.5, a concatenação é **prefixo fixo seguido do segundo argumento explícito R2**. O primeiro argumento R1 é a chave de `GetTableData`; o terceiro argumento R3 é passado a `toInt` como segundo parâmetro. Assim:
+- função 8: `lv_attr_atk .. R2`;
+- função 9: `lv_attr_def .. R2`;
+- função 10: `army_num .. R2`.
+
+A semântica de negócio de R2 e R3 ainda depende de rastrear os chamadores e validar o esquema físico de `heroes_levelup.bytes`. Ver [decodificação das chaves dinâmicas](./hero-levelup-dynamic-field-concat-2026-10-31.md).
