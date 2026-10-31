@@ -1,73 +1,114 @@
 {
-  "status": "PASS_PARTIAL_GET_BREAK_REQUIRE_BASE_SIGNATURE_AND_CALLSITE",
+  "status": "PASS_STATIC_ARGUMENT_TRACE_BOTH_LUA_VERSIONS",
   "module": "HeroLevelUpTemplateManager",
+  "method": "GetNeedMainLv",
+  "accessor": {
+    "functionIndex": 13,
+    "lines": [
+      71,
+      73
+    ],
+    "paramsIncludingSelf": 2,
+    "explicitArguments": 1,
+    "tableField": "break_require_base",
+    "lookupKey": "i"
+  },
   "versions": {
     "5.4": {
-      "functionIndex": 13,
+      "functionIndex": 6,
       "lines": [
-        71,
-        73
+        30,
+        39
       ],
-      "paramsIncludingSelf": 2,
-      "explicitArguments": 1,
-      "tableField": "break_require_base",
-      "directCaller": {
-        "functionIndex": 6,
-        "lines": [
-          30,
-          39
-        ],
-        "symbolConstant": "GetBreakRequireBase",
-        "receiver": "R0",
-        "argument": "R5",
-        "argumentMeaning": "UNKNOWN"
-      }
+      "directCaller": "GetBreakRequireBase",
+      "receiver": "R0",
+      "move": {
+        "pc": 8,
+        "destination": "R8",
+        "source": "R5"
+      },
+      "call": {
+        "pc": 9,
+        "A": 6,
+        "B": 3,
+        "C": 2
+      },
+      "argument": "R5",
+      "loopControl": "R5",
+      "loopControlFormula": "A+3",
+      "forPrepA": 2,
+      "forLoopA": 2
     },
     "5.5": {
-      "functionIndex": 13,
+      "functionIndex": 6,
       "lines": [
-        71,
-        73
+        30,
+        39
       ],
-      "paramsIncludingSelf": 2,
-      "explicitArguments": 1,
-      "tableField": "break_require_base",
-      "directCaller": {
-        "functionIndex": 6,
-        "lines": [
-          30,
-          39
-        ],
-        "symbolConstant": "GetBreakRequireBase",
-        "extractedReceiver": "R0",
-        "extractedArgument": "1",
-        "argumentMappingValidated": false,
-        "argumentMeaning": "UNKNOWN"
+      "directCaller": "GetBreakRequireBase",
+      "receiver": "R0",
+      "move": {
+        "pc": 8,
+        "opcodeId": 86,
+        "destination": "R7",
+        "source": "R4"
+      },
+      "call": {
+        "pc": 9,
+        "A": 5,
+        "B": 3,
+        "C": 2
+      },
+      "argument": "R4",
+      "loopControl": "R4",
+      "loopControlFormula": "A+2",
+      "forPrep": {
+        "pc": 6,
+        "opcodeId": 73,
+        "A": 2
+      },
+      "forLoop": {
+        "pc": 13,
+        "opcodeId": 22,
+        "A": 2
       }
     }
   },
-  "function6Constants": [
-    "DataCenter",
-    "BuildManager",
-    "MainLv",
-    "HeroMaxLevel",
-    "GetBreakRequireBase"
-  ],
-  "limits": [
-    "No semantic name for the explicit argument.",
-    "Lua 5.5 call argument register mapping not independently validated.",
-    "No external caller of function 6 identified yet.",
-    "Static analysis only; no runtime execution."
-  ],
-  "memory": {
-    "freeRamMB": 832.1,
-    "thresholdMB": 875,
-    "newBundleLoad": "BLOCKED"
+  "loop": {
+    "initial": 1,
+    "limit": "HeroMaxLevel",
+    "step": 1,
+    "mainLevelSource": "DataCenter.BuildManager.MainLv"
   },
-  "next": [
-    "Independently decode function 6 call argument registers in Lua 5.4/5.5.",
-    "Trace external consumers of HeroLevelUpTemplateManager.",
-    "Trace GetAtk/GetDef/GetArmyNum callers.",
-    "Export heroes_levelup base and Lua 5.5 only when RAM >=875 MB."
-  ]
+  "correction": {
+    "previousExtractedArgument": "1",
+    "correctInterpretation": "loop initializer, not call argument",
+    "replacement": "R4 in Lua 5.5"
+  },
+  "sources": {
+    "lua54": "https://lua.org/source/5.4/lvm.c.html",
+    "lua55": "https://lua.org/source/5.5/lvm.c.html"
+  },
+  "validations": {
+    "signature": "PASS",
+    "field": "PASS",
+    "callsite54": "PASS",
+    "callsite55": "PASS",
+    "opcode86": "PASS_TARGET",
+    "loopRegisterLayout": "PASS",
+    "runtimeClient": "NOT_RUN",
+    "datatableExtraction": "BLOCKED"
+  },
+  "memory": {
+    "lastFreeMB": 835,
+    "thresholdMB": 875,
+    "datatableExtraction": "BLOCKED"
+  },
+  "limitations": [
+    "Static bytecode analysis; runtime client execution not performed.",
+    "DataTable physical records have not yet been extracted."
+  ],
+  "supersedes": "Earlier report's Lua 5.5 argument literal 1 and argumentMappingValidated=false."
 }
+
+[executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]
