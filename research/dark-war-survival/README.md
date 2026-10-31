@@ -13,7 +13,6 @@ Esta pasta reúne evidências visuais usadas para análise comportamental e téc
 ## Artefatos estruturados adicionais
 
 - [Especificação de chips e Sincronia de Núcleo](../../docs/sistemas/chips_ressonancia.md): requisitos originais, evidências relatadas, regras ainda hipotéticas e testes de aceite.
-
 - `data/green-chip-chest-probabilities.json`: dataset estruturado de 32 resultados do baú verde observado, com probabilidades derivadas identificadas e nomes não confirmados deixados em aberto.
 - `video-analysis-protocol.md`: protocolo para análise dinâmica de vídeos de gameplay enviados por WhatsApp, com timestamps, pré/pós-ação, classificação de evidências e perguntas técnicas.
 - `chip-loadout-integration-test-plan.md`: casos de teste pendentes para validar presets, persistência, inventário, evolução e integração real com atributos de combate.
@@ -45,3 +44,4 @@ A primeira leitura visual foi registrada em `index.md`. Valores exatos de custos
 ## Engenharia reversa — novas descobertas
 
 - [Resolução estática de nomes dinâmicos de tabelas Lua](./engineering/dynamic-table-name-resolution-2026-10-31.md): análise comparativa de HeroUtils nas variantes Lua 5.4/5.5, seleção de NewHeroes/NewHeroesB e LW_Hero/LW_Hero_B, hashes e próximos passos para exportar PveUtil.
+- [Pré-checagem de PveUtil](./engineering/pveutil-precheck-2026-10-30.md): associação confirmada de `PveUtil.bytes` aos bundles Lua base e Lua 5.5 (IDs 7 e 84), hashes locais dos quatro bundles utilitários e bloqueio de exportação por RAM insuficiente.
