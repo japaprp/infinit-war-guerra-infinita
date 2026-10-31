@@ -1,0 +1,280 @@
+{
+  "date": "2026-10-31",
+  "function6": {
+    "module": "HeroLevelUpTemplateManager",
+    "method": "GetNeedMainLv",
+    "functionIndex": 6,
+    "lines": [
+      30,
+      39
+    ],
+    "chunks": {
+      "5.4": "9b1ff70670b820bb4fc3f59cd10adbb8a397ee3e8efab3f1811fc35be9652b42",
+      "5.5": "1e9e37ca404e97d3e387855f1b40eca102eb2ad5d6412b939d46be496f78a72c"
+    },
+    "loopBounds": {
+      "initial": 1,
+      "limit": "HeroMaxLevel",
+      "step": 1,
+      "mainLevelSource": "DataCenter.BuildManager.MainLv"
+    },
+    "5.4": {
+      "forPrep": {
+        "pc": 6,
+        "opcodeId": 74,
+        "A": 2
+      },
+      "forLoop": {
+        "pc": 13,
+        "opcodeId": 73,
+        "A": 2
+      },
+      "controlRegister": "R5",
+      "controlRegisterFormula": "A+3",
+      "self": {
+        "pc": 7,
+        "methodRegister": "R6",
+        "receiver": "R0",
+        "selfRegister": "R7"
+      },
+      "move": {
+        "pc": 8,
+        "destination": "R8",
+        "source": "R5",
+        "opcode": "MOVE"
+      },
+      "call": {
+        "pc": 9,
+        "A": 6,
+        "B": 3,
+        "C": 2,
+        "explicitArgument": "R8",
+        "sourceArgument": "R5"
+      }
+    },
+    "5.5": {
+      "forPrep": {
+        "pc": 6,
+        "opcodeId": 73,
+        "A": 2
+      },
+      "forLoop": {
+        "pc": 13,
+        "opcodeId": 22,
+        "A": 2
+      },
+      "controlRegister": "R4",
+      "controlRegisterFormula": "A+2",
+      "self": {
+        "pc": 7,
+        "methodRegister": "R5",
+        "receiver": "R0",
+        "selfRegister": "R6"
+      },
+      "move": {
+        "pc": 8,
+        "opcodeId": 86,
+        "destination": "R7",
+        "source": "R4",
+        "opcode": "MOVE"
+      },
+      "call": {
+        "pc": 9,
+        "A": 5,
+        "B": 3,
+        "C": 2,
+        "explicitArgument": "R7",
+        "sourceArgument": "R4"
+      }
+    },
+    "opcode86": {
+      "pairedMoveMatches": 28,
+      "functions": 27,
+      "modules": 7,
+      "bFieldWithinMaxStack": 28,
+      "bFieldOutOfRange": 0,
+      "bSameAsLua54": 18,
+      "bDifferentDueRegisterAllocation": 10,
+      "genericCrosswalkConfidence": "MEDIUM",
+      "targetConfidence": "HIGH"
+    },
+    "officialVmSemantics": {
+      "lua54ControlRegister": "A+3",
+      "lua55ControlRegister": "A+2",
+      "lua54Source": "https://lua.org/source/5.4/lvm.c.html",
+      "lua55Source": "https://lua.org/source/5.5/lvm.c.html"
+    },
+    "conclusion": "GetNeedMainLv iterates i from 1 to HeroMaxLevel, calls GetBreakRequireBase(i), and compares the returned requirement with DataCenter.BuildManager.MainLv. The literal 1 is the loop initializer, not the call argument."
+  },
+  "bootstrap": {
+    "rootFunctionIndex": 1,
+    "rootConstants": [
+      "BaseClass",
+      "HeroLevelUpTemplateManager",
+      "__init",
+      "__delete",
+      "Startup",
+      "GetTableName",
+      "GetNeedMainLv",
+      "GetExp",
+      "GetAtk",
+      "GetDef",
+      "GetArmyNum",
+      "GetBreakRequire",
+      "GetBreakRequireRank",
+      "GetBreakRequireBase"
+    ],
+    "classFactorySequence": "BaseClass('HeroLevelUpTemplateManager') followed by closure assignments to class fields.",
+    "explicitDataCenterAssignmentInRoot": false,
+    "externalExactManagerNameConstantHits": 0,
+    "bootstrapFilesFound": {
+      "DataCenter": false,
+      "BaseClass": false,
+      "LuaEntry": false
+    },
+    "classCreation": "PASS",
+    "datacenterPublication": "BLOCKED",
+    "inference": "A central loader may publish BaseClass modules into DataCenter by class name; compatible with observed pattern but not proven."
+  },
+  "getHeroTemplateList": {
+    "exactHits": 6,
+    "calls": [
+      {
+        "module": "HeroDataManager",
+        "version": "5.4",
+        "functionIndex": 30,
+        "lines": [
+          393,
+          448
+        ],
+        "getFieldPc": 57,
+        "callPc": 58,
+        "callee": "HeroUtils.GetHeroTemplateList",
+        "callB": 1,
+        "callC": 2,
+        "explicitArgs": 0,
+        "returns": 1
+      },
+      {
+        "module": "HeroDataManager",
+        "version": "5.5",
+        "functionIndex": 30,
+        "lines": [
+          393,
+          448
+        ],
+        "getFieldPc": 61,
+        "callPc": 62,
+        "callee": "HeroUtils.GetHeroTemplateList",
+        "callB": 1,
+        "callC": 2,
+        "explicitArgs": 0,
+        "returns": 1
+      },
+      {
+        "module": "HeroWeaponManager",
+        "version": "5.4",
+        "functionIndex": 29,
+        "lines": [
+          283,
+          296
+        ],
+        "getFieldPc": 4,
+        "callPc": 5,
+        "callee": "HeroUtils.GetHeroTemplateList",
+        "callB": 1,
+        "callC": 2,
+        "explicitArgs": 0,
+        "returns": 1
+      },
+      {
+        "module": "HeroWeaponManager",
+        "version": "5.5",
+        "functionIndex": 29,
+        "lines": [
+          283,
+          296
+        ],
+        "getFieldPc": 4,
+        "callPc": 5,
+        "callee": "HeroUtils.GetHeroTemplateList",
+        "callB": 1,
+        "callC": 2,
+        "explicitArgs": 0,
+        "returns": 1
+      },
+      {
+        "module": "UIHeroListCtrl",
+        "version": "5.4",
+        "functionIndex": 20,
+        "lines": [
+          373,
+          440
+        ],
+        "getFieldPc": 30,
+        "callPc": 31,
+        "callee": "HeroUtils.GetHeroTemplateList",
+        "callB": 1,
+        "callC": 2,
+        "explicitArgs": 0,
+        "returns": 1
+      },
+      {
+        "module": "UIHeroListCtrl",
+        "version": "5.5",
+        "functionIndex": 20,
+        "lines": [
+          373,
+          440
+        ],
+        "getFieldPc": 30,
+        "callPc": 31,
+        "callee": "HeroUtils.GetHeroTemplateList",
+        "callB": 1,
+        "callC": 2,
+        "explicitArgs": 0,
+        "returns": 1
+      }
+    ],
+    "implementationModuleFound": false,
+    "implementationStatus": "BLOCKED_NOT_EXPORTED",
+    "notOneOfSevenLevelupAccessors": true
+  },
+  "accessorLiteralScan": {
+    "GetExp": 0,
+    "GetAtk": 0,
+    "GetDef": 0,
+    "GetArmyNum": 0,
+    "GetBreakRequire": 0,
+    "GetBreakRequireRank": 0,
+    "GetBreakRequireBase": 0,
+    "limitation": "Dynamic aliases and function references remain possible."
+  },
+  "memory": {
+    "freeMB": 834.7,
+    "minimumMB": 875,
+    "datatableExtraction": "BLOCKED"
+  },
+  "validation": {
+    "opcode73": "PASS_TARGET_CONTEXT",
+    "opcode22": "PASS_TARGET_CONTEXT",
+    "opcode86": "PASS_TARGET_AND_B_OPERAND",
+    "lua54GetBreakRequireBaseArgument": "PASS_R5_LOOP_CONTROL",
+    "lua55GetBreakRequireBaseArgument": "PASS_R4_LOOP_CONTROL",
+    "classFactory": "PASS",
+    "datacenterRegistration": "BLOCKED",
+    "getHeroTemplateListCallers": "PASS_3_CALLSITES_BOTH_VERSIONS",
+    "getHeroTemplateListImplementation": "BLOCKED",
+    "datatableBase": "NOT_RUN",
+    "datatableLua55": "NOT_RUN",
+    "physicalTableComparison": "NOT_RUN"
+  },
+  "safety": {
+    "readOnlyAnalysis": true,
+    "bundlesLoaded": false,
+    "bundlesExported": false,
+    "originalsModified": false,
+    "merge": false,
+    "deploy": false
+  }
+}
