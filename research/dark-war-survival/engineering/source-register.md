@@ -47,7 +47,7 @@
 5. **What is the category-level gameres availability?** Use gameres coverage V2 and the duplicate/category caveats in [crosswalk findings](crosswalk-findings-2026-10-30.md).
 6. **What exact gameres asset path was indexed?** Use the original 24,558-row map plus the 370-row repair patch, or rerun the parser script to reconstruct the corrected V2 map.
 7. **Which Lua TextAssets were exported and integrity-checked?** Use the 13-part Lua binary export manifest; use its per-bundle summary for aggregate counts and TextAsset-set SHA-256.
-8. **Which Lua chunk formats were identified?** Use the full-corpus header validation summary and [Lua format report](../engineering/lua-format-and-crosswalk-2026-10-30.md). All 12,370 headers match official Lua 5.4 or 5.5 structures; full chunk parsing/decompilation remains NOT RUN.
+8. **Which Lua chunk formats were identified?** Use the full-corpus header validation summary and [Lua format report](../engineering/lua-format-and-crosswalk-2026-10-30.md). All 12,370 headers match official Lua 5.4 or 5.5 structures; full-chunk structural parsing is also PASS for 12,370/12,370 (see the Lua format report). Opcode decoding, semantic disassembly and decompilation remain NOT RUN.
 9. **Are the four index version markers consistent?** Use the index version-marker validation CSV; all four marker sizes, CRC32 values and `[Version]` integers match their corresponding index files.
 
 ## Historical versus canonical
