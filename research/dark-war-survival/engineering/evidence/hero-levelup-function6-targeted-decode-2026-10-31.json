@@ -144,7 +144,13 @@
       "baseClassAssetFound": false,
       "luaEntryAssetFound": false,
       "centralDataCenterAssetFound": false,
-      "commonBaseCoreEntryFrameworkBundleCandidates": 0
+      "commonBaseCoreEntryFrameworkBundleCandidates": 0,
+      "exactDataCenterAssetFound": false,
+      "slgDataCenterAssets": 2,
+      "slgDataCenterPaths": [
+        "Assets/SlgEngine/Main/LuaTxt/DataCenter/SlgDataCenter.bytes",
+        "Assets/SlgEngine/Main/LuaTxt_55/DataCenter/SlgDataCenter.bytes"
+      ]
     }
   },
   "getHeroTemplateList": {
@@ -266,7 +272,7 @@
     "limitation": "Dynamic aliases and function references remain possible."
   },
   "memory": {
-    "freeMB": 774.9,
+    "freeMB": 736.9,
     "minimumMB": 875,
     "datatableExtraction": "BLOCKED"
   },
