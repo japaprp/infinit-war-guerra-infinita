@@ -1,96 +1,58 @@
 {
   "date": "2026-10-31",
-  "target": "HeroLevelUpTemplateManager function 6 lines 30-39",
-  "chunks": {
+  "function6": {
+    "module": "HeroLevelUpTemplateManager",
+    "method": "GetNeedMainLv",
+    "functionIndex": 6,
+    "lines": [
+      30,
+      39
+    ],
+    "chunks": {
+      "5.4": "9b1ff70670b820bb4fc3f59cd10adbb8a397ee3e8efab3f1811fc35be9652b42",
+      "5.5": "1e9e37ca404e97d3e387855f1b40eca102eb2ad5d6412b939d46be496f78a72c"
+    },
+    "loopBounds": {
+      "initial": 1,
+      "limit": "HeroMaxLevel",
+      "step": 1,
+      "mainLevelSource": "DataCenter.BuildManager.MainLv"
+    },
     "5.4": {
-      "sha256": "9b1ff70670b820bb4fc3f59cd10adbb8a397ee3e8efab3f1811fc35be9652b42",
-      "instructions": 17
-    },
-    "5.5": {
-      "sha256": "1e9e37ca404e97d3e387855f1b40eca102eb2ad5d6412b939d46be496f78a72c",
-      "instructions": 17
-    }
-  },
-  "opcodeEvidence": {
-    "22": {
-      "targetPc": 13,
-      "candidate": "FORLOOP",
-      "pairedLua54OpcodeId": 73,
-      "alignedSamePcOccurrences": 68,
-      "matched": 61,
-      "other": {
-        "0": 1,
-        "11": 2,
-        "56": 2,
-        "66": 2
-      }
-    },
-    "73": {
-      "targetPc": 6,
-      "candidate": "FORPREP",
-      "pairedLua54OpcodeId": 74,
-      "alignedSamePcOccurrences": 68,
-      "matched": 63,
-      "other": {
-        "12": 3,
-        "14": 2
-      }
-    },
-    "86": {
-      "targetPc": 8,
-      "candidate": "MOVE",
-      "pairedLua54OpcodeId": 0,
-      "alignedSamePcOccurrences": 28,
-      "matched": 28,
-      "functions": 27,
-      "modules": 7,
-      "confidence": "MEDIUM",
-      "aRegisterChecks": 28,
-      "aRegisterInvalid": 0,
-      "bOperandValidated": false
-    }
-  },
-  "argumentTrace": {
-    "5.4": {
-      "status": "PASS",
-      "receiverRegister": 0,
-      "methodRegister": 6,
-      "selfRegister": 7,
+      "forPrep": {
+        "pc": 6,
+        "opcodeId": 74,
+        "A": 2
+      },
+      "forLoop": {
+        "pc": 13,
+        "opcodeId": 73,
+        "A": 2
+      },
+      "controlRegister": "R5",
+      "controlRegisterFormula": "A+3",
+      "self": {
+        "pc": 7,
+        "methodRegister": "R6",
+        "receiver": "R0",
+        "selfRegister": "R7"
+      },
       "move": {
         "pc": 8,
-        "destination": 8,
-        "source": 5
+        "destination": "R8",
+        "source": "R5",
+        "opcode": "MOVE"
       },
       "call": {
         "pc": 9,
         "A": 6,
         "B": 3,
-        "C": 2
-      },
-      "explicitArgumentRegister": 8,
-      "argumentSourceRegister": 5,
-      "forPrepA": 2,
-      "forLoopA": 2
+        "C": 2,
+        "explicitArgument": "R8",
+        "sourceArgument": "R5"
+      }
     },
     "5.5": {
-      "status": "BLOCKED_PARTIAL",
-      "receiverRegister": 0,
-      "methodRegister": 5,
-      "selfRegister": 6,
-      "move": {
-        "pc": 8,
-        "opcodeId": 86,
-        "destination": 7,
-        "sourceCandidate": 4,
-        "confidence": "MEDIUM"
-      },
-      "call": {
-        "pc": 9,
-        "A": 5,
-        "B": 3,
-        "C": 2
-      },
-      "explicitArgumentRegister": 7,
       "forPrep": {
         "pc": 6,
         "opcodeId": 73,
@@ -101,54 +63,214 @@
         "opcodeId": 22,
         "A": 2
       },
-      "loopVariableRegister": "UNKNOWN",
-      "sourceRegisterEquivalenceToLua54": "NOT_VALIDATED"
-    }
+      "controlRegister": "R4",
+      "controlRegisterFormula": "A+2",
+      "self": {
+        "pc": 7,
+        "methodRegister": "R5",
+        "receiver": "R0",
+        "selfRegister": "R6"
+      },
+      "move": {
+        "pc": 8,
+        "opcodeId": 86,
+        "destination": "R7",
+        "source": "R4",
+        "opcode": "MOVE"
+      },
+      "call": {
+        "pc": 9,
+        "A": 5,
+        "B": 3,
+        "C": 2,
+        "explicitArgument": "R7",
+        "sourceArgument": "R4"
+      }
+    },
+    "opcode86": {
+      "pairedMoveMatches": 28,
+      "functions": 27,
+      "modules": 7,
+      "bFieldWithinMaxStack": 28,
+      "bFieldOutOfRange": 0,
+      "bSameAsLua54": 18,
+      "bDifferentDueRegisterAllocation": 10,
+      "genericCrosswalkConfidence": "MEDIUM",
+      "targetConfidence": "HIGH"
+    },
+    "officialVmSemantics": {
+      "lua54ControlRegister": "A+3",
+      "lua55ControlRegister": "A+2",
+      "lua54Source": "https://lua.org/source/5.4/lvm.c.html",
+      "lua55Source": "https://lua.org/source/5.5/lvm.c.html"
+    },
+    "conclusion": "GetNeedMainLv iterates i from 1 to HeroMaxLevel, calls GetBreakRequireBase(i), and compares the returned requirement with DataCenter.BuildManager.MainLv. The literal 1 is the loop initializer, not the call argument."
   },
-  "externalReferenceScan": {
-    "exactSymbols": {
-      "GetExp": 0,
-      "GetAtk": 0,
-      "GetDef": 0,
-      "GetArmyNum": 0,
-      "GetBreakRequire": 0,
-      "GetBreakRequireRank": 0,
-      "GetBreakRequireBase": 0
+  "bootstrap": {
+    "rootFunctionIndex": 1,
+    "rootConstants": [
+      "BaseClass",
+      "HeroLevelUpTemplateManager",
+      "__init",
+      "__delete",
+      "Startup",
+      "GetTableName",
+      "GetNeedMainLv",
+      "GetExp",
+      "GetAtk",
+      "GetDef",
+      "GetArmyNum",
+      "GetBreakRequire",
+      "GetBreakRequireRank",
+      "GetBreakRequireBase"
+    ],
+    "classFactorySequence": "BaseClass('HeroLevelUpTemplateManager') followed by closure assignments to class fields.",
+    "explicitDataCenterAssignmentInRoot": false,
+    "externalExactManagerNameConstantHits": 0,
+    "bootstrapFilesFound": {
+      "DataCenter": false,
+      "BaseClass": false,
+      "LuaEntry": false
     },
-    "relatedStrings": {
-      "HeroLevelUp": 0,
-      "HeroLevelUpTemplateManager": 0,
-      "LevelUpTemplate": 0,
-      "lv_attr_atk": 0,
-      "lv_attr_def": 0,
-      "break_require_base": 0,
-      "break_require_rank": 0,
-      "army_num": 0
-    },
-    "substringGetDefHits": 6,
-    "substringHitsAreExactGetDef": false,
-    "conclusion": "No external literal/alias text found in available constants inventory; runtime aliases and dynamic/reflection calls not excluded."
+    "classCreation": "PASS",
+    "datacenterPublication": "BLOCKED",
+    "inference": "A central loader may publish BaseClass modules into DataCenter by class name; compatible with observed pattern but not proven."
+  },
+  "getHeroTemplateList": {
+    "exactHits": 6,
+    "calls": [
+      {
+        "module": "HeroDataManager",
+        "version": "5.4",
+        "functionIndex": 30,
+        "lines": [
+          393,
+          448
+        ],
+        "getFieldPc": 57,
+        "callPc": 58,
+        "callee": "HeroUtils.GetHeroTemplateList",
+        "callB": 1,
+        "callC": 2,
+        "explicitArgs": 0,
+        "returns": 1
+      },
+      {
+        "module": "HeroDataManager",
+        "version": "5.5",
+        "functionIndex": 30,
+        "lines": [
+          393,
+          448
+        ],
+        "getFieldPc": 61,
+        "callPc": 62,
+        "callee": "HeroUtils.GetHeroTemplateList",
+        "callB": 1,
+        "callC": 2,
+        "explicitArgs": 0,
+        "returns": 1
+      },
+      {
+        "module": "HeroWeaponManager",
+        "version": "5.4",
+        "functionIndex": 29,
+        "lines": [
+          283,
+          296
+        ],
+        "getFieldPc": 4,
+        "callPc": 5,
+        "callee": "HeroUtils.GetHeroTemplateList",
+        "callB": 1,
+        "callC": 2,
+        "explicitArgs": 0,
+        "returns": 1
+      },
+      {
+        "module": "HeroWeaponManager",
+        "version": "5.5",
+        "functionIndex": 29,
+        "lines": [
+          283,
+          296
+        ],
+        "getFieldPc": 4,
+        "callPc": 5,
+        "callee": "HeroUtils.GetHeroTemplateList",
+        "callB": 1,
+        "callC": 2,
+        "explicitArgs": 0,
+        "returns": 1
+      },
+      {
+        "module": "UIHeroListCtrl",
+        "version": "5.4",
+        "functionIndex": 20,
+        "lines": [
+          373,
+          440
+        ],
+        "getFieldPc": 30,
+        "callPc": 31,
+        "callee": "HeroUtils.GetHeroTemplateList",
+        "callB": 1,
+        "callC": 2,
+        "explicitArgs": 0,
+        "returns": 1
+      },
+      {
+        "module": "UIHeroListCtrl",
+        "version": "5.5",
+        "functionIndex": 20,
+        "lines": [
+          373,
+          440
+        ],
+        "getFieldPc": 30,
+        "callPc": 31,
+        "callee": "HeroUtils.GetHeroTemplateList",
+        "callB": 1,
+        "callC": 2,
+        "explicitArgs": 0,
+        "returns": 1
+      }
+    ],
+    "implementationModuleFound": false,
+    "implementationStatus": "BLOCKED_NOT_EXPORTED",
+    "notOneOfSevenLevelupAccessors": true
+  },
+  "accessorLiteralScan": {
+    "GetExp": 0,
+    "GetAtk": 0,
+    "GetDef": 0,
+    "GetArmyNum": 0,
+    "GetBreakRequire": 0,
+    "GetBreakRequireRank": 0,
+    "GetBreakRequireBase": 0,
+    "limitation": "Dynamic aliases and function references remain possible."
   },
   "memory": {
-    "freeMB": 642,
+    "freeMB": 834.7,
     "minimumMB": 875,
     "datatableExtraction": "BLOCKED"
   },
-  "validations": {
-    "decoder": "PASS",
-    "id73Target": "PASS",
-    "id22Target": "PASS",
-    "id86Identity": "PASS_MEDIUM_CONFIDENCE",
-    "lua54Argument": "PASS",
-    "lua55ArgumentEquivalence": "BLOCKED",
-    "externalLiteralScan": "PASS_NONE_FOUND",
-    "dynamicConsumers": "BLOCKED",
+  "validation": {
+    "opcode73": "PASS_TARGET_CONTEXT",
+    "opcode22": "PASS_TARGET_CONTEXT",
+    "opcode86": "PASS_TARGET_AND_B_OPERAND",
+    "lua54GetBreakRequireBaseArgument": "PASS_R5_LOOP_CONTROL",
+    "lua55GetBreakRequireBaseArgument": "PASS_R4_LOOP_CONTROL",
+    "classFactory": "PASS",
+    "datacenterRegistration": "BLOCKED",
+    "getHeroTemplateListCallers": "PASS_3_CALLSITES_BOTH_VERSIONS",
+    "getHeroTemplateListImplementation": "BLOCKED",
     "datatableBase": "NOT_RUN",
     "datatableLua55": "NOT_RUN",
-    "physicalRecordComparison": "NOT_RUN"
+    "physicalTableComparison": "NOT_RUN"
   },
   "safety": {
-    "readOnlyInventoryAnalysis": true,
+    "readOnlyAnalysis": true,
     "bundlesLoaded": false,
     "bundlesExported": false,
     "originalsModified": false,
@@ -156,3 +278,5 @@
     "deploy": false
   }
 }
+
+[executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]
