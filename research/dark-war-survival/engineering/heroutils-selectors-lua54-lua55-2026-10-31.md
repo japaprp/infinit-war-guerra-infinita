@@ -115,3 +115,7 @@ Artefatos reproduzíveis:
 Uma busca literal nas constantes dos inventários Lua disponíveis encontrou `lw_hero`, `LW_Hero` e `LW_Hero_B` dentro do próprio `HeroUtils` nas duas versões. Não foram encontrados outros módulos com essas constantes nos inventários pesquisados, e o scanner de call sites também não encontrou chamada estática para `GetLwHeroTableName`.
 
 A conclusão permitida é limitada: **não há consumidor estático identificado no conjunto de módulos indexados**. Isso não prova que o helper seja código morto; chamadas dinâmicas, reflexão, código não indexado ou caminhos de execução indiretos continuam possíveis. O vínculo físico com os arquivos `lw_hero.bytes` e `lw_hero_B.bytes` permanece pendente de exportação e comparação dos DataTables.
+
+## Precisão adicional: parâmetro de GetLwHeroTableName
+
+A função recebe um parâmetro formal em R0, embora o chunk não contenha nome local de debug. O fluxo de controle foi decodificado em ambas as versões: `LW_Hero_B` é retornada somente quando `CheckSwitch("ABtest_lw_hero")` é truthy **e** R0 é false/nil; em qualquer outro caso, retorna `LW_Hero`. A varredura estática exata encontrou zero callsites no inventário disponível, portanto o significado de R0 e seus valores reais continuam desconhecidos. Ver [auditoria de callsites e parâmetro LW](./hero-selector-callsites-and-lw-parameter-2026-10-31.md).
