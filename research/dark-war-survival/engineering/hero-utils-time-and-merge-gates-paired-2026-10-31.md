@@ -45,11 +45,11 @@ The comparison at PC 130 is EQI(ownedCount, 0, k=0). Lua VM semantics are: if co
 
 ## 4. DataCenter bootstrap
 
-The manager root calls BaseClass(HeroLevelUpTemplateManager); the class factory invocation is confirmed. The exported module inventory contains 30 distinct class/manager names using BaseClass, but no BaseClass definition, central DataCenter asset, or explicit assignment of this manager into DataCenter. A search of the local analysis core and APK audit folder found no local global-metadata.dat, libil2cpp.so, GameAssembly.dll or Assembly-CSharp.dll. The 2,082,044,905-byte APK exists only as a OneDrive cloud placeholder; it was not rehydrated. The central loader/registration mechanism therefore remains **BLOCKED** pending access to the APK/native metadata or another bootstrap source. Runtime registration remains **NOT RUN**.
+The manager root calls BaseClass(HeroLevelUpTemplateManager); the class factory invocation is confirmed. A scan of 12 DataCenter bundle-family exports covered 1,250 .bytes assets; 1,167 contain the BaseClass literal, but no BaseClass implementation pattern or explicit DataCenter initialization/assignment was found. The exact manager module is physically present in lua_scripts_datacenter_h and lua_scripts_datacenter_55_h; both extracted files hash-match the analyzed staging inputs. The runtime factory/registration implementation remains outside the scanned Lua assets. A search of the local analysis core and APK audit folder found no local global-metadata.dat, libil2cpp.so, GameAssembly.dll or Assembly-CSharp.dll. The 2,082,044,905-byte APK exists only as a OneDrive cloud placeholder; it was not rehydrated. The central loader/registration mechanism therefore remains **BLOCKED** pending access to the APK/native metadata or another bootstrap source. Runtime registration remains **NOT RUN**.
 
 ## 5. Memory and DataTables
 
-Last measured free RAM: **763.0 MB**; required threshold: **875 MB** (112 MB short). One AssetRipper instance remains active. Extraction of heroes_levelup base and Lua 5.5, and physical comparison of aps_new_heroes, remain **BLOCKED / NOT RUN**. No bundle was loaded or exported.
+Last measured free RAM: **546.1 MB**; required threshold: **875 MB** (328.9 MB short). One AssetRipper instance remains active. Extraction of heroes_levelup base and Lua 5.5, and physical comparison of aps_new_heroes, remain **BLOCKED / NOT RUN**. No bundle was loaded or exported.
 
 ## VM branch semantics
 
