@@ -173,5 +173,12 @@
     "separatePhysicalAssetForB": false,
     "physicalMappingForB": "NOT CONFIRMED"
   },
-  "nextStep": "Export the base and Lua 5.5 Hero LevelUp DataTable bundles one at a time only after free RAM is at least 875 MB; inspect the exact table schema and derive computed field-key format from the original bytecode."
+  "nextStep": "Export the base and Lua 5.5 Hero LevelUp DataTable bundles one at a time only after free RAM is at least 875 MB; inspect the exact table schema and derive computed field-key format from the original bytecode.",
+  "computedFieldKeyInputs": {
+    "keyArgument": "R1",
+    "computedFieldArgument": "CONCAT(prefix constant, value derived from R2)",
+    "R2Meaning": "NOT DETERMINED",
+    "evidence": "Lua 5.5 function inventory shows a MOVE from R2 to a temporary immediately before CONCAT in functions 8, 9 and 10.",
+    "interpretation": "R2 selects a dynamic field variant; its semantic dimension and exact concatenation order remain unverified."
+  }
 }
