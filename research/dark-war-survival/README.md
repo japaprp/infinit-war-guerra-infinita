@@ -74,7 +74,7 @@ A primeira leitura visual foi registrada em `index.md`. Valores exatos de custos
 
 ## HeroLevelUpTemplateManager — continuidade 2026-10-31
 
-- [Bootstrap, DataCenter e consumidores de GetHeroTemplateList](./engineering/hero-levelup-manager-bootstrap-and-template-list-callers-2026-10-31.md) e [evidência JSON](./engineering/evidence/hero-levelup-manager-bootstrap-and-template-list-callers-2026-10-31.json): 30 classes do inventário usam BaseClass; não há asset BaseClass/LuaEntry/DataCenter central nem bundle common/base/core/entry/framework no manifesto. A classe é criada, mas a publicação em DataCenter continua BLOCKED por ausência do loader.
+- [Bootstrap, DataCenter e consumidores de GetHeroTemplateList](./engineering/hero-levelup-manager-bootstrap-and-template-list-callers-2026-10-31.md) e [evidência JSON](./engineering/evidence/hero-levelup-manager-bootstrap-and-template-list-callers-2026-10-31.json): 30 classes do inventário usam BaseClass; não há BaseClass.bytes, LuaEntry.bytes ou DataCenter.bytes central. Os únicos resultados semelhantes são dois SlgDataCenter.bytes do subsistema SLG. Publicação do manager principal em DataCenter continua BLOCKED por ausência do loader.
 - [Callsites corrigidos de GetBreakRequireBase](./engineering/evidence/hero-levelup-getter-callers-2026-10-31.csv) e [resumo JSON](./engineering/evidence/hero-levelup-getter-callers-2026-10-31.json): corrige o argumento Lua 5.5 para R4, variável de controle do loop, e preserva Lua 5.4 em R5.
 - [Execução final do decodificador dedicado](./engineering/evidence/hero-levelup-function6-final-decoder-run-2026-10-31.json): PASS nas duas versões; nenhuma dependência de scripts PveUtil.
 
