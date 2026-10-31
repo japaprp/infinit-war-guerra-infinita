@@ -45,3 +45,4 @@ A primeira leitura visual foi registrada em `index.md`. Valores exatos de custos
 
 - [Resolução estática de nomes dinâmicos de tabelas Lua](./engineering/dynamic-table-name-resolution-2026-10-31.md): análise comparativa de HeroUtils nas variantes Lua 5.4/5.5, seleção de NewHeroes/NewHeroesB e LW_Hero/LW_Hero_B, hashes e próximos passos para exportar PveUtil.
 - [Pré-checagem de PveUtil](./engineering/pveutil-precheck-2026-10-30.md): associação confirmada de `PveUtil.bytes` aos bundles Lua base e Lua 5.5 (IDs 7 e 84), hashes locais dos quatro bundles utilitários e bloqueio de exportação por RAM insuficiente.
+- [Diagnóstico de importação UnityRaw do PveUtil](./engineering/pveutil-unityraw-import-diagnosis-2026-10-31.md): teste controlado que identificou o prefixo `UnityRaw` como causa provável do bloqueio inicial; importação do bundle 7 concluída após removê-lo em uma cópia de trabalho. Exportação do TextAsset ainda pendente.
