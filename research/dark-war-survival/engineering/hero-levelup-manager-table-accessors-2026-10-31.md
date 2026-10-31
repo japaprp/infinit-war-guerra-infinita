@@ -43,3 +43,13 @@ O padrão de campos foi encontrado nas duas versões Lua. As linhas e índices d
 ## Próxima etapa
 
 Com a margem de RAM acima de 875 MB, exportar primeiro o bundle `datatable_config_luatxt_h_6a1d2a950c996f15a938acebcebc598b.bundle` e o par Lua 5.5 `datatable_config_luatxt_55_h_3241e39d538fe22e815569b43561d206.bundle`. Confirmar os nomes internos, o esquema das colunas e os registros; só então resolver as chaves concatenadas e a variante B.
+
+## Refinamento do bytecode das colunas calculadas
+
+No inventário bruto Lua 5.5, as funções 8, 9 e 10 têm três parâmetros formais (incluindo `self`). A sequência de instruções inclui uma cópia do registrador `R2` para um temporário imediatamente antes da operação `CONCAT`. Em paralelo, a análise de argumentos identifica `R1` como a chave enviada a `GetTableData`.
+
+Assim, o contrato observado é:
+- `R1` → chave/linha consultada;
+- constante `lv_attr_atk`, `lv_attr_def` ou `army_num` + valor derivado de `R2` → nome de campo calculado.
+
+Isso sugere que o segundo parâmetro explícito escolhe uma variante de coluna, mas seu significado (por exemplo, nível, estágio ou outra dimensão) e a ordem exata da concatenação ainda não estão comprovados. Não codificar essa interpretação até decodificar os operandos e comparar com o esquema real da tabela.
