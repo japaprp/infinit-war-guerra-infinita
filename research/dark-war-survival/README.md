@@ -41,3 +41,7 @@ A primeira leitura visual foi registrada em `index.md`. Valores exatos de custos
 - [chest-probability-transcription.md](./chest-probability-transcription.md): transcrição parcial das probabilidades visíveis nas capturas WA0185–WA0193, incluindo subtotal laranja 0,2%, roxo 4,8%, azul 30% e itens individuais legíveis.
 - [equipment-chips-source-comparison.md](./equipment-chips-source-comparison.md): comparação das capturas de chips/equipamentos com o protótipo atual, limitações do modelo de slots e probabilidades.
 - [Issue #16 — quatro slots, presets e ressonância](https://github.com/japaprp/infinit-war-guerra-infinita/issues/16): trabalho rastreável para confirmar as regras visuais e modelá-las com testes.
+
+## Engenharia reversa — novas descobertas
+
+- [Resolução estática de nomes dinâmicos de tabelas Lua](./engineering/dynamic-table-name-resolution-2026-10-31.md): análise comparativa de HeroUtils nas variantes Lua 5.4/5.5, seleção de NewHeroes/NewHeroesB e LW_Hero/LW_Hero_B, hashes e próximos passos para exportar PveUtil.
