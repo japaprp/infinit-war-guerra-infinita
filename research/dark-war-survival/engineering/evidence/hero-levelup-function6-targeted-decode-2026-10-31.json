@@ -1,112 +1,157 @@
 {
   "date": "2026-10-31",
-  "project": "Dark War: Survival reverse engineering for Guerra Infinita",
-  "target": "HeroLevelUpTemplateManager function 6",
-  "decoder": "tools/experiments/decode-herolevelup-function6.js",
-  "decoderIndependentOfPveUtil": true,
-  "functionChunks": {
+  "target": "HeroLevelUpTemplateManager function 6 lines 30-39",
+  "chunks": {
     "5.4": {
       "sha256": "9b1ff70670b820bb4fc3f59cd10adbb8a397ee3e8efab3f1811fc35be9652b42",
-      "functionIndex": 6,
-      "lines": "30-39",
-      "instructions": 17,
-      "argumentStatus": "PASS_STATIC_REGISTER_TRACE",
-      "trace": [
-        {
-          "pc": 6,
-          "op": "FORPREP",
-          "A": 2,
-          "visibleLoopValueRegister": 5
-        },
-        {
-          "pc": 7,
-          "op": "SELF",
-          "A": 6,
-          "B": 0,
-          "C": 4,
-          "k": 1,
-          "method": "GetBreakRequireBase",
-          "receiverRegister": 0,
-          "selfRegister": 7
-        },
-        {
-          "pc": 8,
-          "op": "MOVE",
-          "A": 8,
-          "B": 5
-        },
-        {
-          "pc": 9,
-          "op": "CALL",
-          "A": 6,
-          "B": 3,
-          "C": 2
-        }
-      ],
-      "argumentRegisterAtCall": 8,
-      "argumentSourceRegister": 5,
-      "conclusion": "Explicit argument is the numeric-loop value in R5."
+      "instructions": 17
     },
     "5.5": {
       "sha256": "1e9e37ca404e97d3e387855f1b40eca102eb2ad5d6412b939d46be496f78a72c",
-      "functionIndex": 6,
-      "lines": "30-39",
-      "instructions": 17,
-      "argumentStatus": "BLOCKED_REGISTER_MAPPING",
-      "opcodeIssues": [
-        {
-          "pc": 6,
-          "id": 73,
-          "status": "UNMAPPED"
-        },
-        {
-          "pc": 13,
-          "id": 22,
-          "status": "UNMAPPED"
-        },
-        {
-          "pc": 8,
-          "id": 86,
-          "status": "MEDIUM_CONFIDENCE_MOVE_CANDIDATE"
-        }
-      ],
-      "conclusion": "Call structure aligns, but loop and MOVE semantics do not prove the argument register."
+      "instructions": 17
     }
   },
-  "externalLiteralScan": {
-    "symbols": [
-      "GetExp",
-      "GetAtk",
-      "GetDef",
-      "GetArmyNum",
-      "GetBreakRequire",
-      "GetBreakRequireRank",
-      "GetBreakRequireBase"
-    ],
-    "externalHits": 0,
-    "managerNameExternalHits": 0,
-    "scope": "Full available constants inventory; excludes the defining HeroLevelUpTemplateManager module",
-    "limitation": "Dynamic/aliased/reflection/runtime calls and unindexed modules are not ruled out."
+  "opcodeEvidence": {
+    "22": {
+      "targetPc": 13,
+      "candidate": "FORLOOP",
+      "pairedLua54OpcodeId": 73,
+      "alignedSamePcOccurrences": 68,
+      "matched": 61,
+      "other": {
+        "0": 1,
+        "11": 2,
+        "56": 2,
+        "66": 2
+      }
+    },
+    "73": {
+      "targetPc": 6,
+      "candidate": "FORPREP",
+      "pairedLua54OpcodeId": 74,
+      "alignedSamePcOccurrences": 68,
+      "matched": 63,
+      "other": {
+        "12": 3,
+        "14": 2
+      }
+    },
+    "86": {
+      "targetPc": 8,
+      "candidate": "MOVE",
+      "pairedLua54OpcodeId": 0,
+      "alignedSamePcOccurrences": 28,
+      "matched": 28,
+      "functions": 27,
+      "modules": 7,
+      "confidence": "MEDIUM",
+      "aRegisterChecks": 28,
+      "aRegisterInvalid": 0,
+      "bOperandValidated": false
+    }
+  },
+  "argumentTrace": {
+    "5.4": {
+      "status": "PASS",
+      "receiverRegister": 0,
+      "methodRegister": 6,
+      "selfRegister": 7,
+      "move": {
+        "pc": 8,
+        "destination": 8,
+        "source": 5
+      },
+      "call": {
+        "pc": 9,
+        "A": 6,
+        "B": 3,
+        "C": 2
+      },
+      "explicitArgumentRegister": 8,
+      "argumentSourceRegister": 5,
+      "forPrepA": 2,
+      "forLoopA": 2
+    },
+    "5.5": {
+      "status": "BLOCKED_PARTIAL",
+      "receiverRegister": 0,
+      "methodRegister": 5,
+      "selfRegister": 6,
+      "move": {
+        "pc": 8,
+        "opcodeId": 86,
+        "destination": 7,
+        "sourceCandidate": 4,
+        "confidence": "MEDIUM"
+      },
+      "call": {
+        "pc": 9,
+        "A": 5,
+        "B": 3,
+        "C": 2
+      },
+      "explicitArgumentRegister": 7,
+      "forPrep": {
+        "pc": 6,
+        "opcodeId": 73,
+        "A": 2
+      },
+      "forLoop": {
+        "pc": 13,
+        "opcodeId": 22,
+        "A": 2
+      },
+      "loopVariableRegister": "UNKNOWN",
+      "sourceRegisterEquivalenceToLua54": "NOT_VALIDATED"
+    }
+  },
+  "externalReferenceScan": {
+    "exactSymbols": {
+      "GetExp": 0,
+      "GetAtk": 0,
+      "GetDef": 0,
+      "GetArmyNum": 0,
+      "GetBreakRequire": 0,
+      "GetBreakRequireRank": 0,
+      "GetBreakRequireBase": 0
+    },
+    "relatedStrings": {
+      "HeroLevelUp": 0,
+      "HeroLevelUpTemplateManager": 0,
+      "LevelUpTemplate": 0,
+      "lv_attr_atk": 0,
+      "lv_attr_def": 0,
+      "break_require_base": 0,
+      "break_require_rank": 0,
+      "army_num": 0
+    },
+    "substringGetDefHits": 6,
+    "substringHitsAreExactGetDef": false,
+    "conclusion": "No external literal/alias text found in available constants inventory; runtime aliases and dynamic/reflection calls not excluded."
   },
   "memory": {
-    "freeMB": 707.1,
-    "requiredMB": 875,
+    "freeMB": 642,
+    "minimumMB": 875,
     "datatableExtraction": "BLOCKED"
   },
   "validations": {
-    "dedicatedDecoder": "PASS",
+    "decoder": "PASS",
+    "id73Target": "PASS",
+    "id22Target": "PASS",
+    "id86Identity": "PASS_MEDIUM_CONFIDENCE",
     "lua54Argument": "PASS",
-    "lua55Argument": "BLOCKED",
-    "externalLiteralScan": "PASS",
+    "lua55ArgumentEquivalence": "BLOCKED",
+    "externalLiteralScan": "PASS_NONE_FOUND",
+    "dynamicConsumers": "BLOCKED",
     "datatableBase": "NOT_RUN",
     "datatableLua55": "NOT_RUN",
-    "physicalDataJoin": "NOT_RUN"
+    "physicalRecordComparison": "NOT_RUN"
   },
   "safety": {
-    "readOnlyAnalysis": true,
-    "originalBundlesModified": false,
-    "bundlesLoadedThisRound": false,
-    "bundlesExportedThisRound": false,
+    "readOnlyInventoryAnalysis": true,
+    "bundlesLoaded": false,
+    "bundlesExported": false,
+    "originalsModified": false,
     "merge": false,
     "deploy": false
   }
