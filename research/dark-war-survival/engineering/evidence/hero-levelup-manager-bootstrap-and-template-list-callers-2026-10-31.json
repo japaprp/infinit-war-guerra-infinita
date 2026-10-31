@@ -284,10 +284,33 @@
   "bootstrap": {
     "heroLevelUpManagerClassFactory": "BaseClass('HeroLevelUpTemplateManager')",
     "explicitDataCenterRegistration": false,
-    "loaderStatus": "BLOCKED_NOT_EXPORTED"
+    "loaderStatus": "BLOCKED_NOT_EXPORTED",
+    "baseClassLiteralUse": {
+      "distinctClassNames": 30,
+      "moduleVersionPairs": 30,
+      "inventoryVersions": {
+        "5.4": 3,
+        "5.5": 27
+      },
+      "definitionAssetFound": false
+    },
+    "manifestSearch": {
+      "baseClassAssetFound": false,
+      "luaEntryAssetFound": false,
+      "centralDataCenterAssetFound": false,
+      "commonBaseCoreEntryFrameworkBundleCandidates": 0,
+      "observedLuaBundleFamilies": [
+        "DataCenter",
+        "Scene",
+        "UI",
+        "SLG"
+      ]
+    },
+    "datacenterPublication": "BLOCKED_NOT_IN_EXPORTED_LUA_SET",
+    "inference": "BaseClass is a shared global factory used by 30 manager/controller classes; implementation/registration likely supplied by loader or runtime outside exported Lua assets, not proven."
   },
   "memory": {
-    "freeMB": 718.2,
+    "freeMB": 774.9,
     "thresholdMB": 875,
     "datatableExtraction": "BLOCKED"
   },
