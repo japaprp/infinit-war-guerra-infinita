@@ -3,7 +3,7 @@
 **Date:** 2026-10-30  
 **Scope:** Read-only analysis of preserved Lua 5.4/5.5 bytecode samples. No game modification, account manipulation, runtime injection, or deployment.
 
-**Correction (2026-10-30):** The later same-day empirical Lua 5.5-to-5.4 crosswalk is RETRACTED. Function identity was not established by the matching criteria; direct instruction sequences diverge. Do not use the previous mapping or holdout score as semantic evidence. See `DARKWAR_LUA_OPCODE_CROSSWALK_VALIDATION_2026-10-30.md` for the corrected corpus counts and current blockers.
+**Correction (2026-10-30):** The first same-day Lua 5.5-to-5.4 crosswalk is RETRACTED because its function identity criteria were insufficient. A replacement fingerprint-based crosswalk was then built from 850 unique function pairs and passed a 10-module holdout plus independent A-register, constant, upvalue, prototype, skip-pair, generic-for, and jump-target checks. See `DARKWAR_LUA_OPCODE_CROSSWALK_VALIDATION_2026-10-30.md` and `LUA_OPCODE_CROSSWALK_55_TO_54_FINGERPRINT_V1_2026-10-30.csv`.
 
 ## Project identity
 
@@ -110,5 +110,3 @@ The A-register check further rejects this candidate: 9,735/36,497 checked A valu
 5. Use the validated disassembler to confirm actual `GetTableData` callsites and connect them to DataTable names.
 
 Publication: both investigation reports, the crosswalk CSV, the compact module summary, and the 66-module inventory summary were committed to `research/dark-war-survival-captures`. No merge, deployment, or external game release was performed.
-
-[executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]
