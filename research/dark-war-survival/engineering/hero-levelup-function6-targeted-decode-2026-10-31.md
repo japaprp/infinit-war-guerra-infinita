@@ -1,83 +1,91 @@
-# HeroLevelUpTemplateManager — decode direcionado da função 6 e busca de consumidores (2026-10-31)
+# HeroLevelUpTemplateManager — decode dirigido e referências indiretas (2026-10-31)
 
-## Escopo
+## OpCodes Lua 5.5 — evidência empírica
 
-Construir um decodificador específico para a função 6, sem reutilizar os decodificadores PveUtil; validar a chamada de `GetBreakRequireBase` separadamente em Lua 5.4/5.5; buscar referências literais externas dos sete acessores de evolução de heróis; e verificar se há margem de RAM para extração de DataTables.
+Os IDs 73 e 22 não têm entradas no crosswalk CSV original. Comparei as instruções por PC em funções pareadas Lua 5.5/5.4 do mesmo módulo e linha-fonte.
 
-## 1. Decodificador específico
+| ID Lua 5.5 | Função 6 / PC | Par Lua 5.4 | Identificação no alvo | Evidência mais ampla |
+|---:|---:|---:|---|---|
+| 73 | PC 6 | ID 74 | FORPREP | 63/68 ocorrências alinhadas mapeiam para Lua 5.4 ID 74; demais: ID 12 (3), ID 14 (2) |
+| 22 | PC 13 | ID 73 | FORLOOP | 61/68 ocorrências alinhadas mapeiam para Lua 5.4 ID 73; demais: IDs 66 (2), 0 (1), 11 (2), 56 (2) |
+| 86 | PC 8 | ID 0 | MOVE (candidato empírico) | 28/28 ocorrências alinhadas em 27 funções e 7 módulos mapeiam para Lua 5.4 ID 0 |
 
-Criado `tools/experiments/decode-herolevelup-function6.js`. O script trabalha somente com as 17 palavras de instrução da função 6 em cada versão e com o crosswalk empírico já existente. Não importa nem chama os scripts de PveUtil.
+**Limitação:** a comparação global por mesmo PC apresenta divergências para IDs 73 e 22. No alvo específico, PC6 e PC13 coincidem exatamente com FORPREP/FORLOOP da versão 5.4. Não generalizar os mapeamentos para qualquer módulo sem alinhamento de função mais rigoroso.
 
-Saída local: `validation-reports/HEROLEVELUP_FUNCTION6_TARGETED_DECODE_2026-10-31.json`.
+Para ID 86, a identificação como MOVE tem 28/28 pares alinhados, mas confiança MEDIUM. Existem 28 verificações do campo A sem divergência; o campo B não foi validado separadamente. A identidade do opcode é sustentada, mas a semântica do operando fonte ainda exige confirmação independente.
 
-### Lua 5.4 — argumento validado estaticamente
+## Rastro de GetBreakRequireBase
 
-Função 6, linhas 30–39, SHA-256 do chunk:
-`9b1ff70670b820bb4fc3f59cd10adbb8a397ee3e8efab3f1811fc35be9652b42`.
+Chunks da função 6, linhas 30–39, 17 instruções em cada versão:
+- Lua 5.4 SHA-256: `9b1ff70670b820bb4fc3f59cd10adbb8a397ee3e8efab3f1811fc35be9652b42`
+- Lua 5.5 SHA-256: `1e9e37ca404e97d3e387855f1b40eca102eb2ad5d6412b939d46be496f78a72c`
 
-Fluxo:
-- PC 6: `FORPREP A=2`.
-- PC 13: `FORLOOP A=2`; o valor visível do loop fica em R5 (A+3).
-- PC 7: `SELF A=6, B=0, C=4, k=1`; resolve o método `GetBreakRequireBase` no receptor R0 e coloca o self em R7.
-- PC 8: `MOVE A=8, B=5`; copia R5 para R8.
-- PC 9: `CALL A=6, B=3, C=2`; chama a função em R6 com self em R7 e argumento explícito em R8.
+### Lua 5.4 — PASS
+- PC7 SELF: método `GetBreakRequireBase`, receptor R0, função em R6 e self em R7.
+- PC8 MOVE: R8 recebe R5.
+- PC9 CALL: A=6, B=3, C=2; argumento explícito é R8, portanto sua origem é R5.
+- PC6 FORPREP e PC13 FORLOOP usam A=2; R5 é o registrador candidato da variável visível do loop no layout Lua 5.4.
 
-**Conclusão Lua 5.4: PASS — o argumento explícito de `GetBreakRequireBase` é o valor corrente do loop numérico, originalmente em R5.** O significado de negócio do índice e os limites exatos do loop não são atribuídos nesta etapa.
+Conclusão: **argumento explícito proveniente de R5, confirmado estaticamente**.
 
-### Lua 5.5 — ainda bloqueado
+### Lua 5.5 — cadeia parcial, equivalência ainda BLOCKED
+- PC6 ID73 identificado no alvo como FORPREP, A=2.
+- PC7 SELF: A=5, receptor R0, self em R6.
+- PC8 ID86 candidato MOVE: A=7, B=4.
+- PC9 ID5 CALL: A=5, B=3, C=2; argumento explícito ocupa R7.
+- PC13 ID22 identificado no alvo como FORLOOP, A=2.
 
-Função 6, linhas 30–39, SHA-256 do chunk:
-`1e9e37ca404e97d3e387855f1b40eca102eb2ad5d6412b939d46be496f78a72c`.
+Sob a interpretação empírica ID86=MOVE, o argumento enviado à chamada em R7 vem de R4. Contudo, o campo B do opcode 86 não foi validado separadamente e a posição da variável visível do loop na VM 5.5 ainda não foi demonstrada. A versão 5.5 não deve ser descrita como equivalente à 5.4, nem R4 deve ser chamado de variável do loop sem essa prova.
 
-O crosswalk valida com confiança HIGH os opcodes usados em PCs 0–5, 7, 9–12 e 14–16. Permanecem:
-- PC 6, opcode ID 73: sem mapeamento;
-- PC 13, opcode ID 22: sem mapeamento;
-- PC 8, opcode ID 86: candidato MOVE com confiança MEDIUM.
+Conclusão: **PASS para a estrutura SELF/MOVE/CALL e identificação contextual de FORPREP/FORLOOP; BLOCKED para semântica independente do operando fonte e equivalência de registradores entre versões**. O resultado anterior que apontava literal `1` não se sustenta e está substituído por este rastro mais preciso.
 
-A sequência de chamada está estruturalmente alinhada com a versão 5.4, mas não é suficiente para validar o fluxo do loop e a origem do registrador copiado pelo MOVE. Não aceitar R4, R5 nem o literal 1 como argumento confirmado.
+## Busca de referências externas e indiretas
 
-**Conclusão Lua 5.5: BLOCKED — argumento ainda não validado.** Próximo passo é validar os IDs 73 e 22 e o formato/semântica do ID 86 usando pares de instruções adicionais e invariantes de registradores, sem promover inferência estrutural a fato.
+Busca no inventário de constantes Lua 5.4/5.5, excluindo o módulo que declara os acessores:
 
-## 2. Consumidores externos dos acessores
+| Termo exato / chave | Hits externos |
+|---|---:|
+| GetExp | 0 |
+| GetAtk | 0 |
+| GetDef | 0 |
+| GetArmyNum | 0 |
+| GetBreakRequire | 0 |
+| GetBreakRequireRank | 0 |
+| GetBreakRequireBase | 0 |
+| HeroLevelUp / HeroLevelUpTemplateManager | 0 |
+| lv_attr_atk / lv_attr_def | 0 |
+| break_require_base / break_require_rank | 0 |
+| army_num | 0 |
 
-Busca literal no inventário completo de constantes extraídas dos módulos Lua 5.4/5.5, excluindo o próprio `HeroLevelUpTemplateManager`, para:
-- `GetExp`
-- `GetAtk`
-- `GetDef`
-- `GetArmyNum`
-- `GetBreakRequire`
-- `GetBreakRequireRank`
-- `GetBreakRequireBase`
+Busca parcial por `GetDef` encontrou seis strings em módulos Arena, mas nenhuma é igualdade exata com o símbolo `GetDef`; foram excluídas dos hits do acessor. O inventário não revela alias literal, nome de manager ou chave de DataTable relacionada fora do módulo.
 
-Resultado: **zero referências literais externas** para cada um dos sete símbolos no inventário analisado. Também não foram encontradas referências literais externas a `HeroLevelUpTemplateManager` ou `HeroLevelUp` no inventário de constantes.
+**Conclusão limitada:** nenhum consumidor externo literal/alias textual foi identificado no inventário disponível. Ainda não é prova de código morto. Chamadas por referência de função, aliases atribuídos em runtime, reflexão, nomes construídos, módulos ausentes ou acesso via objeto genérico continuam possíveis. Próximo passo: rastrear módulos de bootstrap/registro de DataCenter e referências ao objeto que recebe o manager, em vez de procurar apenas o nome textual do método.
 
-Isso não prova ausência de consumidores: chamadas por alias, acesso dinâmico, nomes construídos em runtime, reflexão ou módulos não indexados podem escapar da busca literal. Resultado correto: **nenhum consumidor externo estático/literal identificado neste inventário**.
+## RAM e DataTables
 
-Evidência local: `validation-reports/HEROLEVELUP_ACCESSOR_EXTERNAL_LITERAL_SCAN_2026-10-31.json`.
+Última medição: **642 MB livres**, abaixo do mínimo de 875 MB.
+- **BLOCKED** — não iniciar AssetRipper nem carregar bundle de DataTable.
+- **NOT RUN** — extração `heroes_levelup` base.
+- **NOT RUN** — extração `heroes_levelup` Lua 5.5.
+- **NOT RUN** — hash/estrutura de TextAssets físicos e comparação de registros.
 
-## 3. DataTables e memória
+Quando a RAM alcançar 875 MB: extrair somente a versão base; verificar caminho, tamanho e SHA-256; depois extrair a versão 5.5 e comparar colunas, chaves, custos, requisitos e progressão.
 
-Medição de RAM livre: **707,1 MB**. Limite de segurança estabelecido: **875 MB livres**.
+## Validações
 
-- **BLOCKED** — não iniciar AssetRipper nem carregar/exportar bundles de DataTable nesta rodada.
-- **NOT RUN** — extração de `heroes_levelup` Lua base.
-- **NOT RUN** — extração de `heroes_levelup` Lua 5.5.
-- Os arquivos Lua de código já exportados foram localizados (2.214 bytes base e 1.958 bytes 5.5); eles não são os DataTables físicos.
-
-Quando a RAM alcançar 875 MB livres, extrair um bundle por vez, primeiro `heroes_levelup` base, validar caminho/tamanho/hash do TextAsset físico, e só depois a versão 5.5.
-
-## 4. Validações
-
-| Verificação | Estado | Evidência |
-|---|---|---|
-| Decodificador dedicado criado e executado | PASS | Script e JSON local |
-| Lua 5.4 — registradores e argumento | PASS | SELF → MOVE → CALL e loop FORPREP/FORLOOP |
-| Lua 5.5 — argumento | BLOCKED | IDs 73/22 sem mapa; ID 86 MEDIUM |
-| Busca literal dos sete acessores externos | PASS | 0 hits em módulos externos no inventário |
-| Busca literal do nome do manager externo | PASS | 0 hits no inventário |
-| Extração DataTable base/5.5 | NOT RUN | RAM abaixo do limite |
-| Cruzamento com registros físicos | NOT RUN | depende da extração |
+| Verificação | Estado |
+|---|---|
+| Decodificador dedicado executado | PASS |
+| ID73 contextualizado no alvo como FORPREP | PASS |
+| ID22 contextualizado no alvo como FORLOOP | PASS |
+| ID86 identificado empiricamente como MOVE | PASS, confiança MEDIUM; campo B pendente |
+| Lua 5.4 — argumento R5 | PASS |
+| Lua 5.5 — origem R4 | BLOCKED para semântica independente/equivalência |
+| Consumidores externos literais | PASS — nenhum identificado |
+| Consumidores indiretos dinâmicos | BLOCKED — exige rastrear bootstrap/aliases |
+| Extração DataTables | NOT RUN — RAM 642 MB < 875 MB |
+| Cruzamento físico de registros | NOT RUN |
 
 ## Segurança
 
-Somente leitura de inventários e escrita de novos artefatos de pesquisa. Nenhum bundle foi carregado/exportado nesta rodada; nenhum original foi alterado; sem merge, deploy ou publicação.
+Análise estática e leitura de inventários; escrita apenas de artefatos de pesquisa. Nenhum bundle foi carregado/exportado, nenhum original foi modificado, e não houve merge, deploy ou publicação.
