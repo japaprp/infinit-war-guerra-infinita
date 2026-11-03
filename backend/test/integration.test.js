@@ -391,3 +391,38 @@ test("idempotency with Redis persists across server restart", async (t) => {
         await server.stop();
     }
 });
+
+
+test("alliance help reduces an ally building timer once and rejects cross-alliance access", async () => {
+    await fs.rm(dbPath, { force: true });
+    const server = await bootServer({ redisEnabled: false });
+    try {
+        const loginA = await api(server.baseUrl, "POST", "/v1/auth/login", { body: { platform: "guest", externalId: "it_help_requester" } });
+        const loginB = await api(server.baseUrl, "POST", "/v1/auth/login", { body: { platform: "guest", externalId: "it_help_helper" } });
+        const loginC = await api(server.baseUrl, "POST", "/v1/auth/login", { body: { platform: "guest", externalId: "it_help_outsider" } });
+        assert.equal(loginA.status, 200); assert.equal(loginB.status, 200); assert.equal(loginC.status, 200);
+        const tokenA = loginA.body.accessToken, tokenB = loginB.body.accessToken, tokenC = loginC.body.accessToken;
+        const create = await api(server.baseUrl, "POST", "/v1/alliances", { token: tokenA, body: { name: "Sentinelas", tag: "SNT" } });
+        assert.equal(create.status, 200);
+        const allianceId = create.body.allianceId;
+        assert.equal((await api(server.baseUrl, "POST", `/v1/alliances/${allianceId}/join`, { token: tokenB })).status, 200);
+        assert.equal((await api(server.baseUrl, "POST", "/v1/alliances", { token: tokenC, body: { name: "Rivais", tag: "RIV" } })).status, 200);
+        const db = await readDb(); const building = db.users["guest:it_help_requester"].v1.buildings[0];
+        building.state = "BUILDING"; building.taskId = "help_task_1"; building.endAtMs = Date.now() + 600_000; await writeDb(db);
+        const request = await api(server.baseUrl, "POST", "/v1/alliances/help-requests", { token: tokenA, body: { taskId: "help_task_1" } });
+        assert.equal(request.status, 201); assert.equal(request.body.status, "OPEN");
+        const listed = await api(server.baseUrl, "GET", "/v1/alliances/help-requests", { token: tokenB });
+        assert.equal(listed.status, 200); assert.equal(listed.body.requests.length, 1);
+        const before = (await readDb()).users["guest:it_help_requester"].v1.buildings[0].endAtMs;
+        const helped = await api(server.baseUrl, "POST", `/v1/alliances/help-requests/${request.body.requestId}/contribute`, { token: tokenB });
+        assert.equal(helped.status, 200); assert.equal(helped.body.alreadyHelped, false); assert.equal(helped.body.appliedReductionMs, 60_000);
+        const after = (await readDb()).users["guest:it_help_requester"].v1.buildings[0].endAtMs; assert.equal(before - after, 60_000);
+        const duplicate = await api(server.baseUrl, "POST", `/v1/alliances/help-requests/${request.body.requestId}/contribute`, { token: tokenB });
+        assert.equal(duplicate.status, 200); assert.equal(duplicate.body.alreadyHelped, true);
+        assert.equal((await readDb()).users["guest:it_help_requester"].v1.buildings[0].endAtMs, after);
+        const forbidden = await api(server.baseUrl, "POST", `/v1/alliances/help-requests/${request.body.requestId}/contribute`, { token: tokenC });
+        assert.equal(forbidden.status, 403);
+        const outsiderList = await api(server.baseUrl, "GET", "/v1/alliances/help-requests", { token: tokenC });
+        assert.equal(outsiderList.status, 200); assert.equal(outsiderList.body.requests.length, 0);
+    } finally { await server.stop(); }
+});

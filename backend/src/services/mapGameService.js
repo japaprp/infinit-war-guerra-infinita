@@ -427,3 +427,63 @@ export function openServerChest(user, chestId, idempotencyKey) {
     user.v1.stateVersion += 1;
     return receipt;
 }
+
+
+const ALLIANCE_HELP_REDUCTION_MS = 60_000;
+const ALLIANCE_HELP_MAX_HELPERS = 5;
+const ALLIANCE_HELP_TTL_MS = 24 * 60 * 60 * 1000;
+function allianceOf(user) { ensureV1State(user); return user.v1.alliances?.allianceId || null; }
+
+export function createAllianceHelpRequest(db, requesterId, requester, payload = {}) {
+    const allianceId = allianceOf(requester);
+    if (!allianceId) return resultError(409, "Join an alliance before requesting help");
+    const taskId = String(payload.taskId || "").trim();
+    if (!taskId || taskId.length > 120) return resultError(400, "taskId is required");
+    const building = (requester.v1.buildings || []).find((item) => item.taskId === taskId);
+    if (!building || building.state === "IDLE" || !Number.isFinite(Number(building.endAtMs)) || Number(building.endAtMs) <= nowMs()) return resultError(409, "The building task is not active");
+    db.allianceHelpRequests ||= {};
+    const existing = Object.values(db.allianceHelpRequests).find((item) => item.requesterId === requesterId && item.taskId === taskId && item.status === "OPEN" && item.expiresAtMs > nowMs());
+    if (existing) return { ...existing, alreadyOpen: true };
+    const request = {
+        requestId: id("alliance_help"), allianceId, requesterId, taskId,
+        buildingType: String(building.buildingType || "building"),
+        createdAtMs: nowMs(), expiresAtMs: nowMs() + ALLIANCE_HELP_TTL_MS,
+        reductionPerHelpMs: ALLIANCE_HELP_REDUCTION_MS, maxHelpers: ALLIANCE_HELP_MAX_HELPERS,
+        helperIds: [], status: "OPEN"
+    };
+    db.allianceHelpRequests[request.requestId] = request;
+    return { ...request };
+}
+
+export function listAllianceHelpRequests(db, user) {
+    const allianceId = allianceOf(user);
+    if (!allianceId) return resultError(409, "Join an alliance before viewing alliance help");
+    db.allianceHelpRequests ||= {};
+    const now = nowMs();
+    for (const request of Object.values(db.allianceHelpRequests)) if (request.status === "OPEN" && request.expiresAtMs <= now) request.status = "EXPIRED";
+    return { requests: Object.values(db.allianceHelpRequests).filter((request) => request.allianceId === allianceId && request.status === "OPEN").map((request) => ({ ...request, helperIds: [...request.helperIds] })).sort((a, b) => a.createdAtMs - b.createdAtMs) };
+}
+
+export function contributeAllianceHelp(db, helperId, helper, requestId) {
+    const allianceId = allianceOf(helper);
+    if (!allianceId) return resultError(409, "Join an alliance before helping");
+    db.allianceHelpRequests ||= {};
+    const request = db.allianceHelpRequests[requestId];
+    if (!request) return resultError(404, "Alliance help request not found");
+    if (request.allianceId !== allianceId) return resultError(403, "This help request belongs to another alliance");
+    if (request.requesterId === helperId) return resultError(409, "You cannot help your own request");
+    if (request.expiresAtMs <= nowMs() && request.status === "OPEN") request.status = "EXPIRED";
+    if (request.status !== "OPEN") return resultError(409, "This help request is no longer open");
+    if (request.helperIds.includes(helperId)) return { request: { ...request, helperIds: [...request.helperIds] }, alreadyHelped: true };
+    const requester = db.users?.[request.requesterId];
+    if (!requester) return resultError(409, "The requesting player no longer exists");
+    ensureV1State(requester);
+    const building = (requester.v1.buildings || []).find((item) => item.taskId === request.taskId);
+    if (!building || building.state === "IDLE" || !Number.isFinite(Number(building.endAtMs))) { request.status = "FULFILLED"; return resultError(409, "The building task is no longer active"); }
+    const beforeEndAtMs = Number(building.endAtMs);
+    building.endAtMs = Math.max(nowMs(), beforeEndAtMs - ALLIANCE_HELP_REDUCTION_MS);
+    request.helperIds.push(helperId);
+    requester.v1.stateVersion = Math.max(0, Number(requester.v1.stateVersion) || 0) + 1;
+    if (building.endAtMs <= nowMs() || request.helperIds.length >= request.maxHelpers) request.status = "FULFILLED";
+    return { request: { ...request, helperIds: [...request.helperIds] }, appliedReductionMs: beforeEndAtMs - building.endAtMs, building: { taskId: building.taskId, endAtMs: building.endAtMs, state: building.state }, alreadyHelped: false };
+}

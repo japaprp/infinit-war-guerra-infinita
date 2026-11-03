@@ -115,7 +115,8 @@ function normalizeDbShape(parsed) {
         // Cross-player map operations are stored in app_state until dedicated SQL
         // tables and transactional repository methods are introduced.
         rallies: parsed?.rallies || {},
-        battles: parsed?.battles || {}
+        battles: parsed?.battles || {},
+        allianceHelpRequests: parsed?.allianceHelpRequests || {}
     };
 }
 
