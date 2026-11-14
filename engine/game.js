@@ -490,7 +490,8 @@ const runtime = {
     },
     energyRegenBuffer: 0,
     paused: false,
-    minimapVisible: true
+    minimapVisible: true,
+    tapMoveTarget: null
 };
 let backendSyncTimer = null;
 let gameLoopRequestId = null;
@@ -3084,6 +3085,81 @@ function processInteractions() {
 }
 
 window.addEventListener("resize", resizeCanvas);
+
+function setTapMoveTarget(event) {
+    if (event.button !== undefined && event.button !== 0) return;
+    if (runtime.paused) return;
+
+    const worldX = clamp(event.clientX + camera.x, 0, world.width);
+    const worldY = clamp(event.clientY + camera.y, 0, world.height);
+    let selected = null;
+    let selectedDistance = Infinity;
+
+    runtime.resourceNodes.forEach((node) => {
+        if (!node.available) return;
+        const hitDistance = distance(worldX, worldY, node.x, node.y);
+        const hitRadius = (resourceKinds[node.kind]?.radius || 14) + 20;
+        if (hitDistance <= hitRadius && hitDistance < selectedDistance) {
+            selected = { x: node.x, y: node.y, action: "collect", target: node };
+            selectedDistance = hitDistance;
+        }
+    });
+
+    runtime.monsters.forEach((monster) => {
+        if (!monster.alive) return;
+        const hitDistance = distance(worldX, worldY, monster.x, monster.y);
+        if (hitDistance <= 34 && hitDistance < selectedDistance) {
+            selected = { x: monster.x, y: monster.y, action: "fight", target: monster };
+            selectedDistance = hitDistance;
+        }
+    });
+
+    runtime.tapMoveTarget = selected || {
+        x: clamp(worldX - player.size / 2, 0, world.width - player.size),
+        y: clamp(worldY - player.size / 2, 0, world.height - player.size),
+        action: null,
+        target: null
+    };
+}
+
+canvas.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    setTapMoveTarget(event);
+}, { passive: false });
+
+function getTapMovementKeys() {
+    const movementKeys = { ...keys };
+    const target = runtime.tapMoveTarget;
+    if (!target) return movementKeys;
+
+    if (target.action === "collect" && !target.target?.available) {
+        runtime.tapMoveTarget = null;
+        return movementKeys;
+    }
+    if (target.action === "fight" && !target.target?.alive) {
+        runtime.tapMoveTarget = null;
+        return movementKeys;
+    }
+
+    const dx = target.x - player.x;
+    const dy = target.y - player.y;
+    const remaining = Math.hypot(dx, dy);
+    const interactionRange = target.action === "fight" ? 78 : target.action === "collect" ? 72 : 12;
+
+    if (remaining <= interactionRange) {
+        runtime.tapMoveTarget = null;
+        if (target.action === "collect") collectResourceNode(target.target);
+        if (target.action === "fight") fightMonster(target.target);
+        return movementKeys;
+    }
+
+    movementKeys.w = dy < -7;
+    movementKeys.s = dy > 7;
+    movementKeys.a = dx < -7;
+    movementKeys.d = dx > 7;
+    return movementKeys;
+}
+
 window.addEventListener("keydown", (event) => {
     const key = event.key.toLowerCase();
     const firstPress = !keys[key];
@@ -3091,6 +3167,7 @@ window.addEventListener("keydown", (event) => {
     keys[key] = true;
 
     if (!firstPress) return;
+    if (["w", "a", "s", "d", "arrowup", "arrowleft", "arrowdown", "arrowright"].includes(key)) runtime.tapMoveTarget = null;
 
     if (key === "escape") {
         const closedAnyPanel = closeTransientPanels();
@@ -3121,7 +3198,7 @@ function gameLoop(currentTime) {
         updateSprint(deltaTime);
         regenerateEnergy(deltaTime);
         refreshBuildQueueState();
-        player.move(keys, deltaTime, world.width, world.height);
+        player.move(getTapMovementKeys(), deltaTime, world.width, world.height);
         refreshMapRespawns();
         processInteractions();
         processAutoActions(Date.now());
