@@ -1,0 +1,39 @@
+name: Validate Agent Configuration
+
+on:
+  pull_request:
+    paths:
+      - "AGENTS.md"
+      - ".github/copilot-instructions.md"
+      - ".github/agents/**"
+      - ".agents/skills/**"
+      - "scripts/validate-agent-config.py"
+      - ".github/workflows/validate-agent-config.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "AGENTS.md"
+      - ".github/copilot-instructions.md"
+      - ".github/agents/**"
+      - ".agents/skills/**"
+      - "scripts/validate-agent-config.py"
+      - ".github/workflows/validate-agent-config.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate agent profiles and skill links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Validate metadata and referenced skills
+        run: python scripts/validate-agent-config.py
