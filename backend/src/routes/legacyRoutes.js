@@ -2,10 +2,27 @@
 import { readDb, writeDb } from "../repositories/dbRepository.js";
 import { createSessionToken } from "../services/tokenService.js";
 import { createMockReceipt, consumeMockReceipt } from "../services/shopService.js";
-import { ensureUser, getUserId, validateLegacyStateShape } from "../services/userService.js";
+import { ensureUser, getUserId, ensureV1State, validateLegacyStateShape } from "../services/userService.js";
 import { createAuthMiddleware } from "../middlewares/authMiddleware.js";
 import { createUserLockMiddleware } from "../middlewares/userLockMiddleware.js";
 import { createIdempotencyMiddleware } from "../middlewares/idempotencyMiddleware.js";
+
+function withAuthoritativeLegacyResources(user, state) {
+    if (!state) return state;
+    ensureV1State(user);
+    return {
+        ...state,
+        resources: {
+            ...state.resources,
+            gold: user.v1.resources.gold,
+            silver: user.v1.resources.steel,
+            wood: user.v1.resources.wood,
+            food: user.v1.resources.food,
+            gems: user.v1.resources.gems,
+            energy: user.v1.resources.energy
+        }
+    };
+}
 
 export function createLegacyRoutes(env, runtime = {}) {
     const router = Router();
@@ -47,7 +64,7 @@ export function createLegacyRoutes(env, runtime = {}) {
             return res.status(404).json({ error: "User not found" });
         }
 
-        return res.json({ state: user.state, economy: user.economy || { gems: 0 } });
+        return res.json({ state: withAuthoritativeLegacyResources(user, user.state), economy: user.economy || { gems: 0 } });
     });
 
     router.put("/player/state", authMiddleware, userLock, async (req, res) => {
@@ -68,13 +85,8 @@ export function createLegacyRoutes(env, runtime = {}) {
             return res.status(404).json({ error: "User not found" });
         }
 
-        user.state = state;
+        user.state = withAuthoritativeLegacyResources(user, state);
         user.updatedAt = Date.now();
-
-        if (!user.economy) user.economy = { gems: 4210 };
-        if (state.resources && Number.isFinite(state.resources.gems)) {
-            state.resources.gems = user.economy.gems;
-        }
 
         await writeDb(db);
         return res.json({ ok: true, updatedAt: user.updatedAt });

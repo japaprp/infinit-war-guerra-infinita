@@ -1198,6 +1198,120 @@ canvas {
     font-size: 12px;
 }
 
+.expedition-panel {
+    position: fixed;
+    top: 270px;
+    right: 16px;
+    z-index: 10;
+    width: 196px;
+    max-height: calc(100vh - 290px);
+    overflow: auto;
+    padding: 9px;
+    border: 1px solid #75c8ff45;
+    border-radius: 12px;
+    background: #0c1727eF;
+    box-shadow: 0 12px 28px #0005;
+}
+
+.expedition-panel header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.expedition-panel header small,
+#expeditionStatus {
+    color: #b7c8df;
+    font-size: 10px;
+}
+
+#expeditionStatus {
+    margin: 0 0 8px;
+    line-height: 1.4;
+}
+
+.expedition-start {
+    display: grid;
+    gap: 5px;
+}
+
+.expedition-start label {
+    color: #dce8f8;
+    font-size: 10px;
+}
+
+.expedition-start select,
+.expedition-start button,
+.expedition-card button {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #ffffff28;
+    border-radius: 7px;
+    padding: 7px 6px;
+    background: #182b43;
+    color: #f2f7ff;
+    font-size: 10px;
+}
+
+.expedition-start button,
+.expedition-card button {
+    background: linear-gradient(90deg, #285c7c, #347e83);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.expedition-start button:disabled,
+.expedition-card button:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+}
+
+.expedition-list {
+    display: grid;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.expedition-card {
+    padding: 7px;
+    border: 1px solid #ffffff20;
+    border-radius: 8px;
+    background: #ffffff08;
+}
+
+.expedition-card strong,
+.expedition-card small {
+    display: block;
+    line-height: 1.35;
+}
+
+.expedition-card strong {
+    font-size: 11px;
+}
+
+.expedition-card small {
+    margin: 3px 0 5px;
+    color: #b7c8df;
+    font-size: 10px;
+}
+
+.expedition-card.is-ready {
+    border-color: #8ed6a0a8;
+}
+
+.expedition-card.is-collected {
+    opacity: 0.72;
+}
+
+.expedition-map-label {
+    color: #e8f3ff;
+    font: 700 12px "Trebuchet MS", sans-serif;
+    text-shadow: 0 1px 4px #000;
+}
+
 @media (max-width: 960px) {
     .vertical-slice-panel {
         top: 206px;
@@ -1222,6 +1336,13 @@ canvas {
         width: 172px;
         top: 72px;
         right: 10px;
+    }
+
+    .expedition-panel {
+        top: 252px;
+        right: 10px;
+        width: 172px;
+        max-height: calc(100vh - 270px);
     }
 }
 
@@ -1252,6 +1373,21 @@ canvas {
         width: 158px;
         top: 68px;
         right: 8px;
+    }
+
+    .expedition-panel {
+        top: 238px;
+        right: 8px;
+        width: 158px;
+        max-height: calc(100vh - 250px);
+        padding: 7px;
+    }
+
+    .expedition-start select,
+    .expedition-start button,
+    .expedition-card button {
+        font-size: 9px;
+        padding: 6px 4px;
     }
 
     .pause-badge {

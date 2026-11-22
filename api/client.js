@@ -97,6 +97,9 @@
         request("POST", "/v1/buildings/start", { buildingType, slotCode, targetLevel });
     const completeBuildV1 = async (taskId) => request("POST", "/v1/buildings/complete", { taskId });
     const queryTilesV1 = async ({ x, y, radius }) => request("GET", `/v1/world/tiles?x=${x}&y=${y}&radius=${radius}`);
+    const listMarchesV1 = async () => request("GET", "/v1/world/marches");
+    const startMarchV1 = async ({ resourceType }) => request("POST", "/v1/world/marches/start", { resourceType });
+    const collectMarchV1 = async (marchId) => request("POST", "/v1/world/marches/collect", { marchId });
     const purchaseSkuV1 = async ({ sku, quantity = 1, idempotencyKey }) =>
         request("POST", "/v1/shop/purchase", { sku, quantity, idempotencyKey });
 
@@ -117,6 +120,9 @@
         startBuildV1,
         completeBuildV1,
         queryTilesV1,
+        listMarchesV1,
+        startMarchV1,
+        collectMarchV1,
         purchaseSkuV1
     };
 

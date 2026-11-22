@@ -31,6 +31,9 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
 
+      - name: Check browser JavaScript syntax
+        run: node --check engine/game.js && node --check api/client.js
+
       - name: Install backend dependencies
         run: npm ci
         working-directory: backend

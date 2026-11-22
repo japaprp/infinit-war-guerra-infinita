@@ -9,8 +9,9 @@ const dbPath = path.join(tmpDir, "db.json");
 process.env.IWAR_DB_PATH = dbPath;
 
 const { createApp } = await import("../src/app.js");
-const { initializeRepository, getRepositoryMode } = await import("../src/repositories/dbRepository.js");
+const { initializeRepository, getRepositoryMode, readDb, writeDb } = await import("../src/repositories/dbRepository.js");
 const { initializeRedis } = await import("../src/services/redisService.js");
+const { startMarch, collectMarch } = await import("../src/services/v1StubService.js");
 
 const baseEnv = {
     PORT: 0,
@@ -145,6 +146,162 @@ test("v1 endpoints: heroes and buildings flow", async () => {
     }
 });
 
+test("server owns resource balances across v1 sync and legacy save APIs", async () => {
+    await fs.rm(dbPath, { force: true });
+
+    const server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_authoritative_resources" }
+        });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+        const original = login.body.player.resources;
+
+        const sync = await api(server.baseUrl, "POST", "/v1/player/sync", {
+            token,
+            body: { snapshot: { gold: 999999999, wood: 999999999, steel: 999999999, food: 999999999, energy: 999999999 } }
+        });
+        assert.equal(sync.status, 200);
+        assert.equal(sync.body.profile.resources.gold, original.gold);
+        assert.equal(sync.body.profile.resources.wood, original.wood);
+        assert.equal(sync.body.profile.resources.steel, original.steel);
+        assert.equal(sync.body.profile.resources.food, original.food);
+        assert.equal(sync.body.profile.energy.current, 120);
+
+        const legacyWrite = await api(server.baseUrl, "PUT", "/player/state", {
+            token,
+            body: {
+                state: {
+                    resources: { gold: 999999999, silver: 999999999, wood: 999999999, food: 999999999, gems: 999999999, energy: 999999999 },
+                    mission: { completed: [] }
+                }
+            }
+        });
+        assert.equal(legacyWrite.status, 200);
+
+        const legacyRead = await api(server.baseUrl, "GET", "/player/state", { token });
+        assert.equal(legacyRead.status, 200);
+        assert.equal(legacyRead.body.state.resources.gold, original.gold);
+        assert.equal(legacyRead.body.state.resources.silver, original.steel);
+        assert.equal(legacyRead.body.state.resources.wood, original.wood);
+        assert.equal(legacyRead.body.state.resources.food, original.food);
+        assert.equal(legacyRead.body.state.resources.gems, original.gems);
+        assert.equal(legacyRead.body.state.resources.energy, 120);
+    } finally {
+        await server.stop();
+    }
+});
+
+test("march API enforces server-selected resource and timer", async () => {
+    await fs.rm(dbPath, { force: true });
+
+    const server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_march_api" }
+        });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+
+        const invalid = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            body: { resourceType: "diamonds", durationMs: 1, reward: 999999999 }
+        });
+        assert.equal(invalid.status, 400);
+
+        const started = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            body: { resourceType: "food", durationMs: 1, reward: 999999999 }
+        });
+        assert.equal(started.status, 200);
+        assert.equal(started.body.march.resourceType, "food");
+        assert.equal(started.body.march.arriveAtMs - started.body.march.departAtMs, 60000);
+        assert.equal(started.body.march.rewardAmount, 1000);
+        assert.deepEqual(started.body.march.destination, { x: 500, y: 2030 });
+        assert.equal(started.body.march.status, "MARCHING");
+
+        const listed = await api(server.baseUrl, "GET", "/v1/world/marches", { token });
+        assert.equal(listed.status, 200);
+        assert.ok(listed.body.marches.some((march) => march.marchId === started.body.march.marchId));
+
+        const sync = await api(server.baseUrl, "POST", "/v1/player/sync", { token, body: {} });
+        assert.ok(sync.body.pendingTimers.some((timer) => timer.id === started.body.march.marchId && timer.category === "MARCH"));
+
+        const tooEarly = await api(server.baseUrl, "POST", "/v1/world/marches/collect", {
+            token,
+            body: { marchId: started.body.march.marchId }
+        });
+        assert.equal(tooEarly.status, 409);
+        assert.match(tooEarly.body.message, /not arrived/i);
+    } finally {
+        await server.stop();
+    }
+});
+
+test("march rewards are timed, server-calculated and collected only once", () => {
+    const user = { profile: { displayName: "march_test" }, economy: { gems: 4210 } };
+    const beforeFood = 55000;
+    const started = startMarch(user, { resourceType: "food", durationMs: 1, reward: 999999999 }, 1000);
+    assert.equal(started.march.arriveAtMs, 61000);
+    assert.equal(started.march.status, "MARCHING");
+
+    const early = collectMarch(user, started.march.marchId, 60999);
+    assert.equal(early.error.status, 409);
+
+    const collected = collectMarch(user, started.march.marchId, 61000);
+    assert.equal(collected.rewards.food, 1000);
+    assert.equal(collected.resources.food, beforeFood + 1000);
+    assert.equal(collected.march.status, "COLLECTED");
+
+    const duplicate = collectMarch(user, started.march.marchId, 62000);
+    assert.equal(duplicate.error.status, 409);
+    assert.equal(user.v1.resources.food, beforeFood + 1000);
+});
+
+test("active expedition timer survives backend restart", async () => {
+    await fs.rm(dbPath, { force: true });
+
+    let server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_march_restart" }
+        });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+
+        const started = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            body: { resourceType: "wood", durationMs: 1, reward: 999999 }
+        });
+        assert.equal(started.status, 200);
+        const originalMarch = started.body.march;
+        const originalRemainingMs = originalMarch.arriveAtMs - Date.now();
+        assert.ok(originalRemainingMs > 0);
+        assert.equal(originalMarch.arriveAtMs - originalMarch.departAtMs, 60_000);
+        assert.equal(originalMarch.rewardAmount, 800);
+        assert.deepEqual(originalMarch.destination, { x: 520, y: 360 });
+
+        await server.stop();
+        await new Promise((resolve) => setTimeout(resolve, 40));
+        server = await bootServer({ redisEnabled: false });
+
+        const restored = await api(server.baseUrl, "GET", "/v1/world/marches", { token });
+        assert.equal(restored.status, 200);
+        const resumedMarch = restored.body.marches.find((march) => march.marchId === originalMarch.marchId);
+        assert.ok(resumedMarch);
+        assert.equal(resumedMarch.arriveAtMs, originalMarch.arriveAtMs);
+        assert.equal(resumedMarch.departAtMs, originalMarch.departAtMs);
+        assert.deepEqual(resumedMarch.destination, originalMarch.destination);
+        assert.equal(resumedMarch.rewardAmount, originalMarch.rewardAmount);
+        assert.equal(resumedMarch.status, "MARCHING");
+        assert.ok(resumedMarch.arriveAtMs - Date.now() < originalRemainingMs);
+        assert.ok(resumedMarch.arriveAtMs > Date.now());
+    } finally {
+        await server.stop();
+    }
+});
+
 test("legacy shop receipt can be consumed only once", async () => {
     await fs.rm(dbPath, { force: true });
 
@@ -233,6 +390,98 @@ test("idempotency with Redis persists across server restart", async (t) => {
         assert.equal(second.status, 200);
         assert.equal(second.body.orderId, first.body.orderId);
         assert.equal(second.body.gemsSpent, first.body.gemsSpent);
+    } finally {
+        await server.stop();
+    }
+});
+
+
+test("expedition collection is idempotent during concurrent retries and after restart", async (t) => {
+    await fs.rm(dbPath, { force: true });
+
+    let server = await bootServer({ redisEnabled: true });
+    if (!server.redisClient) {
+        await server.stop();
+        t.skip("Redis nao disponivel para teste de idempotencia de expedicao.");
+        return;
+    }
+
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", {
+            body: { platform: "guest", externalId: "it_march_idempotency" }
+        });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+
+        const started = await api(server.baseUrl, "POST", "/v1/world/marches/start", {
+            token,
+            body: { resourceType: "wood" }
+        });
+        assert.equal(started.status, 200);
+        const marchId = started.body.march.marchId;
+
+        const beforeDb = await readDb();
+        const userId = "guest:it_march_idempotency";
+        const user = beforeDb.users[userId];
+        assert.ok(user);
+        const woodBefore = user.v1.resources.wood;
+        const march = user.v1.marches.find((item) => item.marchId === marchId);
+        assert.ok(march);
+        march.arriveAtMs = Date.now() - 1;
+        await writeDb(beforeDb);
+
+        const idempotencyKey = "it-march-collect-once-001";
+        const headers = { "x-idempotency-key": idempotencyKey };
+        const body = { marchId };
+
+        const concurrent = await Promise.all([
+            api(server.baseUrl, "POST", "/v1/world/marches/collect", { token, headers, body }),
+            api(server.baseUrl, "POST", "/v1/world/marches/collect", { token, headers, body })
+        ]);
+
+        assert.ok(concurrent.every((result) => [200, 409].includes(result.status)));
+        const firstSuccess = concurrent.find((result) => result.status === 200);
+        assert.ok(firstSuccess, "at least one concurrent request must complete successfully");
+
+        const retry = await api(server.baseUrl, "POST", "/v1/world/marches/collect", {
+            token,
+            headers,
+            body
+        });
+        assert.equal(retry.status, 200);
+        assert.deepEqual(retry.body.rewards, firstSuccess.body.rewards);
+        assert.deepEqual(retry.body.resources, firstSuccess.body.resources);
+
+        const afterCollect = await readDb();
+        assert.equal(afterCollect.users[userId].v1.resources.wood, woodBefore + 800);
+        assert.equal(
+            afterCollect.users[userId].v1.marches.find((item) => item.marchId === marchId).status,
+            "COLLECTED"
+        );
+
+        await server.stop();
+        server = await bootServer({ redisEnabled: true });
+        assert.ok(server.redisClient, "Redis must be available after the simulated restart");
+
+        const replayAfterRestart = await api(server.baseUrl, "POST", "/v1/world/marches/collect", {
+            token,
+            headers,
+            body
+        });
+        assert.equal(replayAfterRestart.status, 200);
+        assert.deepEqual(replayAfterRestart.body.rewards, firstSuccess.body.rewards);
+        assert.deepEqual(replayAfterRestart.body.resources, firstSuccess.body.resources);
+
+        const changedPayload = await api(server.baseUrl, "POST", "/v1/world/marches/collect", {
+            token,
+            headers,
+            body: { marchId: "different-march" }
+        });
+        assert.equal(changedPayload.status, 409);
+        assert.equal(changedPayload.body.code, "IDEMPOTENCY_KEY_REUSED");
+
+        const finalDb = await readDb();
+        assert.equal(finalDb.users[userId].v1.resources.wood, woodBefore + 800);
     } finally {
         await server.stop();
     }
