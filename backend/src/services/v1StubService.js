@@ -69,6 +69,66 @@ export function syncState(userId, user, _request) {
     };
 }
 
+const EXPEDITION_CONFIG = {
+    "grey-forest": { multiplier: 1, objectives: { explore: 1, hunt: 1.2, gather: 1.1 } },
+    "old-ruins": { multiplier: 1.25, objectives: { explore: 1, hunt: 1.2 } },
+    "ash-marsh": { multiplier: 1.45, objectives: { hunt: 1.2, gather: 1.1 } }
+};
+
+export function startExpedition(user, payload = {}) {
+    ensureV1State(user);
+    const destinationId = String(payload.destinationId || "");
+    const objectiveId = String(payload.objectiveId || "");
+    const destination = EXPEDITION_CONFIG[destinationId];
+    if (!destination || !Object.hasOwn(destination.objectives, objectiveId)) return { error: { status: 400, message: "Invalid expedition destination or objective" } };
+    user.v1.expedition ||= { active: null, claimedIds: [], receipts: {} };
+    if (user.v1.expedition.active) return { error: { status: 409, message: "An expedition is already active" } };
+    if (user.v1.resources.energy < 15) return { error: { status: 409, message: "Insufficient energy" } };
+    const now = nowMs();
+    const expeditionId = `exp_${crypto.randomUUID()}`;
+    user.v1.resources.energy -= 15;
+    user.v1.expedition.active = { expeditionId, destinationId, objectiveId, startedAtMs: now, endsAtMs: now + 60000 };
+    bumpStateVersion(user);
+    return { expeditionId, destinationId, objectiveId, startedAtMs: now, endsAtMs: now + 60000, resources: user.v1.resources, stateVersion: user.v1.stateVersion };
+}
+
+export function claimExpedition(user, payload = {}) {
+    ensureV1State(user);
+    user.v1.expedition ||= { active: null, claimedIds: [], receipts: {} };
+    user.v1.expedition.receipts ||= {};
+    const expeditionId = String(payload.expeditionId || "");
+    const expedition = user.v1.expedition.active;
+    const claimedIds = user.v1.expedition.claimedIds || [];
+    if (!expeditionId) return { error: { status: 400, message: "expeditionId is required" } };
+    if (claimedIds.includes(expeditionId)) {
+        const priorReceipt = user.v1.expedition.receipts[expeditionId];
+        return priorReceipt
+            ? { ...priorReceipt, alreadyClaimed: true }
+            : { error: { status: 409, message: "Expedition reward already claimed; receipt unavailable" } };
+    }
+    if (!expedition || expedition.expeditionId !== expeditionId) return { error: { status: 409, message: "No matching active expedition" } };
+    if (nowMs() < expedition.endsAtMs) return { error: { status: 409, message: "Expedition is not complete yet" } };
+    const destination = EXPEDITION_CONFIG[expedition.destinationId];
+    const objectiveMultiplier = destination?.objectives?.[expedition.objectiveId];
+    if (!destination || !Number.isFinite(objectiveMultiplier)) return { error: { status: 409, message: "Expedition configuration is invalid" } };
+    const multiplier = destination.multiplier * objectiveMultiplier;
+    const power = Math.max(0, Number(user.v1.power) || 0);
+    const rewards = {
+        gold: Math.floor((250 + Math.floor(power / 1800)) * multiplier),
+        steel: Math.floor((180 + Math.floor(power / 2400)) * multiplier),
+        food: Math.floor((35 + Math.floor(power / 12000)) * multiplier * (expedition.objectiveId === "gather" ? 1.25 : 1))
+    };
+    user.v1.expedition.claimedIds = [...new Set([...claimedIds, expeditionId])].slice(-500);
+    user.v1.expedition.active = null;
+    for (const [key, amount] of Object.entries(rewards)) user.v1.resources[key] = Math.max(0, Number(user.v1.resources[key]) || 0) + amount;
+    bumpStateVersion(user);
+    const receipt = { expeditionId, rewards, resources: { ...user.v1.resources }, stateVersion: user.v1.stateVersion };
+    user.v1.expedition.receipts[expeditionId] = receipt;
+    const retainedIds = new Set(user.v1.expedition.claimedIds);
+    user.v1.expedition.receipts = Object.fromEntries(Object.entries(user.v1.expedition.receipts).filter(([id]) => retainedIds.has(id)));
+    return receipt;
+}
+
 export function listHeroes(user) {
     ensureV1State(user);
     return { heroes: user.v1.heroes };

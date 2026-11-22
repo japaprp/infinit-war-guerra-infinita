@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "status": "intake",
+  "notes": "Original Guerra Infinita assets generated externally. Paths are relative to the repository root.",
+  "assets": [
+    {
+      "id": "hero_recruit",
+      "path": "assets/art/heroes/hero_recruit.png",
+      "kind": "character",
+      "required": true,
+      "minWidth": 512,
+      "minHeight": 768,
+      "alphaRecommended": true
+    },
+    {
+      "id": "enemy_mutant_scavenger",
+      "path": "assets/art/enemies/enemy_mutant_scavenger.png",
+      "kind": "creature",
+      "required": true,
+      "minWidth": 512,
+      "minHeight": 512,
+      "alphaRecommended": true
+    },
+    {
+      "id": "equipment_scrap_blade",
+      "path": "assets/art/equipment/equipment_scrap_blade.png",
+      "kind": "equipment",
+      "required": true,
+      "minWidth": 256,
+      "minHeight": 256,
+      "alphaRecommended": true
+    },
+    {
+      "id": "chest_supply_common",
+      "path": "assets/art/chests/chest_supply_common.png",
+      "kind": "chest",
+      "required": true,
+      "minWidth": 256,
+      "minHeight": 256,
+      "alphaRecommended": true
+    },
+    {
+      "id": "map_wasteland_expedition",
+      "path": "assets/art/maps/map_wasteland_expedition.png",
+      "kind": "background",
+      "required": true,
+      "minWidth": 1280,
+      "minHeight": 720,
+      "alphaRecommended": false
+    }
+  ]
+}

@@ -9,8 +9,9 @@ const dbPath = path.join(tmpDir, "db.json");
 process.env.IWAR_DB_PATH = dbPath;
 
 const { createApp } = await import("../src/app.js");
-const { initializeRepository, getRepositoryMode } = await import("../src/repositories/dbRepository.js");
+const { initializeRepository, getRepositoryMode, readDb, writeDb } = await import("../src/repositories/dbRepository.js");
 const { initializeRedis } = await import("../src/services/redisService.js");
+const { clearIdempotencyMemoryForTests } = await import("../src/middlewares/idempotencyMiddleware.js");
 
 const baseEnv = {
     PORT: 0,
@@ -104,12 +105,26 @@ test("v1 endpoints: heroes and buildings flow", async () => {
 
         const token = login.body.accessToken;
 
+        assert.equal(login.body.player.resources.gold, 0);
+        assert.equal(login.body.player.resources.wood, 0);
+        assert.equal(login.body.player.resources.steel, 0);
+        assert.equal(login.body.player.resources.food, 0);
+        assert.equal(login.body.player.resources.gems, 0);
+
         const heroes = await api(server.baseUrl, "GET", "/v1/heroes", { token });
         assert.equal(heroes.status, 200);
         assert.ok(Array.isArray(heroes.body.heroes));
-        assert.ok(heroes.body.heroes.length >= 2);
-
+        assert.equal(heroes.body.heroes.length, 1);
         const lucasBefore = heroes.body.heroes.find((hero) => hero.heroId === "lucas");
+        assert.ok(lucasBefore);
+
+        // Seed earned resources after validating the fresh-account baseline so the
+        // remainder of this integration test can exercise upgrades/buildings.
+        const db = await readDb();
+        const testUser = db.users["guest:it_slice_1"];
+        testUser.economy.gems = 1000;
+        testUser.v1.resources = { ...testUser.v1.resources, gold: 1000000, wood: 1000000, steel: 1000000, food: 1000000, gems: 1000 };
+        await writeDb(db);
         assert.ok(lucasBefore);
 
         const levelUp = await api(server.baseUrl, "POST", "/v1/heroes/lucas/level-up", {
@@ -145,6 +160,89 @@ test("v1 endpoints: heroes and buildings flow", async () => {
     }
 });
 
+test("expedition reward is server-timed, persisted, and claimable only once", async () => {
+    await fs.rm(dbPath, { force: true });
+    let server = await bootServer({ redisEnabled: false });
+    try {
+        const login = await api(server.baseUrl, "POST", "/v1/auth/login", { body: { platform: "guest", externalId: "it_expedition_1" } });
+        assert.equal(login.status, 200);
+        const token = login.body.accessToken;
+        const invalid = await api(server.baseUrl, "POST", "/v1/expeditions/start", {
+            token, body: { destinationId: "unknown-map", objectiveId: "explore" }
+        });
+        assert.equal(invalid.status, 400);
+        const start = await api(server.baseUrl, "POST", "/v1/expeditions/start", { token, body: { destinationId: "grey-forest", objectiveId: "explore" } });
+        assert.equal(start.status, 200);
+        assert.equal(start.body.resources.energy, 85);
+        assert.ok(start.body.expeditionId);
+        const duplicateStart = await api(server.baseUrl, "POST", "/v1/expeditions/start", {
+            token, body: { destinationId: "grey-forest", objectiveId: "explore" }
+        });
+        assert.equal(duplicateStart.status, 409);
+        const early = await api(server.baseUrl, "POST", "/v1/expeditions/claim", { token, body: { expeditionId: start.body.expeditionId, idempotencyKey: "early-claim" } });
+        assert.equal(early.status, 409);
+        const db = await readDb();
+        db.users["guest:it_expedition_1"].v1.expedition.active.endsAtMs = Date.now() - 1;
+        await writeDb(db);
+        const first = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
+            token, headers: { "x-idempotency-key": "exp-claim-1" },
+            body: { expeditionId: start.body.expeditionId, idempotencyKey: "exp-claim-1" }
+        });
+        assert.equal(first.status, 200);
+        assert.ok(first.body.rewards.gold > 0);
+        assert.ok(first.body.rewards.steel > 0);
+        assert.ok(first.body.rewards.food > 0);
+        assert.equal(first.body.resources.gold, first.body.rewards.gold);
+        assert.equal(first.body.resources.steel, first.body.rewards.steel);
+        assert.equal(first.body.resources.food, first.body.rewards.food);
+        assert.equal(first.body.resources.energy, 85);
+
+        // Simulate a lost HTTP response: retry with the same idempotency key.
+        const sameKeyRetry = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
+            token, headers: { "x-idempotency-key": "exp-claim-1" },
+            body: { expeditionId: start.body.expeditionId, idempotencyKey: "exp-claim-1" }
+        });
+        assert.equal(sameKeyRetry.status, 200);
+        assert.deepEqual(sameKeyRetry.body.rewards, first.body.rewards);
+        assert.deepEqual(sameKeyRetry.body.resources, first.body.resources);
+
+        await server.stop();
+        // Simulate process-local idempotency cache loss, as in a real Node.js restart.
+        clearIdempotencyMemoryForTests();
+        server = await bootServer({ redisEnabled: false });
+
+        // The persisted expedition ledger must recover the receipt after process restart.
+        const sameKeyAfterRestart = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
+            token, headers: { "x-idempotency-key": "exp-claim-1" },
+            body: { expeditionId: start.body.expeditionId, idempotencyKey: "exp-claim-1" }
+        });
+        assert.equal(sameKeyAfterRestart.status, 200);
+        assert.equal(sameKeyAfterRestart.body.alreadyClaimed, true);
+        assert.deepEqual(sameKeyAfterRestart.body.rewards, first.body.rewards);
+        assert.deepEqual(sameKeyAfterRestart.body.resources, first.body.resources);
+
+        const second = await api(server.baseUrl, "POST", "/v1/expeditions/claim", {
+            token, headers: { "x-idempotency-key": "exp-claim-2" },
+            body: { expeditionId: start.body.expeditionId, idempotencyKey: "exp-claim-2" }
+        });
+        assert.equal(second.status, 200);
+        assert.equal(second.body.alreadyClaimed, true);
+        assert.deepEqual(second.body.rewards, first.body.rewards);
+        assert.equal(second.body.resources.gold, first.body.resources.gold);
+        assert.equal(second.body.resources.steel, first.body.resources.steel);
+        assert.equal(second.body.resources.food, first.body.resources.food);
+        const persisted = await readDb();
+        assert.equal(persisted.users["guest:it_expedition_1"].v1.resources.gold, first.body.resources.gold);
+        assert.equal(persisted.users["guest:it_expedition_1"].v1.resources.steel, first.body.resources.steel);
+        assert.equal(persisted.users["guest:it_expedition_1"].v1.resources.food, first.body.resources.food);
+        assert.equal(persisted.users["guest:it_expedition_1"].v1.resources.energy, 85);
+        assert.equal(persisted.users["guest:it_expedition_1"].v1.expedition.claimedIds.filter(id => id === start.body.expeditionId).length, 1);
+        assert.equal(Object.keys(persisted.users["guest:it_expedition_1"].v1.expedition.receipts).length, 1);
+    } finally {
+        await server.stop();
+    }
+});
+
 test("legacy shop receipt can be consumed only once", async () => {
     await fs.rm(dbPath, { force: true });
 
@@ -162,6 +260,11 @@ test("legacy shop receipt can be consumed only once", async () => {
         assert.ok(session.body.token);
 
         const token = session.body.token;
+
+        // The fresh account starts at zero; grant test-earned gems to cover this purchase.
+        const db = await readDb();
+        db.users["guest:it_legacy_1"].economy.gems = 100;
+        await writeDb(db);
 
         const receipt = await api(server.baseUrl, "POST", "/shop/mock-receipt", {
             token,
@@ -205,6 +308,11 @@ test("idempotency with Redis persists across server restart", async (t) => {
         });
         assert.equal(login.status, 200);
         const token = login.body.accessToken;
+
+        const db = await readDb();
+        db.users["guest:it_idem_1"].economy.gems = 1000;
+        db.users["guest:it_idem_1"].v1.resources.gems = 1000;
+        await writeDb(db);
 
         const idempotencyKey = "it-idem-redis-001";
         const headers = { "x-idempotency-key": idempotencyKey };

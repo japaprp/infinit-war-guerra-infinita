@@ -1,0 +1,23 @@
+name: Drop Probability Calibration
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  probability-calibration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validate original art manifest and intake
+        run: |
+          node --test tests/art-asset-manifest.test.mjs
+          node scripts/validate-art-assets.mjs
+      - name: Run deterministic Monte Carlo calibration
+        run: node --test tests/drop-probability-simulation.test.mjs

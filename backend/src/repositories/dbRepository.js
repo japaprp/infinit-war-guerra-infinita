@@ -45,20 +45,20 @@ function inferProfileFromUserId(userId, fallbackNickname = "") {
     };
 }
 
-function buildDefaultV1(gems = 4210) {
+function buildDefaultV1(gems = 0) {
     return {
         stateVersion: 1,
         level: 1,
-        power: 12840,
+        power: 0,
         vipLevel: 0,
         resources: {
-            gold: 80000,
-            wood: 60000,
-            steel: 50000,
-            food: 55000,
+            gold: 0,
+            wood: 0,
+            steel: 0,
+            food: 0,
             gems,
-            energy: 120,
-            energyMax: 120,
+            energy: 100,
+            energyMax: 100,
             energyRegenPerMinute: 1.2
         },
         heroes: [
@@ -69,16 +69,6 @@ function buildDefaultV1(gems = 4210) {
                 stars: 1,
                 ascension: 0,
                 stats: { atk: 15440, def: 14304, units: 503, power: 211203 },
-                shardsOwned: 0,
-                skillLevels: [1, 1, 1]
-            },
-            {
-                heroId: "kai",
-                rarity: "EPIC",
-                level: 1,
-                stars: 1,
-                ascension: 0,
-                stats: { atk: 12990, def: 11120, units: 422, power: 173520 },
                 shardsOwned: 0,
                 skillLevels: [1, 1, 1]
             }
@@ -275,7 +265,7 @@ async function writeDbToMySqlAppState(db) {
 function buildUserFromRow(row) {
     const meta = parseJsonField(row.profile_json, {});
     const v1Meta = meta?.v1Meta && typeof meta.v1Meta === "object" ? meta.v1Meta : {};
-    const gems = safeNumber(meta?.economy?.gems, safeNumber(v1Meta?.resources?.gems, 4210));
+    const gems = safeNumber(meta?.economy?.gems, safeNumber(v1Meta?.resources?.gems, 0));
     const defaults = buildDefaultV1(gems);
     const profile = meta?.profile && typeof meta.profile === "object" ? meta.profile : inferProfileFromUserId(row.external_id, row.nickname);
     const resourcesInput = v1Meta?.resources && typeof v1Meta.resources === "object" ? v1Meta.resources : {};

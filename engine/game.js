@@ -10,8 +10,31 @@ const STORAGE_KEY = "iwar_village_state_v1";
 const LEGACY_STORAGE_KEY = "gde_village_state_v4";
 const ONBOARDING_KEY = "iwar_onboarding_seen_v1";
 const LEGACY_ONBOARDING_KEY = "gde_onboarding_seen_v1";
-const INITIAL_UNLOCKED = 3;
+const INITIAL_UNLOCKED = 1;
 const PUZZLES_PER_HERO = 10;
+const EQUIPMENT_DROP_CHANCE = 0.2;
+const CHEST_DROP_CHANCE = 0.1;
+const EXPEDITION_DESTINATIONS = [
+    { id: "grey-forest", label: "Floresta Cinzenta", region: "Floresta", x: 900, y: 620, rewardMultiplier: 1, objectiveIds: ["explore", "hunt", "gather"] },
+    { id: "old-ruins", label: "Ruínas Antigas", region: "Ruínas", x: 2180, y: 900, rewardMultiplier: 1.25, objectiveIds: ["explore", "hunt"] },
+    { id: "ash-marsh", label: "Pântano das Cinzas", region: "Pântano", x: 2840, y: 1780, rewardMultiplier: 1.45, objectiveIds: ["hunt", "gather"] }
+];
+const EXPEDITION_OBJECTIVES = [
+    { id: "explore", label: "Explorar região", description: "Mapear trilhas e descobrir recursos", rewardMultiplier: 1 },
+    { id: "hunt", label: "Caçar criaturas", description: "Priorizar ameaças e troféus", rewardMultiplier: 1.2 },
+    { id: "gather", label: "Coletar suprimentos", description: "Priorizar alimento e materiais", rewardMultiplier: 1.1 }
+];
+const CHEST_REWARD_TABLE = [
+    { id: "resources", label: "Recursos", weight: 0.55 },
+    { id: "shards", label: "Fragmentos", weight: 0.3 },
+    { id: "equipment", label: "Equipamento", weight: 0.15 }
+];
+const EQUIPMENT_SLOTS = { weapon: "Arma", armor: "Armadura", boots: "Botas" };
+const EQUIPMENT_RARITIES = [
+    { id: "common", label: "Comum", weight: 0.72, multiplier: 1 },
+    { id: "rare", label: "Raro", weight: 0.23, multiplier: 1.6 },
+    { id: "epic", label: "Épico", weight: 0.05, multiplier: 2.5 }
+];
 const AUTH_SESSION_KEY = "iwar_auth_session";
 const LEGACY_AUTH_SESSION_KEY = "gde_auth_session";
 const ACTION_COOLDOWNS = {
@@ -151,7 +174,15 @@ const ui = {
     sliceCompleteBuildBtn: document.getElementById("sliceCompleteBuildBtn"),
     sliceFightPveBtn: document.getElementById("sliceFightPveBtn"),
     sliceUpgradeHeroBtn: document.getElementById("sliceUpgradeHeroBtn"),
-    sliceClaimRewardBtn: document.getElementById("sliceClaimRewardBtn")
+    sliceClaimRewardBtn: document.getElementById("sliceClaimRewardBtn"),
+    expeditionPanel: document.getElementById("expeditionPanel"),
+    expeditionStatus: document.getElementById("expeditionStatus"),
+    expeditionMapLabel: document.getElementById("expeditionMapLabel"),
+    startExpeditionBtn: document.getElementById("startExpeditionBtn"),
+    claimExpeditionBtn: document.getElementById("claimExpeditionBtn"),
+    expeditionDestination: document.getElementById("expeditionDestination"),
+    expeditionObjective: document.getElementById("expeditionObjective"),
+    expeditionRewardPreview: document.getElementById("expeditionRewardPreview")
 };
 
 const heroDetail = {
@@ -239,21 +270,22 @@ function createHeroState(template) {
         level: 1,
         stars: 1,
         specificShards: 0,
-        equipment: { weapon: 1, armor: 1, boots: 1 },
+        equipment: { weapon: 0, armor: 0, boots: 0 },
         skillLevels: [1, 1, 1]
     };
 }
 
 function createDefaultState() {
     return {
-        resources: { gold: 1200000, silver: 800000, wood: 600000, food: 120, energy: 120, gems: 4210 },
+        resources: { gold: 0, silver: 0, wood: 0, food: 0, energy: 100, gems: 0 },
+        inventory: { equipment: [], chests: [] },
         genericShards: { bronze: 0, silver: 0, gold: 0 },
         selectedHeroId: "lucas",
         activeHeroTab: "atributos",
         activeSquadSlot: 0,
         totalPuzzles: 0,
         nextUnlockAt: PUZZLES_PER_HERO,
-        squad: ["lucas", "kai", "megan", null, null],
+        squad: ["lucas", null, null, null, null],
         mission: { monsters: 0, monstersTarget: 3 },
         events: {
             vsEndsAt: Date.now() + 8 * 24 * 3600 * 1000 + 3 * 3600 * 1000,
@@ -271,6 +303,7 @@ function createDefaultState() {
             heroUpgraded: false,
             rewardClaimed: false
         },
+        expedition: { id: null, active: false, startedAt: null, endsAt: null, rewardClaimed: true, completedCount: 0, destinationId: "grey-forest", objectiveId: "explore", claimedIds: [] },
         heroes: Object.fromEntries(heroTemplates.map((template) => [template.id, createHeroState(template)]))
     };
 }
@@ -299,10 +332,21 @@ function loadState() {
 
         merged.resources = { ...fallback.resources, ...(parsed.resources || {}) };
         merged.genericShards = { ...fallback.genericShards, ...(parsed.genericShards || {}) };
+        merged.inventory = {
+            equipment: Array.isArray(parsed.inventory?.equipment) ? parsed.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : [],
+            chests: Array.isArray(parsed.inventory?.chests) ? parsed.inventory.chests.slice(0, 100) : []
+        };
         merged.events = { ...fallback.events, ...(parsed.events || {}) };
         merged.mission = { ...fallback.mission, ...(parsed.mission || {}) };
         merged.buildings = { ...fallback.buildings, ...(parsed.buildings || {}) };
         merged.verticalSlice = { ...fallback.verticalSlice, ...(parsed.verticalSlice || {}) };
+        merged.expedition = { ...fallback.expedition, ...(parsed.expedition || {}) };
+        merged.expedition.destinationId = EXPEDITION_DESTINATIONS.some((item) => item.id === merged.expedition.destinationId) ? merged.expedition.destinationId : fallback.expedition.destinationId;
+        merged.expedition.objectiveId = EXPEDITION_OBJECTIVES.some((item) => item.id === merged.expedition.objectiveId) ? merged.expedition.objectiveId : fallback.expedition.objectiveId;
+        merged.expedition.claimedIds = Array.isArray(merged.expedition.claimedIds) ? [...new Set(merged.expedition.claimedIds.filter((id) => typeof id === "string"))].slice(-200) : [];
+        if (merged.expedition.active && (!Number.isFinite(merged.expedition.endsAt) || !merged.expedition.id)) {
+            merged.expedition = { ...fallback.expedition, completedCount: Math.max(0, Number(merged.expedition.completedCount) || 0) };
+        }
         merged.heroes = { ...fallback.heroes, ...(parsed.heroes || {}) };
         merged.squad = Array.isArray(parsed.squad) ? parsed.squad.slice(0, 5) : fallback.squad;
         merged.buildQueue = Array.isArray(parsed.buildQueue) ? parsed.buildQueue.slice(0, 2) : fallback.buildQueue;
@@ -312,7 +356,8 @@ function loadState() {
             merged.heroes[template.id] = {
                 ...createHeroState(template),
                 ...current,
-                equipment: { weapon: 1, armor: 1, boots: 1, ...(current.equipment || {}) },
+                equipment: { weapon: 0, armor: 0, boots: 0, ...(current.equipment || {}) },
+                equippedItems: Object.fromEntries(Object.keys(EQUIPMENT_SLOTS).map((slot) => [slot, current.equippedItems?.[slot] || null])),
                 skillLevels: Array.isArray(current.skillLevels) ? current.skillLevels.slice(0, 3) : [1, 1, 1]
             };
         });
@@ -423,9 +468,14 @@ function tierLabel(tier) {
 function getHeroRuntime(heroId) {
     const template = getHeroTemplate(heroId);
     const heroState = state.heroes[heroId];
-    const equipBonusAtk = heroState.equipment.weapon * 64;
-    const equipBonusDef = heroState.equipment.armor * 57;
-    const equipBonusTroops = heroState.equipment.boots * 2;
+    const ownedItems = Array.isArray(state.inventory?.equipment) ? state.inventory.equipment : [];
+    const getEquippedBonus = (slot) => {
+        const itemId = heroState.equippedItems?.[slot];
+        return itemId ? (ownedItems.find((item) => item.id === itemId)?.bonus || 0) : 0;
+    };
+    const equipBonusAtk = heroState.equipment.weapon * 64 + getEquippedBonus("weapon");
+    const equipBonusDef = heroState.equipment.armor * 57 + getEquippedBonus("armor");
+    const equipBonusTroops = heroState.equipment.boots * 2 + getEquippedBonus("boots");
     const skillAtkBonus = heroState.skillLevels.reduce((sum, level) => sum + level * 28, 0);
     const skillDefBonus = heroState.skillLevels.reduce((sum, level) => sum + level * 22, 0);
     const starMultiplier = 1 + (heroState.stars - 1) * 0.08;
@@ -935,6 +985,87 @@ function upgradeEquipment(slot) {
     saveState();
 }
 
+function equipInventoryItem(itemId) {
+    const item = state.inventory.equipment.find((entry) => entry.id === itemId);
+    if (!item || !EQUIPMENT_SLOTS[item.slot]) {
+        pushFeed("Equipamento não encontrado no inventário.");
+        return;
+    }
+    const hero = state.heroes[state.selectedHeroId];
+    if (!hero?.unlocked) return;
+    hero.equippedItems = { ...(hero.equippedItems || {}), [item.slot]: item.id };
+    pushFeed(`${item.name} equipado em ${getHeroTemplate(state.selectedHeroId).name}.`);
+    renderAll();
+    saveState();
+}
+
+function createEquipmentItem(monsterLevel) {
+    const roll = Math.random();
+    let cumulative = 0;
+    const rarity = EQUIPMENT_RARITIES.find((entry) => {
+        cumulative += entry.weight;
+        return roll < cumulative;
+    }) || EQUIPMENT_RARITIES[0];
+    const slots = Object.keys(EQUIPMENT_SLOTS);
+    const slot = slots[Math.floor(Math.random() * slots.length)];
+    const baseBonus = Math.max(1, Math.floor((5 + monsterLevel * 0.6) * rarity.multiplier));
+    const names = { weapon: "Lâmina", armor: "Couraça", boots: "Grevas" };
+    return {
+        id: `gear-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        slot,
+        rarity: rarity.id,
+        rarityLabel: rarity.label,
+        name: `${names[slot]} ${rarity.label}`,
+        bonus: baseBonus,
+        obtainedAt: Date.now()
+    };
+}
+
+function rollEquipmentDrop(monsterLevel) {
+    return Math.random() < EQUIPMENT_DROP_CHANCE ? createEquipmentItem(monsterLevel) : null;
+}
+
+function rollChestReward() {
+    const roll = Math.random();
+    let cumulative = 0;
+    return CHEST_REWARD_TABLE.find((entry) => {
+        cumulative += entry.weight;
+        return roll < cumulative;
+    }) || CHEST_REWARD_TABLE[0];
+}
+
+function openInventoryChest(chestId) {
+    const chestIndex = state.inventory.chests.findIndex((chest) => chest.id === chestId);
+    if (chestIndex < 0) {
+        pushFeed("Baú não encontrado no inventário.");
+        return;
+    }
+    const [chest] = state.inventory.chests.splice(chestIndex, 1);
+    const reward = rollChestReward();
+    if (reward.id === "resources") {
+        const gold = 250 + Math.floor(Math.random() * 751);
+        const silver = 200 + Math.floor(Math.random() * 601);
+        const food = 40 + Math.floor(Math.random() * 81);
+        state.resources.gold += gold;
+        state.resources.silver += silver;
+        state.resources.food += food;
+        pushFeed(`Baú aberto: +${gold} ouro, +${silver} prata e +${food} alimento.`);
+    } else if (reward.id === "shards") {
+        const pool = ["bronze", "silver", "gold"][Math.floor(Math.random() * 3)];
+        const amount = pool === "bronze" ? 3 : pool === "silver" ? 2 : 1;
+        state.genericShards[pool] += amount;
+        state.totalPuzzles += amount;
+        checkHeroUnlocks();
+        pushFeed(`Baú aberto: +${amount} fragmento(s) ${tierLabel(pool).toLowerCase()}.`);
+    } else {
+        const item = createEquipmentItem(8);
+        state.inventory.equipment.push(item);
+        pushFeed(`Baú aberto: ${item.name} (+${item.bonus}).`);
+    }
+    renderAll();
+    saveState();
+}
+
 function upgradeSkill(skillIndex) {
     const hero = getHeroRuntime(state.selectedHeroId);
     const currentLevel = hero.heroState.skillLevels[skillIndex];
@@ -1160,6 +1291,16 @@ function fightMonster(monster) {
         state.resources.silver += silverGain;
         state.mission.monsters += 1;
 
+        const equipmentDrop = rollEquipmentDrop(monster.level);
+        if (equipmentDrop) {
+            state.inventory.equipment.push(equipmentDrop);
+            pushFeed(`Equipamento encontrado: ${equipmentDrop.name} (+${equipmentDrop.bonus}).`);
+        }
+        if (Math.random() < CHEST_DROP_CHANCE) {
+            state.inventory.chests.push({ id: `chest-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type: "explorer", name: "Baú de Explorador", obtainedAt: Date.now() });
+            pushFeed("Você encontrou um Baú de Explorador!");
+        }
+
         if (monster.level >= 45 && Math.random() < 0.4) addPuzzleReward("specific", 1, state.selectedHeroId);
         else if (Math.random() < 0.35) addPuzzleReward("silver", 1);
 
@@ -1338,10 +1479,24 @@ function renderTabContent() {
                 <div class="stat-item"><span>Unidades</span><strong>${hero.troops.toLocaleString("pt-BR")}</strong><em>${tierLabel(hero.template.tier)}</em></div>
             </div>
             <div class="equip-grid">
-                <button class="equip-card" data-action="upgrade-equip" data-slot="weapon">Arma Nv.${hero.heroState.equipment.weapon}<small>+ATQ</small></button>
-                <button class="equip-card" data-action="upgrade-equip" data-slot="armor">Armadura Nv.${hero.heroState.equipment.armor}<small>+DEF</small></button>
-                <button class="equip-card" data-action="upgrade-equip" data-slot="boots">Botas Nv.${hero.heroState.equipment.boots}<small>+Unidades</small></button>
+                ${Object.entries(EQUIPMENT_SLOTS).map(([slot, label]) => {
+                    const equippedId = hero.heroState.equippedItems?.[slot];
+                    const equipped = state.inventory.equipment.find((item) => item.id === equippedId);
+                    const bonusLabel = slot === "weapon" ? "ATQ" : slot === "armor" ? "DEF" : "Unidades";
+                    return `<article class="equip-card"><strong>${label}</strong><small>Nível ${hero.heroState.equipment[slot]} · ${equipped ? `${equipped.name} (+${equipped.bonus} ${bonusLabel})` : "Nenhum item equipado"}</small></article>`;
+                }).join("")}
             </div>
+            <section class="inventory-section"><h3>Baús (${state.inventory.chests.length})</h3>
+                ${state.inventory.chests.length ? state.inventory.chests.map((chest) => `<article class="inventory-item"><span><strong>${chest.name || "Baú de Explorador"}</strong><small>Recompensa aleatória · probabilidades publicadas</small></span><button class="inline-action" data-action="open-chest" data-chest-id="${chest.id}">Abrir</button></article>`).join("") : "<p>Baús podem ser encontrados ao derrotar monstros.</p>"}
+            </section>
+            <section class="inventory-section"><h3>Inventário de equipamentos (${state.inventory.equipment.length})</h3>
+                ${state.inventory.equipment.length ? state.inventory.equipment.map((item) => {
+                    const isEquipped = hero.heroState.equippedItems?.[item.slot] === item.id;
+                    const label = EQUIPMENT_SLOTS[item.slot];
+                    const bonusLabel = item.slot === "weapon" ? "ATQ" : item.slot === "armor" ? "DEF" : "Unidades";
+                    return `<article class="inventory-item"><span><strong>${item.name}</strong><small>${label} · ${item.rarityLabel} · +${item.bonus} ${bonusLabel}</small></span><button class="inline-action" data-action="equip-item" data-item-id="${item.id}" ${isEquipped ? "disabled" : ""}>${isEquipped ? "Equipado" : "Equipar"}</button></article>`;
+                }).join("") : "<p>Derrote monstros para ter a chance de encontrar equipamentos.</p>"}
+            </section>
             <button class="inline-action" data-action="level-up-hero">Subir nivel (custo: ${foodCost} alimento)</button>
         `;
         return;
@@ -1396,6 +1551,152 @@ function renderTimers() {
     ui.bonusTimer.textContent = formatTimer(state.events.bonusEndsAt - Date.now());
 }
 
+function getExpeditionDestination(destinationId = state.expedition.destinationId) {
+    return EXPEDITION_DESTINATIONS.find((item) => item.id === destinationId) || EXPEDITION_DESTINATIONS[0];
+}
+
+function getExpeditionObjective(objectiveId = state.expedition.objectiveId) {
+    return EXPEDITION_OBJECTIVES.find((item) => item.id === objectiveId) || EXPEDITION_OBJECTIVES[0];
+}
+
+function renderExpeditionOptions() {
+    if (!ui.expeditionDestination || !ui.expeditionObjective) return;
+    const expedition = state.expedition;
+    const destination = getExpeditionDestination();
+    const availableObjectives = EXPEDITION_OBJECTIVES.filter((objective) => destination.objectiveIds.includes(objective.id));
+    if (!ui.expeditionDestination.options.length) {
+        ui.expeditionDestination.innerHTML = EXPEDITION_DESTINATIONS.map((item) => `<option value="${item.id}">${item.label}</option>`).join("");
+    }
+    ui.expeditionDestination.value = destination.id;
+    const objective = availableObjectives.some((item) => item.id === expedition.objectiveId) ? expedition.objectiveId : availableObjectives[0].id;
+    if (!availableObjectives.some((item) => item.id === expedition.objectiveId)) expedition.objectiveId = objective;
+    ui.expeditionObjective.innerHTML = availableObjectives.map((item) => `<option value="${item.id}">${item.label}</option>`).join("");
+    ui.expeditionObjective.value = objective;
+    ui.expeditionDestination.disabled = expedition.active;
+    ui.expeditionObjective.disabled = expedition.active;
+    if (ui.expeditionMapLabel) ui.expeditionMapLabel.textContent = destination.label;
+    if (ui.expeditionRewardPreview) {
+        ui.expeditionRewardPreview.textContent = `${destination.region} · ${getExpeditionObjective().description} · recompensa base x${(destination.rewardMultiplier * getExpeditionObjective().rewardMultiplier).toFixed(2)}`;
+    }
+}
+
+function renderExpeditionPanel() {
+    if (!ui.expeditionPanel || !ui.expeditionStatus || !ui.startExpeditionBtn || !ui.claimExpeditionBtn) return;
+    renderExpeditionOptions();
+    const expedition = state.expedition;
+    if (expedition.active) {
+        const remaining = Math.max(0, expedition.endsAt - Date.now());
+        ui.expeditionStatus.textContent = remaining > 0
+            ? `${getExpeditionDestination().label} · ${getExpeditionObjective().label} · retorno em ${formatTimer(remaining)}. O progresso é salvo automaticamente.`
+            : `${getExpeditionDestination().label} concluída! Objetivo: ${getExpeditionObjective().label}. Resgate para atualizar o saldo.`;
+        ui.startExpeditionBtn.disabled = true;
+        ui.claimExpeditionBtn.disabled = remaining > 0 || expedition.rewardClaimed || expedition.claimedIds.includes(expedition.id);
+        ui.claimExpeditionBtn.textContent = expedition.rewardClaimed || expedition.claimedIds.includes(expedition.id) ? "Recompensa resgatada" : "Resgatar recompensa";
+        return;
+    }
+    ui.expeditionStatus.textContent = expedition.completedCount > 0
+        ? `Última expedição concluída. Expedições resgatadas: ${expedition.completedCount}.`
+        : "Escolha um destino e objetivo no mapa para preparar sua primeira expedição.";
+    ui.startExpeditionBtn.disabled = state.resources.energy < VERTICAL_SLICE_ENERGY_COST;
+    ui.claimExpeditionBtn.disabled = true;
+    ui.claimExpeditionBtn.textContent = "Resgatar recompensa";
+}
+
+async function startExpedition() {
+    if (state.expedition.active && !state.expedition.rewardClaimed) {
+        pushFeed("Conclua e resgate a expedição atual antes de iniciar outra.");
+        return;
+    }
+    if (state.resources.energy < VERTICAL_SLICE_ENERGY_COST) {
+        pushFeed("Energia insuficiente para iniciar a expedição.");
+        return;
+    }
+    const destination = getExpeditionDestination();
+    const objective = getExpeditionObjective();
+    if (!destination.objectiveIds.includes(objective.id)) {
+        pushFeed("Esse objetivo não está disponível nesse destino.");
+        return;
+    }
+    const api = getApiClient();
+    let serverExpedition = null;
+    if (api && api.hasToken && api.hasToken() && typeof api.startExpeditionV1 === "function") {
+        try {
+            serverExpedition = await api.startExpeditionV1({ destinationId: destination.id, objectiveId: objective.id });
+        } catch (error) {
+            pushFeed(`Não foi possível iniciar a expedição no servidor: ${error.message}`);
+            return;
+        }
+    }
+    const now = Date.now();
+    state.resources.energy = serverExpedition?.resources?.energy ?? (state.resources.energy - VERTICAL_SLICE_ENERGY_COST);
+    state.expedition = {
+        ...state.expedition,
+        id: serverExpedition?.expeditionId || `exp-${now}-${Math.random().toString(36).slice(2, 9)}`,
+        destinationId: destination.id,
+        objectiveId: objective.id,
+        active: true,
+        startedAt: serverExpedition?.startedAtMs || now,
+        endsAt: serverExpedition?.endsAtMs || now + 60000,
+        rewardClaimed: false,
+        serverAuthoritative: Boolean(serverExpedition)
+    };
+    pushFeed(`Expedição iniciada: ${destination.label} — ${objective.label}.`);
+    renderAll();
+    saveState();
+}
+
+async function claimExpeditionReward() {
+    const expedition = state.expedition;
+    if (!expedition.active || expedition.rewardClaimed || expedition.claimedIds.includes(expedition.id) || !Number.isFinite(expedition.endsAt) || Date.now() < expedition.endsAt) {
+        pushFeed("A recompensa da expedição ainda não está disponível ou já foi resgatada.");
+        return;
+    }
+    if (!expedition.id || expedition.claimedIds.includes(expedition.id)) {
+        pushFeed("Resgate duplicado bloqueado.");
+        return;
+    }
+    const destination = getExpeditionDestination();
+    const objective = getExpeditionObjective();
+    let gold;
+    let silver;
+    let food;
+    const api = getApiClient();
+    if (expedition.serverAuthoritative && api && typeof api.claimExpeditionV1 === "function") {
+        const idempotencyKey = `exp-claim-${expedition.id}`;
+        let result;
+        try {
+            result = await api.claimExpeditionV1({ expeditionId: expedition.id, idempotencyKey });
+        } catch (error) {
+            pushFeed(`O servidor não confirmou o resgate: ${error.message}. O saldo não foi alterado.`);
+            return;
+        }
+        gold = result.rewards.gold;
+        silver = result.rewards.steel;
+        food = result.rewards.food;
+        state.resources.energy = result.resources.energy;
+    } else {
+        const multiplier = destination.rewardMultiplier * objective.rewardMultiplier;
+        const squadPower = getSquadPower();
+        gold = Math.floor((250 + Math.floor(squadPower / 1800)) * multiplier);
+        silver = Math.floor((180 + Math.floor(squadPower / 2400)) * multiplier);
+        food = Math.floor((35 + Math.floor(squadPower / 12000)) * (objective.id === "gather" ? multiplier * 1.25 : multiplier));
+    }
+    expedition.claimedIds = [...new Set([...(expedition.claimedIds || []), expedition.id])].slice(-200);
+    expedition.serverAuthoritative = false;
+    expedition.rewardClaimed = true;
+    expedition.active = false;
+    expedition.completedCount += 1;
+    // The server confirms the expedition reward amount. Apply that reward once to the
+    // local economy, which still contains legacy gameplay gains not yet migrated to v1.
+    // A retry after a crash starts from the pre-claim local save and receives the same receipt.
+    state.resources.gold += gold;
+    state.resources.silver += silver;
+    state.resources.food += food;
+    pushFeed(`Recompensa de ${destination.label}: +${gold} ouro, +${silver} prata e +${food} alimento.`);
+    renderAll();
+    saveState();
+}
+
 function renderAll() {
     renderResources();
     renderMission();
@@ -1411,6 +1712,7 @@ function renderAll() {
     updateInteractionHint();
     renderAutomationButtons();
     renderVerticalSlicePanel();
+    renderExpeditionPanel();
 }
 
 async function pullStateFromBackend() {
@@ -1425,9 +1727,22 @@ async function pullStateFromBackend() {
             return;
         }
 
-        // Merge controlado para evitar sobrescrever estrutura em runtime.
-        state.resources = { ...state.resources, ...(remote.state.resources || {}) };
+        // A economia principal ainda contém ganhos/gastos legados apenas no cliente.
+        // Não sobrescrever esses saldos com zeros de um snapshot remoto parcial; energia
+        // da expedição é autoritativa no backend e continua sendo sincronizada.
+        state.resources = {
+            ...state.resources,
+            ...(remote.state.resources || {}),
+            gold: state.resources.gold,
+            silver: state.resources.silver,
+            food: state.resources.food,
+            energy: Number.isFinite(remote.state.resources.energy) ? remote.state.resources.energy : state.resources.energy
+        };
         state.genericShards = { ...state.genericShards, ...(remote.state.genericShards || {}) };
+        state.inventory = {
+            equipment: Array.isArray(remote.state.inventory?.equipment) ? remote.state.inventory.equipment.filter((item) => item && typeof item.id === "string" && EQUIPMENT_SLOTS[item.slot] && Number.isFinite(item.bonus) && item.bonus > 0).slice(0, 500) : state.inventory.equipment,
+            chests: Array.isArray(remote.state.inventory?.chests) ? remote.state.inventory.chests.slice(0, 100) : state.inventory.chests
+        };
         state.selectedHeroId = remote.state.selectedHeroId || state.selectedHeroId;
         state.activeHeroTab = remote.state.activeHeroTab || state.activeHeroTab;
         state.activeSquadSlot = Number.isFinite(remote.state.activeSquadSlot) ? remote.state.activeSquadSlot : state.activeSquadSlot;
@@ -1438,6 +1753,26 @@ async function pullStateFromBackend() {
         state.events = { ...state.events, ...(remote.state.events || {}) };
         state.buildings = { ...state.buildings, ...(remote.state.buildings || {}) };
         state.verticalSlice = { ...state.verticalSlice, ...(remote.state.verticalSlice || {}) };
+        if (remote.state.expedition && typeof remote.state.expedition === "object") {
+            const localExpedition = state.expedition || {};
+            const remoteExpedition = remote.state.expedition;
+            state.expedition = {
+                ...localExpedition,
+                ...remoteExpedition,
+                // The backend snapshot can omit client-facing completion metadata while
+                // older gameplay state is being migrated. Merge it monotonically so a
+                // reload cannot erase a confirmed local receipt/completion.
+                claimedIds: [...new Set([
+                    ...(Array.isArray(localExpedition.claimedIds) ? localExpedition.claimedIds : []),
+                    ...(Array.isArray(remoteExpedition.claimedIds) ? remoteExpedition.claimedIds : [])
+                ])].slice(-200),
+                completedCount: Math.max(
+                    Number.isFinite(localExpedition.completedCount) ? localExpedition.completedCount : 0,
+                    Number.isFinite(remoteExpedition.completedCount) ? remoteExpedition.completedCount : 0
+                ),
+                rewardClaimed: Boolean(localExpedition.rewardClaimed || remoteExpedition.rewardClaimed)
+            };
+        }
         state.buildQueue = Array.isArray(remote.state.buildQueue) ? remote.state.buildQueue.slice(0, 2) : state.buildQueue;
         state.heroes = { ...state.heroes, ...(remote.state.heroes || {}) };
 
@@ -1486,6 +1821,8 @@ function bindUiActions() {
         if (!actionTarget) return;
         const action = actionTarget.dataset.action;
         if (action === "upgrade-equip") upgradeEquipment(actionTarget.dataset.slot);
+        if (action === "equip-item") equipInventoryItem(actionTarget.dataset.itemId);
+        if (action === "open-chest") openInventoryChest(actionTarget.dataset.chestId);
         if (action === "upgrade-skill") upgradeSkill(Number(actionTarget.dataset.skillIndex));
         if (action === "ascend-hero") ascendHero();
         if (action === "level-up-hero") levelUpHero();
@@ -1511,6 +1848,24 @@ function bindUiActions() {
 
     ui.closeShopBtn.addEventListener("click", () => {
         closeShopPanel();
+    });
+
+    if (ui.startExpeditionBtn) ui.startExpeditionBtn.addEventListener("click", startExpedition);
+    if (ui.claimExpeditionBtn) ui.claimExpeditionBtn.addEventListener("click", claimExpeditionReward);
+    if (ui.expeditionDestination) ui.expeditionDestination.addEventListener("change", () => {
+        if (state.expedition.active) return;
+        state.expedition.destinationId = EXPEDITION_DESTINATIONS.some((item) => item.id === ui.expeditionDestination.value) ? ui.expeditionDestination.value : "grey-forest";
+        const destination = getExpeditionDestination();
+        if (!destination.objectiveIds.includes(state.expedition.objectiveId)) state.expedition.objectiveId = destination.objectiveIds[0];
+        renderAll();
+        saveState();
+    });
+    if (ui.expeditionObjective) ui.expeditionObjective.addEventListener("change", () => {
+        if (state.expedition.active) return;
+        const destination = getExpeditionDestination();
+        state.expedition.objectiveId = destination.objectiveIds.includes(ui.expeditionObjective.value) ? ui.expeditionObjective.value : destination.objectiveIds[0];
+        renderAll();
+        saveState();
     });
 
     ui.saveSquadBtn.addEventListener("click", () => {
@@ -1713,10 +2068,36 @@ function drawTrees() {
     }
 }
 
+function drawExpeditionDestinations() {
+    EXPEDITION_DESTINATIONS.forEach((destination) => {
+        const x = destination.x - camera.x;
+        const y = destination.y - camera.y;
+        if (x < -100 || y < -100 || x > canvas.width + 100 || y > canvas.height + 100) return;
+        const selected = destination.id === state.expedition.destinationId;
+        ctx.save();
+        ctx.globalAlpha = selected ? 1 : 0.72;
+        ctx.strokeStyle = selected ? "#f4c56c" : "#9ab0c7";
+        ctx.fillStyle = selected ? "#f4c56c" : "#7188a3";
+        ctx.lineWidth = selected ? 3 : 2;
+        ctx.beginPath();
+        ctx.arc(x, y, selected ? 24 : 17, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, selected ? 8 : 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#f3f7ff";
+        ctx.font = "bold 12px Trebuchet MS";
+        ctx.textAlign = "center";
+        ctx.fillText(destination.label, x, y - 31);
+        ctx.restore();
+    });
+}
+
 function drawVillage() {
     drawTerrain();
     drawRoads();
     drawTrees();
+    drawExpeditionDestinations();
     villageBuildings.forEach(drawBuilding);
     runtime.resourceNodes.forEach(drawResourceNode);
     runtime.monsters.forEach(drawMonster);
@@ -1745,6 +2126,14 @@ function drawMinimap() {
         if (!monster.alive) return;
         minimapCtx.fillStyle = "#dc6565";
         minimapCtx.fillRect(monster.x * scaleX, monster.y * scaleY, 2, 2);
+    });
+
+    EXPEDITION_DESTINATIONS.forEach((destination) => {
+        const selected = destination.id === state.expedition.destinationId;
+        minimapCtx.fillStyle = selected ? "#f4c56c" : "#9ab0c7";
+        minimapCtx.beginPath();
+        minimapCtx.arc(destination.x * scaleX, destination.y * scaleY, selected ? 4 : 2.5, 0, Math.PI * 2);
+        minimapCtx.fill();
     });
 
     minimapCtx.strokeStyle = "#e5c07f";
@@ -1798,6 +2187,7 @@ window.addEventListener("keyup", (event) => {
 setInterval(() => {
     renderTimers();
     renderVerticalSlicePanel();
+    renderExpeditionPanel();
 }, 1000);
 
 function gameLoop(currentTime) {

@@ -46,7 +46,7 @@ export function consumeMockReceipt(db, userId, payload, receiptSecret) {
         return { error: { status: 401, message: "Invalid receipt signature" } };
     }
 
-    if (!user.economy) user.economy = { gems: 4210 };
+    if (!user.economy) user.economy = { gems: 0 };
     if (user.economy.gems < receipt.costGems) {
         return { error: { status: 402, message: "Insufficient gems" } };
     }
