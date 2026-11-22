@@ -9,18 +9,21 @@ export async function initializeRedis(env) {
         return null;
     }
 
+    let connection;
     try {
-        redisClient = new Redis(env.REDIS_URL, {
+        connection = new Redis(env.REDIS_URL, {
             lazyConnect: true,
             maxRetriesPerRequest: 1,
             enableOfflineQueue: false
         });
 
-        await redisClient.connect();
-        await redisClient.ping();
+        await connection.connect();
+        await connection.ping();
+        redisClient = connection;
         console.log("[redis] conectado.");
         return redisClient;
     } catch (error) {
+        connection?.disconnect();
         console.warn(`[redis] Falha ao conectar (${error.message}). Fallback em memoria local.`);
         redisClient = null;
         return null;
