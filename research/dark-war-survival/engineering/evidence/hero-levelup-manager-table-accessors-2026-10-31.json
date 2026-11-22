@@ -1,0 +1,184 @@
+{
+  "status": "PASS_HERO_LEVELUP_MANAGER_ACCESSOR_CONTRACT",
+  "source": "DARKWAR_GETTABLEDATA_CALL_ARGUMENTS_2026-10-30.csv",
+  "selector": {
+    "switch": "ABtest_heroes_levelup",
+    "trueTable": "NewHeroesLevelUp_B",
+    "falseOrNilTable": "NewHeroesLevelUp",
+    "runtimeValueObserved": false
+  },
+  "versions": {
+    "5.4": [
+      {
+        "functionIndex": 7,
+        "lineDefined": 41,
+        "field": "exp",
+        "key": "R1",
+        "fieldKey": "literal",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      },
+      {
+        "functionIndex": 8,
+        "lineDefined": 46,
+        "field": "lv_attr_atk",
+        "key": "R1",
+        "fieldKey": "concatenated_expression",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      },
+      {
+        "functionIndex": 9,
+        "lineDefined": 52,
+        "field": "lv_attr_def",
+        "key": "R1",
+        "fieldKey": "concatenated_expression",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      },
+      {
+        "functionIndex": 10,
+        "lineDefined": 58,
+        "field": "army_num",
+        "key": "R1",
+        "fieldKey": "concatenated_expression",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      },
+      {
+        "functionIndex": 11,
+        "lineDefined": 63,
+        "field": "break_require",
+        "key": "R1",
+        "fieldKey": "literal",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      },
+      {
+        "functionIndex": 12,
+        "lineDefined": 67,
+        "field": "break_require_rank",
+        "key": "R1",
+        "fieldKey": "literal",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      },
+      {
+        "functionIndex": 13,
+        "lineDefined": 71,
+        "field": "break_require_base",
+        "key": "R1",
+        "fieldKey": "literal",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      }
+    ],
+    "5.5": [
+      {
+        "functionIndex": 7,
+        "lineDefined": 41,
+        "field": "exp",
+        "key": "R1",
+        "fieldKey": "literal",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      },
+      {
+        "functionIndex": 8,
+        "lineDefined": 46,
+        "field": "lv_attr_atk",
+        "key": "R1",
+        "fieldKey": "concatenated_expression",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      },
+      {
+        "functionIndex": 9,
+        "lineDefined": 52,
+        "field": "lv_attr_def",
+        "key": "R1",
+        "fieldKey": "concatenated_expression",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      },
+      {
+        "functionIndex": 10,
+        "lineDefined": 58,
+        "field": "army_num",
+        "key": "R1",
+        "fieldKey": "concatenated_expression",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      },
+      {
+        "functionIndex": 11,
+        "lineDefined": 63,
+        "field": "break_require",
+        "key": "R1",
+        "fieldKey": "literal",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      },
+      {
+        "functionIndex": 12,
+        "lineDefined": 67,
+        "field": "break_require_rank",
+        "key": "R1",
+        "fieldKey": "literal",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      },
+      {
+        "functionIndex": 13,
+        "lineDefined": 71,
+        "field": "break_require_base",
+        "key": "R1",
+        "fieldKey": "literal",
+        "explicitArgs": 3,
+        "tableArgument": "self:GetTableName()",
+        "resultCount": 1
+      }
+    ]
+  },
+  "interpretation": {
+    "fields": [
+      "exp",
+      "lv_attr_atk",
+      "lv_attr_def",
+      "army_num",
+      "break_require",
+      "break_require_rank",
+      "break_require_base"
+    ],
+    "computedFieldKeys": [
+      "lv_attr_atk",
+      "lv_attr_def",
+      "army_num"
+    ],
+    "computedFieldKeyFormat": "NOT DETERMINED",
+    "physicalAsset": "heroes_levelup.bytes",
+    "separatePhysicalAssetForB": false,
+    "physicalMappingForB": "NOT CONFIRMED"
+  },
+  "nextStep": "Export the base and Lua 5.5 Hero LevelUp DataTable bundles one at a time only after free RAM is at least 875 MB; inspect the exact table schema and derive computed field-key format from the original bytecode.",
+  "computedFieldKeyInputs": {
+    "keyArgument": "R1",
+    "computedFieldArgument": "CONCAT(prefix constant, value derived from R2)",
+    "R2Meaning": "NOT DETERMINED",
+    "evidence": "Lua 5.5 function inventory shows a MOVE from R2 to a temporary immediately before CONCAT in functions 8, 9 and 10.",
+    "interpretation": "R2 selects a dynamic field variant; its semantic dimension and exact concatenation order remain unverified."
+  }
+}

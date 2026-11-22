@@ -1,0 +1,300 @@
+{
+  "date": "2026-10-30",
+  "inputKind": "directory",
+  "filesScanned": 12370,
+  "filesPassed": 12370,
+  "filesFailed": 0,
+  "byVersion": {
+    "5.4": {
+      "files": 6185,
+      "functions": 89544,
+      "instructions": 3166597,
+      "constants": 914094,
+      "strings": 1250701
+    },
+    "5.5": {
+      "files": 6185,
+      "functions": 89544,
+      "instructions": 3164334,
+      "constants": 911305,
+      "strings": 1320504
+    }
+  },
+  "totalFunctions": 179088,
+  "totalInstructions": 6330931,
+  "totalConstants": 1825399,
+  "totalStrings": 2571205,
+  "byBundle": [
+    {
+      "bundle": "lua_scripts_datacenter_55_a_e0403aa29678e2cdc329235706e71f0c",
+      "files": 107,
+      "lua54": 0,
+      "lua55": 107,
+      "functions": 2587,
+      "instructions": 70825,
+      "constants": 22957
+    },
+    {
+      "bundle": "lua_scripts_datacenter_55_act_fc08cb35c58d300a9714d47efe685351",
+      "files": 192,
+      "lua54": 0,
+      "lua55": 192,
+      "functions": 4251,
+      "instructions": 147260,
+      "constants": 41339
+    },
+    {
+      "bundle": "lua_scripts_datacenter_55_h_f79abcbbf0220e774a63fe8a7e090129",
+      "files": 103,
+      "lua54": 0,
+      "lua55": 103,
+      "functions": 1806,
+      "instructions": 46901,
+      "constants": 15572
+    },
+    {
+      "bundle": "lua_scripts_datacenter_55_o_9919e2f7733529906eac5ba1f54d0e2f",
+      "files": 19,
+      "lua54": 0,
+      "lua55": 19,
+      "functions": 258,
+      "instructions": 5697,
+      "constants": 1901
+    },
+    {
+      "bundle": "lua_scripts_datacenter_55_s_be180bad19905fa11d6cda0641e5e14f",
+      "files": 56,
+      "lua54": 0,
+      "lua55": 56,
+      "functions": 1111,
+      "instructions": 30210,
+      "constants": 9855
+    },
+    {
+      "bundle": "lua_scripts_datacenter_55_world_a3c218bc8222ddf0afd3fddad4bd4d06",
+      "files": 148,
+      "lua54": 0,
+      "lua55": 148,
+      "functions": 2923,
+      "instructions": 665676,
+      "constants": 77095
+    },
+    {
+      "bundle": "lua_scripts_datacenter_a_64f0f1f274fda3167ee6e6f73fff5c90",
+      "files": 107,
+      "lua54": 107,
+      "lua55": 0,
+      "functions": 2587,
+      "instructions": 70753,
+      "constants": 23002
+    },
+    {
+      "bundle": "lua_scripts_datacenter_act_5806e344796efc1c4b50a36520fbf327",
+      "files": 192,
+      "lua54": 192,
+      "lua55": 0,
+      "functions": 4251,
+      "instructions": 146966,
+      "constants": 41379
+    },
+    {
+      "bundle": "lua_scripts_datacenter_h_f6f22362635e63292b1607cec8bb5438",
+      "files": 103,
+      "lua54": 103,
+      "lua55": 0,
+      "functions": 1806,
+      "instructions": 46838,
+      "constants": 15594
+    },
+    {
+      "bundle": "lua_scripts_datacenter_o_ef1e84edbbc4c5c772dd0198eb8845f4",
+      "files": 19,
+      "lua54": 19,
+      "lua55": 0,
+      "functions": 258,
+      "instructions": 5695,
+      "constants": 1904
+    },
+    {
+      "bundle": "lua_scripts_datacenter_s_bcc0903aeab7705aedf243b96605da57",
+      "files": 56,
+      "lua54": 56,
+      "lua55": 0,
+      "functions": 1111,
+      "instructions": 30173,
+      "constants": 9875
+    },
+    {
+      "bundle": "lua_scripts_datacenter_world_871631e93bd9f367f0b63c25b54dc0f4",
+      "files": 148,
+      "lua54": 148,
+      "lua55": 0,
+      "functions": 2923,
+      "instructions": 665578,
+      "constants": 77151
+    },
+    {
+      "bundle": "lua_scripts_scene_34c1389a6d61ac8ddbe96b2b1e2526eb",
+      "files": 702,
+      "lua54": 702,
+      "lua55": 0,
+      "functions": 10371,
+      "instructions": 278592,
+      "constants": 96810
+    },
+    {
+      "bundle": "lua_scripts_scene_55_fd936e35884348ea7cef382e5c1da648",
+      "files": 702,
+      "lua54": 0,
+      "lua55": 702,
+      "functions": 10371,
+      "instructions": 278723,
+      "constants": 96524
+    },
+    {
+      "bundle": "lua_scripts_ui_55_uia_da0533e788209fb40f8502a0ef5fa810",
+      "files": 986,
+      "lua54": 0,
+      "lua55": 986,
+      "functions": 14955,
+      "instructions": 474958,
+      "constants": 160407
+    },
+    {
+      "bundle": "lua_scripts_ui_55_uib_f21f11c187947abd3571ee8aa36b9508",
+      "files": 298,
+      "lua54": 0,
+      "lua55": 298,
+      "functions": 3560,
+      "instructions": 96131,
+      "constants": 33404
+    },
+    {
+      "bundle": "lua_scripts_ui_55_uic_762de48c062578db5aad29c2fd5fb9f8",
+      "files": 790,
+      "lua54": 0,
+      "lua55": 790,
+      "functions": 9361,
+      "instructions": 254513,
+      "constants": 88166
+    },
+    {
+      "bundle": "lua_scripts_ui_55_uih_990c4205851bb33a13f8325bbb1b55eb",
+      "files": 377,
+      "lua54": 0,
+      "lua55": 377,
+      "functions": 4898,
+      "instructions": 113090,
+      "constants": 40767
+    },
+    {
+      "bundle": "lua_scripts_ui_55_uis_47d603292817c6dff992d1ad9c97b892",
+      "files": 1465,
+      "lua54": 0,
+      "lua55": 1465,
+      "functions": 16717,
+      "instructions": 426648,
+      "constants": 150981
+    },
+    {
+      "bundle": "lua_scripts_ui_55_uiw_e1e09a1c8ae1431f4c0db8d0b30606a0",
+      "files": 394,
+      "lua54": 0,
+      "lua55": 394,
+      "functions": 5833,
+      "instructions": 212947,
+      "constants": 64002
+    },
+    {
+      "bundle": "lua_scripts_ui_uia_4cc0025924a2717fd148655bdf493cb0",
+      "files": 986,
+      "lua54": 986,
+      "lua55": 0,
+      "functions": 14955,
+      "instructions": 475058,
+      "constants": 161054
+    },
+    {
+      "bundle": "lua_scripts_ui_uib_71ce8eb539aa0fdd44c624af019373ee",
+      "files": 298,
+      "lua54": 298,
+      "lua55": 0,
+      "functions": 3560,
+      "instructions": 96136,
+      "constants": 33541
+    },
+    {
+      "bundle": "lua_scripts_ui_uic_279e11320b3551399526fbb389a428ce",
+      "files": 790,
+      "lua54": 790,
+      "lua55": 0,
+      "functions": 9361,
+      "instructions": 254432,
+      "constants": 88377
+    },
+    {
+      "bundle": "lua_scripts_ui_uih_657a42ccd0f37f36faefccf3d1ff0bc6",
+      "files": 377,
+      "lua54": 377,
+      "lua55": 0,
+      "functions": 4898,
+      "instructions": 113049,
+      "constants": 40887
+    },
+    {
+      "bundle": "lua_scripts_ui_uis_a733a63872bf983d7c4a81de1f65b9da",
+      "files": 1465,
+      "lua54": 1465,
+      "lua55": 0,
+      "functions": 16717,
+      "instructions": 426575,
+      "constants": 151341
+    },
+    {
+      "bundle": "lua_scripts_ui_uiw_c2dbd9ef793847749939a24d5d9d5972",
+      "files": 394,
+      "lua54": 394,
+      "lua55": 0,
+      "functions": 5833,
+      "instructions": 216205,
+      "constants": 64626
+    },
+    {
+      "bundle": "lua_slg_scripts_datacenter_55_f74f3922672b373bf21d9d68f1d04942",
+      "files": 445,
+      "lua54": 0,
+      "lua55": 445,
+      "functions": 8906,
+      "instructions": 274137,
+      "constants": 86415
+    },
+    {
+      "bundle": "lua_slg_scripts_datacenter_988860135aeec87b21ddce9ff106329a",
+      "files": 445,
+      "lua54": 445,
+      "lua55": 0,
+      "functions": 8906,
+      "instructions": 273944,
+      "constants": 86547
+    },
+    {
+      "bundle": "lua_slg_scripts_scene_55_2dee8f73e1a423032b613d82f89330c9",
+      "files": 103,
+      "lua54": 0,
+      "lua55": 103,
+      "functions": 2007,
+      "instructions": 66618,
+      "constants": 21920
+    },
+    {
+      "bundle": "lua_slg_scripts_scene_d03dd991e964fceb424589d466792645",
+      "files": 103,
+      "lua54": 103,
+      "lua55": 0,
+      "functions": 2007,
+      "instructions": 66603,
+      "constants": 22006
+    }
+  ],
+  "tableCandidateStringRows": 26354,
+  "failures": [],

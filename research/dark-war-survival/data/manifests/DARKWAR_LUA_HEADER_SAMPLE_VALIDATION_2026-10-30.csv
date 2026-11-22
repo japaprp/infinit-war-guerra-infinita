@@ -1,0 +1,7 @@
+Module,Variant,SizeBytes,SHA256,DetectedLuaVersion,HeaderValidation,Status
+HeroDataManager,base,18763,a7095b1b2d3c2f526414de5b531d127dda903a762ad208e15f0b74dc3cdd62b1,5.4,all official header sentinels PASS,PASS
+HeroDataManager,55,15136,9b05ffb6059f396964256bfed841dd5dbcaf38046b7e7f7040ce5763ada24d7f,5.5,all official header sentinels PASS,PASS
+HeroEquipManager,base,32313,1cb8f564fc803333c5d430b468149696b2e15d8e447a5fccd882cfcbd438a69f,5.4,all official header sentinels PASS,PASS
+HeroEquipManager,55,24537,c72c4afc315e5405a0febd57bddd651744e6e1cb64e0d52f935c7f293c63be9c,5.5,all official header sentinels PASS,PASS
+HeroLevelUpTemplateManager,base,2214,9b1ff70670b820bb4fc3f59cd10adbb8a397ee3e8efab3f1811fc35be9652b42,5.4,all official header sentinels PASS,PASS
+HeroLevelUpTemplateManager,55,1958,1e9e37ca404e97d3e387855f1b40eca102eb2ad5d6412b939d46be496f78a72c,5.5,all official header sentinels PASS,PASS

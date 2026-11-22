@@ -1,0 +1,669 @@
+[Reading 665 lines from start (total: 665 lines, 0 remaining)]
+
+{
+  "status": "PASS_HERO_UTILS_SELECTOR_ROOT_MAPPING_AND_BYTECODE_DECODE",
+  "sourceFiles": {
+    "functionsCsvSha256": "ac04ed111c0cacdf7e385273fc94fd34ff15be864e5474f5ef56841d53f42c5c",
+    "constantsCsvSha256": "a9d7bb298e4bf8fdb45f6fc3eca70471277a88e5c43b395fb894797840470ccb",
+    "crosswalkCsvSha256": "0d8715d6e62810db4c599ba6be2261f183adef14f9c1fc3c7bad6dde31360fc3"
+  },
+  "versions": {
+    "lua54": {
+      "version": "5.4",
+      "sourceSha256": "11dc09c87bd052b81efa427ccfd800b5ec41b1d246a5d68f7a42df6dc728c53c",
+      "rootInstructionCount": 616,
+      "rootChildPrototypeCount": 167,
+      "selectors": {
+        "GetHeroXmlName": {
+          "functionIndex": 106,
+          "lineDefined": 1529,
+          "numParams": 1,
+          "instructionCount": 14,
+          "constantCount": 7,
+          "root": {
+            "constantIndex": 125,
+            "setfieldPc": 381,
+            "closurePc": 280,
+            "childPrototypeOrdinal": 99
+          },
+          "constants": [
+            {
+              "index": 0,
+              "type": "string",
+              "value": "LuaEntry"
+            },
+            {
+              "index": 1,
+              "type": "string",
+              "value": "DataConfig"
+            },
+            {
+              "index": 2,
+              "type": "string",
+              "value": "CheckSwitch"
+            },
+            {
+              "index": 3,
+              "type": "string",
+              "value": "ABtest_aps_new_heroes"
+            },
+            {
+              "index": 4,
+              "type": "string",
+              "value": "TableName"
+            },
+            {
+              "index": 5,
+              "type": "string",
+              "value": "NewHeroesB"
+            },
+            {
+              "index": 6,
+              "type": "string",
+              "value": "NewHeroes"
+            }
+          ],
+          "rawWords": [
+            "0000008b",
+            "0101008e",
+            "02018094",
+            "00018183",
+            "020300c4",
+            "000000c2",
+            "80000138",
+            "0400010b",
+            "0502010e",
+            "00020148",
+            "0400010b",
+            "0602010e",
+            "00020148",
+            "00010147"
+          ],
+          "decoded": [
+            "GETTABUP",
+            "GETFIELD",
+            "SELF",
+            "LOADK",
+            "CALL",
+            "TEST",
+            "JMP",
+            "GETTABUP",
+            "GETFIELD",
+            "RETURN1",
+            "GETTABUP",
+            "GETFIELD",
+            "RETURN1",
+            "RETURN0"
+          ],
+          "jumps": [
+            {
+              "pc": 6,
+              "word": "80000138",
+              "offset": 3,
+              "target": 10
+            }
+          ],
+          "testInstructions": [
+            {
+              "pc": 5,
+              "A": 1,
+              "k": 0
+            }
+          ]
+        },
+        "GetLwHeroTableName": {
+          "functionIndex": 107,
+          "lineDefined": 1538,
+          "numParams": 1,
+          "instructionCount": 16,
+          "constantCount": 7,
+          "root": {
+            "constantIndex": 126,
+            "setfieldPc": 382,
+            "closurePc": 281,
+            "childPrototypeOrdinal": 100
+          },
+          "constants": [
+            {
+              "index": 0,
+              "type": "string",
+              "value": "LuaEntry"
+            },
+            {
+              "index": 1,
+              "type": "string",
+              "value": "DataConfig"
+            },
+            {
+              "index": 2,
+              "type": "string",
+              "value": "CheckSwitch"
+            },
+            {
+              "index": 3,
+              "type": "string",
+              "value": "ABtest_lw_hero"
+            },
+            {
+              "index": 4,
+              "type": "string",
+              "value": "TableName"
+            },
+            {
+              "index": 5,
+              "type": "string",
+              "value": "LW_Hero_B"
+            },
+            {
+              "index": 6,
+              "type": "string",
+              "value": "LW_Hero"
+            }
+          ],
+          "rawWords": [
+            "0000008b",
+            "0101008e",
+            "02018094",
+            "00018183",
+            "020300c4",
+            "000000c2",
+            "80000238",
+            "00008042",
+            "80000138",
+            "0400010b",
+            "0502010e",
+            "00020148",
+            "0400010b",
+            "0602010e",
+            "00020148",
+            "00010147"
+          ],
+          "decoded": [
+            "GETTABUP",
+            "GETFIELD",
+            "SELF",
+            "LOADK",
+            "CALL",
+            "TEST",
+            "JMP",
+            "TEST",
+            "JMP",
+            "GETTABUP",
+            "GETFIELD",
+            "RETURN1",
+            "GETTABUP",
+            "GETFIELD",
+            "RETURN1",
+            "RETURN0"
+          ],
+          "jumps": [
+            {
+              "pc": 6,
+              "word": "80000238",
+              "offset": 5,
+              "target": 12
+            },
+            {
+              "pc": 8,
+              "word": "80000138",
+              "offset": 3,
+              "target": 12
+            }
+          ],
+          "testInstructions": [
+            {
+              "pc": 5,
+              "A": 1,
+              "k": 0
+            },
+            {
+              "pc": 7,
+              "A": 0,
+              "k": 1
+            }
+          ]
+        },
+        "GetHeroLevelUpXmlName": {
+          "functionIndex": 109,
+          "lineDefined": 1554,
+          "numParams": 1,
+          "instructionCount": 14,
+          "constantCount": 7,
+          "root": {
+            "constantIndex": 252,
+            "setfieldPc": 500,
+            "closurePc": 283,
+            "childPrototypeOrdinal": 102
+          },
+          "constants": [
+            {
+              "index": 0,
+              "type": "string",
+              "value": "LuaEntry"
+            },
+            {
+              "index": 1,
+              "type": "string",
+              "value": "DataConfig"
+            },
+            {
+              "index": 2,
+              "type": "string",
+              "value": "CheckSwitch"
+            },
+            {
+              "index": 3,
+              "type": "string",
+              "value": "ABtest_heroes_levelup"
+            },
+            {
+              "index": 4,
+              "type": "string",
+              "value": "TableName"
+            },
+            {
+              "index": 5,
+              "type": "string",
+              "value": "NewHeroesLevelUp_B"
+            },
+            {
+              "index": 6,
+              "type": "string",
+              "value": "NewHeroesLevelUp"
+            }
+          ],
+          "rawWords": [
+            "0000008b",
+            "0101008e",
+            "02018094",
+            "00018183",
+            "020300c4",
+            "000000c2",
+            "80000138",
+            "0400010b",
+            "0502010e",
+            "00020148",
+            "0400010b",
+            "0602010e",
+            "00020148",
+            "00010147"
+          ],
+          "decoded": [
+            "GETTABUP",
+            "GETFIELD",
+            "SELF",
+            "LOADK",
+            "CALL",
+            "TEST",
+            "JMP",
+            "GETTABUP",
+            "GETFIELD",
+            "RETURN1",
+            "GETTABUP",
+            "GETFIELD",
+            "RETURN1",
+            "RETURN0"
+          ],
+          "jumps": [
+            {
+              "pc": 6,
+              "word": "80000138",
+              "offset": 3,
+              "target": 10
+            }
+          ],
+          "testInstructions": [
+            {
+              "pc": 5,
+              "A": 1,
+              "k": 0
+            }
+          ]
+        }
+      }
+    },
+    "lua55": {
+      "version": "5.5",
+      "sourceSha256": "d99b88bba24b35e2400ac8f648570d82c4892140941211e19d53c50764aa153b",
+      "rootInstructionCount": 613,
+      "rootChildPrototypeCount": 167,
+      "selectors": {
+        "GetHeroXmlName": {
+          "functionIndex": 106,
+          "lineDefined": 1529,
+          "numParams": 1,
+          "instructionCount": 14,
+          "constantCount": 7,
+          "root": {
+            "constantIndex": 123,
+            "setfieldPc": 381,
+            "closurePc": 280,
+            "childPrototypeOrdinal": 99
+          },
+          "constants": [
+            {
+              "index": 0,
+              "type": "string",
+              "value": "LuaEntry"
+            },
+            {
+              "index": 1,
+              "type": "string",
+              "value": "DataConfig"
+            },
+            {
+              "index": 2,
+              "type": "string",
+              "value": "CheckSwitch"
+            },
+            {
+              "index": 3,
+              "type": "string",
+              "value": "ABtest_aps_new_heroes"
+            },
+            {
+              "index": 4,
+              "type": "string",
+              "value": "TableName"
+            },
+            {
+              "index": 5,
+              "type": "string",
+              "value": "NewHeroesB"
+            },
+            {
+              "index": 6,
+              "type": "string",
+              "value": "NewHeroes"
+            }
+          ],
+          "rawWords": [
+            "000000e2",
+            "010100e7",
+            "020100ae",
+            "000181d8",
+            "02030085",
+            "000000d0",
+            "8000012b",
+            "0400017d",
+            "05020112",
+            "00020111",
+            "04000162",
+            "0602017b",
+            "00020111",
+            "00010128"
+          ],
+          "decoded": [
+            "GETTABUP",
+            "GETFIELD",
+            "SELF",
+            "LOADK",
+            "CALL",
+            "TEST",
+            "JMP",
+            "GETTABUP",
+            "GETFIELD",
+            "RETURN1",
+            "GETTABUP",
+            "GETFIELD",
+            "RETURN1",
+            "RETURN0"
+          ],
+          "jumps": [
+            {
+              "pc": 6,
+              "word": "8000012b",
+              "offset": 3,
+              "target": 10
+            }
+          ],
+          "testInstructions": [
+            {
+              "pc": 5,
+              "A": 1,
+              "k": 0
+            }
+          ]
+        },
+        "GetLwHeroTableName": {
+          "functionIndex": 107,
+          "lineDefined": 1538,
+          "numParams": 1,
+          "instructionCount": 16,
+          "constantCount": 7,
+          "root": {
+            "constantIndex": 124,
+            "setfieldPc": 382,
+            "closurePc": 281,
+            "childPrototypeOrdinal": 100
+          },
+          "constants": [
+            {
+              "index": 0,
+              "type": "string",
+              "value": "LuaEntry"
+            },
+            {
+              "index": 1,
+              "type": "string",
+              "value": "DataConfig"
+            },
+            {
+              "index": 2,
+              "type": "string",
+              "value": "CheckSwitch"
+            },
+            {
+              "index": 3,
+              "type": "string",
+              "value": "ABtest_lw_hero"
+            },
+            {
+              "index": 4,
+              "type": "string",
+              "value": "TableName"
+            },
+            {
+              "index": 5,
+              "type": "string",
+              "value": "LW_Hero_B"
+            },
+            {
+              "index": 6,
+              "type": "string",
+              "value": "LW_Hero"
+            }
+          ],
+          "rawWords": [
+            "000000fd",
+            "01010092",
+            "020100ee",
+            "00018181",
+            "02030085",
+            "000000d0",
+            "8000022b",
+            "00008050",
+            "8000012b",
+            "0400017d",
+            "0502017b",
+            "00020111",
+            "04000162",
+            "06020112",
+            "00020111",
+            "00010128"
+          ],
+          "decoded": [
+            "GETTABUP",
+            "GETFIELD",
+            "SELF",
+            "LOADK",
+            "CALL",
+            "TEST",
+            "JMP",
+            "TEST",
+            "JMP",
+            "GETTABUP",
+            "GETFIELD",
+            "RETURN1",
+            "GETTABUP",
+            "GETFIELD",
+            "RETURN1",
+            "RETURN0"
+          ],
+          "jumps": [
+            {
+              "pc": 6,
+              "word": "8000022b",
+              "offset": 5,
+              "target": 12
+            },
+            {
+              "pc": 8,
+              "word": "8000012b",
+              "offset": 3,
+              "target": 12
+            }
+          ],
+          "testInstructions": [
+            {
+              "pc": 5,
+              "A": 1,
+              "k": 0
+            },
+            {
+              "pc": 7,
+              "A": 0,
+              "k": 1
+            }
+          ]
+        },
+        "GetHeroLevelUpXmlName": {
+          "functionIndex": 109,
+          "lineDefined": 1554,
+          "numParams": 1,
+          "instructionCount": 14,
+          "constantCount": 7,
+          "root": {
+            "constantIndex": 249,
+            "setfieldPc": 500,
+            "closurePc": 283,
+            "childPrototypeOrdinal": 102
+          },
+          "constants": [
+            {
+              "index": 0,
+              "type": "string",
+              "value": "LuaEntry"
+            },
+            {
+              "index": 1,
+              "type": "string",
+              "value": "DataConfig"
+            },
+            {
+              "index": 2,
+              "type": "string",
+              "value": "CheckSwitch"
+            },
+            {
+              "index": 3,
+              "type": "string",
+              "value": "ABtest_heroes_levelup"
+            },
+            {
+              "index": 4,
+              "type": "string",
+              "value": "TableName"
+            },
+            {
+              "index": 5,
+              "type": "string",
+              "value": "NewHeroesLevelUp_B"
+            },
+            {
+              "index": 6,
+              "type": "string",
+              "value": "NewHeroesLevelUp"
+            }
+          ],
+          "rawWords": [
+            "000000fd",
+            "01010092",
+            "020100ee",
+            "000181f9",
+            "02030085",
+            "000000d0",
+            "8000012b",
+            "0400017d",
+            "0502017b",
+            "00020111",
+            "04000162",
+            "06020167",
+            "00020111",
+            "00010128"
+          ],
+          "decoded": [
+            "GETTABUP",
+            "GETFIELD",
+            "SELF",
+            "LOADK",
+            "CALL",
+            "TEST",
+            "JMP",
+            "GETTABUP",
+            "GETFIELD",
+            "RETURN1",
+            "GETTABUP",
+            "GETFIELD",
+            "RETURN1",
+            "RETURN0"
+          ],
+          "jumps": [
+            {
+              "pc": 6,
+              "word": "8000012b",
+              "offset": 3,
+              "target": 10
+            }
+          ],
+          "testInstructions": [
+            {
+              "pc": 5,
+              "A": 1,
+              "k": 0
+            }
+          ]
+        }
+      }
+    }
+  },
+  "conclusions": {
+    "GetHeroXmlName": {
+      "signature": "one formal parameter; parameter not read by this selector",
+      "switch": "ABtest_aps_new_heroes",
+      "trueReturn": "TableName.NewHeroesB",
+      "falseOrNilReturn": "TableName.NewHeroes",
+      "controlFlow": "TEST PC5 / JMP PC6→PC10; true switch skips JMP and returns PC9; false/nil executes JMP and returns PC12."
+    },
+    "GetHeroLevelUpXmlName": {
+      "signature": "one formal parameter; parameter not read by this selector",
+      "switch": "ABtest_heroes_levelup",
+      "trueReturn": "TableName.NewHeroesLevelUp_B",
+      "falseOrNilReturn": "TableName.NewHeroesLevelUp",
+      "controlFlow": "TEST PC5 / JMP PC6→PC10; true switch skips JMP and returns PC9; false/nil executes JMP and returns PC12."
+    },
+    "GetLwHeroTableName": {
+      "signature": "one formal parameter in R0; no local debug name is present in the chunk",
+      "switch": "ABtest_lw_hero",
+      "returns": {
+        "pc11": "TableName.LW_Hero_B",
+        "pc14": "TableName.LW_Hero"
+      },
+      "controlFlow": "If CheckSwitch is false/nil, PC6 jumps to PC12 and returns LW_Hero. If CheckSwitch is true, execution reaches TEST R0 k=1 at PC7. If the argument in R0 is false/nil, TEST skips PC8 JMP and returns LW_Hero_B at PC11. If R0 is truthy, PC8 JMP→PC12 returns LW_Hero.",
+      "rule": "LW_Hero_B iff CheckSwitch('ABtest_lw_hero') is truthy AND the single argument R0 is false/nil; otherwise LW_Hero.",
+      "unresolved": "The semantic name and real-world meaning of the formal parameter, plus actual caller values, remain unverified. A repository-wide exact-string search of the available function-constant inventory found no GetLwHeroTableName callsite."
+    }
+  }
+}\n
+
+[executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]

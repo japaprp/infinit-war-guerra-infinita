@@ -1,0 +1,9 @@
+EvidenceLevel,Category,NormalizedMatchLinks,LinksWithGetTableDataSymbol,DistinctModuleVariants,DistinctMatchedTables,Interpretation
+Overall,All exact normalized constant-to-index-name matches,883,453,792,34,Constant-pool match only; same-module API co-occurrence is not a confirmed callsite
+Category,Building,83,52,75,3,Matches building; dragon_building; season_donate_building
+Category,Heroes,6,3,6,2,Matches heroes_exclusive_equip; pve_heroes
+Category,Equipment,4,1,4,2,Matches car_equip; heroes_exclusive_equip
+Category,Seasons,50,37,41,12,Matches 12 season-prefixed table names
+Category,Activities,119,93,114,10,Includes season_activity_panel as well as activity-prefixed tables
+Category,World and territory,90,79,89,2,Matches worldcity; worldcity_color
+Category,Events,0,0,0,0,No exact normalized event-table constant match in the current candidate extraction; event tables remain present in the index

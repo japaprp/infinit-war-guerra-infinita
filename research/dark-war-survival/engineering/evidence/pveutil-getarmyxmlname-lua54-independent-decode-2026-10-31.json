@@ -1,0 +1,45 @@
+{
+  "status": "PASS_INDEPENDENT_LUA54_FIELD_AND_CONTROL_FLOW_DECODE",
+  "source": {
+    "module": "PveUtil",
+    "luaVersion": "5.4",
+    "functionIndex": 136,
+    "lineDefined": 3163,
+    "instructionCount": 14,
+    "sha256": "691089c87fbb6beb6452f88be999e19f118b961f809955c721087071eb2f161a"
+  },
+  "decoder": {
+    "jumpPc": 6,
+    "jumpWord": "80000138",
+    "jumpSignedOffset": 3,
+    "jumpTarget": 10,
+    "testPc": 5,
+    "testWord": "00000042",
+    "testA": 0,
+    "testK": 0,
+    "testSkipTarget": 7
+  },
+  "branchInterpretation": {
+    "switchTrue": {
+      "nextPc": 7,
+      "returnAtPc": 9,
+      "returnConstant": "Army_B"
+    },
+    "switchFalse": {
+      "jumpTarget": 10,
+      "returnAtPc": 12,
+      "returnConstant": "Army"
+    }
+  },
+  "referenceSemantics": {
+    "source": "Lua 5.4.9",
+    "opTest": "cond = !l_isfalse(R[A]); docondjump()",
+    "docondjump": "if (cond != k) skip next instruction; otherwise execute following JMP",
+    "references": [
+      "https://www.lua.org/source/5.4/lvm.c.html",
+      "https://www.lua.org/source/5.4/lopcodes.h.html"
+    ]
+  },
+  "scriptSha256": "A0FEC6AF1C129415FCDC5E4E7E6EEF6A60CB6330986A95FE712D242CF112287E",
+  "localReportSha256": "05D3D23D88C372F704FAAAAC086ED0B2F628BB1040585D53B884AAC8D121614B"
+}

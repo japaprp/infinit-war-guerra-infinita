@@ -1,0 +1,183 @@
+{
+  "status": "PASS_HERO_SELECTOR_CALLSITE_AND_LW_PARAMETER_STATIC_AUDIT",
+  "sources": {
+    "callsiteReport": "validation-reports/HERO_SELECTOR_CALLSITES_2026-10-31.json",
+    "rootMappingReport": "validation-reports/HERO_UTILS_SELECTOR_ROOT_MAPPING_2026-10-31.json",
+    "functionsCsvSha256": "b06cd1e049068619132ba27b044f429ac2fb4d078bd9302b18f9b43a67456552",
+    "constantsCsvSha256": "b82332aa1399d1e8b29fe913ad07e1c5e2eaa121c805aff7a852eda36d45b079",
+    "lua55CrosswalkCsvSha256": "0d8715d6e62810db4c599ba6be2261f183adef14f9c1fc3c7bad6dde31360fc3"
+  },
+  "getHeroXmlName": {
+    "callsiteCount": 20,
+    "perVersion": {
+      "lua54": 10,
+      "lua55": 10
+    },
+    "modules": [
+      {
+        "name": "HeroDataManager",
+        "callsPerVersion": 2,
+        "functions": [
+          {
+            "index": 43,
+            "line": 609
+          },
+          {
+            "index": 46,
+            "line": 638
+          }
+        ]
+      },
+      {
+        "name": "HeroEquipManager",
+        "callsPerVersion": 3,
+        "functions": [
+          {
+            "index": 25,
+            "line": 252
+          },
+          {
+            "index": 34,
+            "line": 377
+          },
+          {
+            "index": 35,
+            "line": 390
+          }
+        ]
+      },
+      {
+        "name": "HeroWeaponManager",
+        "callsPerVersion": 1,
+        "functions": [
+          {
+            "index": 6,
+            "line": 37
+          }
+        ]
+      },
+      {
+        "name": "UIHeroListCtrl",
+        "callsPerVersion": 2,
+        "functions": [
+          {
+            "index": 15,
+            "line": 282,
+            "callPcs": [
+              10,
+              24
+            ]
+          }
+        ]
+      },
+      {
+        "name": "UIWorldCupActListPanelCtrl",
+        "callsPerVersion": 2,
+        "functions": [
+          {
+            "index": 4,
+            "line": 12,
+            "callPcs": [
+              91,
+              107
+            ]
+          }
+        ]
+      }
+    ],
+    "explicitArguments": 0,
+    "returnValues": 1
+  },
+  "getLwHeroTableName": {
+    "functionIndex": 107,
+    "childPrototypeOrdinal": 100,
+    "lines": [
+      1538,
+      1544
+    ],
+    "formalParameters": 1,
+    "parameterRegister": "R0",
+    "parameterSemantic": "UNKNOWN",
+    "switch": "ABtest_lw_hero",
+    "outputs": {
+      "variantB": "TableName.LW_Hero_B",
+      "base": "TableName.LW_Hero"
+    },
+    "rule": "LW_Hero_B iff switch is truthy AND R0 is false/nil; otherwise LW_Hero",
+    "lua54": {
+      "testSwitch": {
+        "pc": 5,
+        "opcodeId": 66,
+        "A": 1,
+        "k": 0
+      },
+      "jumpSwitch": {
+        "pc": 6,
+        "opcodeId": 56,
+        "sJ": 5,
+        "target": 12
+      },
+      "testParameter": {
+        "pc": 7,
+        "opcodeId": 66,
+        "A": 0,
+        "k": 1
+      },
+      "jumpParameter": {
+        "pc": 8,
+        "opcodeId": 56,
+        "sJ": 3,
+        "target": 12
+      }
+    },
+    "lua55": {
+      "testSwitch": {
+        "pc": 5,
+        "opcodeId": 80,
+        "A": 1,
+        "k": 0
+      },
+      "jumpSwitch": {
+        "pc": 6,
+        "opcodeId": 43,
+        "sJ": 5,
+        "target": 12
+      },
+      "testParameter": {
+        "pc": 7,
+        "opcodeId": 80,
+        "A": 0,
+        "k": 1
+      },
+      "jumpParameter": {
+        "pc": 8,
+        "opcodeId": 43,
+        "sJ": 3,
+        "target": 12
+      }
+    },
+    "callsiteCount": 0,
+    "actualRuntimeSwitchValue": "NOT OBSERVED",
+    "actualCallerArgument": "NOT OBSERVED"
+  },
+  "otherSelectorSearch": {
+    "GetLwHeroTableName": {
+      "constantReferences": 0,
+      "callsiteCount": 0
+    },
+    "GetHeroLevelUpXmlName": {
+      "constantReferences": 0,
+      "callsiteCount": 0
+    }
+  },
+  "memory": {
+    "freeRamMB": 420.2,
+    "requiredBeforeAssetRipperLoadMB": 875,
+    "bundleLoadOrExport": "BLOCKED"
+  },
+  "limits": [
+    "Static exact GETFIELD→CALL scan only; dynamic calls/reflection may not be visible.",
+    "No active server switch values inferred.",
+    "No physical DataTable export performed."
+  ]
+}

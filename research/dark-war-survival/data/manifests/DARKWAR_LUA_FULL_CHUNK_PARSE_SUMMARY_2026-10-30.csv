@@ -1,0 +1,4 @@
+﻿"Scope","Files","Functions","Instructions","Constants","StringOccurrences","Status"
+"Lua 5.4","6185","89544","3166597","914094","1250701","PASS"
+"Lua 5.5","6185","89544","3164334","911305","1320504","PASS"
+"ALL","12370","179088","6330931","1825399","2571205","PASS"

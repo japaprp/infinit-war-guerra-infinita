@@ -1,0 +1,304 @@
+[Reading 300 lines from start (total: 788 lines, 488 remaining)]
+
+{
+  "status": "PASS_HERODATA_MANAGER_DYNAMIC_HERO_TABLE_CONSUMER_TRACE",
+  "method": "Decoded the exact GETFIELD→CALL selector use and subsequent GETTableData call from existing full-chunk function inventory. Lua 5.5 names use high-confidence empirical crosswalk entries only.",
+  "sourceHashes": {
+    "functionsCsv": "b06cd1e049068619132ba27b044f429ac2fb4d078bd9302b18f9b43a67456552",
+    "constantsCsv": "b82332aa1399d1e8b29fe913ad07e1c5e2eaa121c805aff7a852eda36d45b079",
+    "crosswalkCsv": "0d8715d6e62810db4c599ba6be2261f183adef14f9c1fc3c7bad6dde31360fc3"
+  },
+  "consumers": [
+    {
+      "version": "5.4",
+      "functionIndex": 43,
+      "lineDefined": 609,
+      "lastLineDefined": 620,
+      "parameters": 2,
+      "instructions": 43,
+      "constants": [
+        {
+          "index": 0,
+          "value": "HeroCamp"
+        },
+        {
+          "index": 1,
+          "value": "All"
+        },
+        {
+          "index": 2,
+          "value": null
+        },
+        {
+          "index": 3,
+          "value": "HeroUtils"
+        },
+        {
+          "index": 4,
+          "value": "RarityType"
+        },
+        {
+          "index": 5,
+          "value": "S"
+        },
+        {
+          "index": 6,
+          "value": "pairs"
+        },
+        {
+          "index": 7,
+          "value": "masterHero"
+        },
+        {
+          "index": 8,
+          "value": "GetTableData"
+        },
+        {
+          "index": 9,
+          "value": "GetHeroXmlName"
+        },
+        {
+          "index": 10,
+          "value": "heroId"
+        },
+        {
+          "index": 11,
+          "value": "camp"
+        },
+        {
+          "index": 12,
+          "value": "rarity"
+        },
+        {
+          "index": 13,
+          "value": "IsMaxQuality"
+        }
+      ],
+      "selectorCall": {
+        "getField": {
+          "pc": 18,
+          "word": "090c060e",
+          "op": "GETFIELD",
+          "A": 12,
+          "B": 12,
+          "C": 9,
+          "Bx": 4632
+        },
+        "call": {
+          "pc": 19,
+          "word": "02010644",
+          "op": "CALL",
+          "A": 12,
+          "B": 1,
+          "C": 2,
+          "Bx": 1026
+        },
+        "explicitArguments": 0,
+        "returnsOneValue": true,
+        "resultRegister": 12
+      },
+      "getTableDataCall": {
+        "lookup": {
+          "pc": 16,
+          "word": "0800058b",
+          "op": "GETTABUP",
+          "A": 11,
+          "B": 0,
+          "C": 8,
+          "Bx": 4096
+        },
+        "call": {
+          "pc": 22,
+          "word": "020405c4",
+          "op": "CALL",
+          "A": 11,
+          "B": 4,
+          "C": 2,
+          "Bx": 1032
+        },
+        "explicitArguments": 3,
+        "returnsOneValue": 1,
+        "arguments": "tableName from GetHeroXmlName(); heroId; camp"
+      },
+      "campLoads": [
+        {
+          "pc": 21,
+          "word": "00058703",
+          "op": "LOADK",
+          "A": 14,
+          "B": 5,
+          "C": 0,
+          "Bx": 11
+        }
+      ],
+      "trace": [
+        {
+          "pc": 16,
+          "word": "0800058b",
+          "op": "GETTABUP",
+          "A": 11,
+          "B": 0,
+          "C": 8,
+          "Bx": 4096
+        },
+        {
+          "pc": 17,
+          "word": "0300060b",
+          "op": "GETTABUP",
+          "A": 12,
+          "B": 0,
+          "C": 3,
+          "Bx": 1536
+        },
+        {
+          "pc": 18,
+          "word": "090c060e",
+          "op": "GETFIELD",
+          "A": 12,
+          "B": 12,
+          "C": 9,
+          "Bx": 4632
+        },
+        {
+          "pc": 19,
+          "word": "02010644",
+          "op": "CALL",
+          "A": 12,
+          "B": 1,
+          "C": 2,
+          "Bx": 1026
+        },
+        {
+          "pc": 20,
+          "word": "0a0a068e",
+          "op": "GETFIELD",
+          "A": 13,
+          "B": 10,
+          "C": 10,
+          "Bx": 5140
+        },
+        {
+          "pc": 21,
+          "word": "00058703",
+          "op": "LOADK",
+          "A": 14,
+          "B": 5,
+          "C": 0,
+          "Bx": 11
+        },
+        {
+          "pc": 22,
+          "word": "020405c4",
+          "op": "CALL",
+          "A": 11,
+          "B": 4,
+          "C": 2,
+          "Bx": 1032
+        }
+      ]
+    },
+    {
+      "version": "5.4",
+      "functionIndex": 46,
+      "lineDefined": 638,
+      "lastLineDefined": 666,
+      "parameters": 1,
+      "instructions": 71,
+      "constants": [
+        {
+          "index": 0,
+          "value": "pairs"
+        },
+        {
+          "index": 1,
+          "value": "typeHeroes"
+        },
+        {
+          "index": 2,
+          "value": null
+        },
+        {
+          "index": 3,
+          "value": "ipairs"
+        },
+        {
+          "index": 4,
+          "value": "isMaster"
+        },
+        {
+          "index": 5,
+          "value": "quality"
+        },
+        {
+          "index": 6,
+          "value": "table"
+        },
+        {
+          "index": 7,
+          "value": "insert"
+        },
+        {
+          "index": 8,
+          "value": "uuid"
+        },
+        {
+          "index": 9,
+          "value": "GetTableData"
+        },
+        {
+          "index": 10,
+          "value": "HeroUtils"
+        },
+        {
+          "index": 11,
+          "value": "GetHeroXmlName"
+        },
+        {
+          "index": 12,
+          "value": "camp"
+        },
+        {
+          "index": 13,
+          "value": "heroId"
+        },
+        {
+          "index": 14,
+          "value": "rarity"
+        },
+        {
+          "index": 15,
+          "value": "uuidList"
+        },
+        {
+          "index": 16,
+          "value": "count"
+        }
+      ],
+      "selectorCall": {
+        "getField": {
+          "pc": 37,
+          "word": "0b0a050e",
+          "op": "GETFIELD",
+          "A": 10,
+          "B": 10,
+          "C": 11,
+          "Bx": 5652
+        },
+        "call": {
+          "pc": 38,
+          "word": "02010544",
+          "op": "CALL",
+          "A": 10,
+          "B": 1,
+          "C": 2,
+          "Bx": 1026
+        },
+        "explicitArguments": 0,
+        "returnsOneValue": true,
+        "resultRegister": 10
+      },
+      "getTableDataCall": {
+        "lookup": {
+          "pc": 35,
+
+[executed on device: WIN-RPC1DR79TVC (a1fb0fea-9200-442c-8e10-e849494b85b1)]
