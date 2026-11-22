@@ -38,3 +38,20 @@ jobs:
       - name: Run backend integration tests
         run: npm run test:integration
         working-directory: backend
+
+  frontend-static-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Check game JavaScript syntax
+        run: node --check engine/game.js
+
+      - name: Validate recruitable hero asset
+        run: node scripts/validate-hero-assets.mjs

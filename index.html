@@ -1,45 +1,46 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:4000 https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com;">
-<title>Infinit War (Guerra Infinita)</title>
+<meta name="theme-color" content="#111a1c">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:4000;">
+<title>Guerra Infinita — Sobrevivência</title>
 <link rel="stylesheet" href="style.css">
 </head>
-<body class="menu">
-<main class="menu-container">
-    <h1>Infinit War</h1>
-    <p class="subtitle">Escolha seu elemento e entre na arena.</p>
-
-    <div class="auth-box">
-        <p id="authStatus" class="auth-status">Conta: nao vinculada</p>
-        <div class="auth-actions">
-            <button type="button" id="googleLoginBtn" class="oauth-btn google">Vincular Google</button>
-            <button type="button" id="facebookLoginBtn" class="oauth-btn facebook">Vincular Facebook</button>
-            <button type="button" id="logoutBtn" class="oauth-btn logout">Desvincular</button>
-        </div>
+<body class="entry-screen">
+<main class="war-entry">
+  <div class="entry-skyline" aria-hidden="true"></div>
+  <header class="entry-topline">
+    <div class="entry-brand"><span class="brand-mark">GI</span><span>GUERRA <b>INFINITA</b><small>SOBREVIVA. RECONSTRUA.</small></span></div>
+  </header>
+  <section class="entry-content">
+    <div class="entry-copy">
+      <p class="entry-eyebrow">O MUNDO MUDOU. SUA HISTÓRIA COMEÇA AQUI.</p>
+      <h1>GUERRA<br><em>INFINITA</em></h1>
+      <p class="entry-description">Reúna sobreviventes, construa sua base e prepare seu esquadrão.</p>
+      <div class="entry-login">
+        <label class="entry-nick-label" for="email">ENTRE COM SEU E-MAIL</label>
+        <input type="email" id="email" placeholder="voce@exemplo.com" autocomplete="email" inputmode="email" maxlength="254" required>
+        <label class="entry-nick-label entry-nick-secondary" for="nickname">NOME DO COMANDANTE <span>(opcional)</span></label>
+        <input type="text" id="nickname" placeholder="Como quer ser chamado?" maxlength="16" autocomplete="nickname">
+        <button type="button" id="startGameBtn" class="entry-start-btn"><span>CONFIRMAR E ENTRAR</span><b>➜</b></button>
+        <div class="entry-divider"><span>OU</span></div>
+        <button type="button" id="googleLoginBtn" class="entry-google-btn"><span class="google-mark">G</span> CONTINUAR COM GOOGLE</button>
+        <p id="entryMessage" class="entry-auth-note" role="status">Versão de teste: o acesso por e-mail fica salvo apenas neste dispositivo.</p>
+      </div>
     </div>
-
-    <label class="field-label" for="nickname">Nickname</label>
-    <input type="text" id="nickname" placeholder="Digite seu nickname" maxlength="16" autocomplete="off">
-
-    <h2>Escolha seu elemento</h2>
-    <div class="elements" role="group" aria-label="Selecao de elemento">
-        <button type="button" class="element-btn is-selected" data-element="fire">Fogo</button>
-        <button type="button" class="element-btn" data-element="water">Agua</button>
-        <button type="button" class="element-btn" data-element="earth">Terra</button>
+    <div class="entry-art" aria-hidden="true">
+      <div class="entry-sun"></div><div class="entry-smoke smoke-one"></div><div class="entry-smoke smoke-two"></div>
+      <div class="entry-ridge ridge-back"></div><div class="entry-ridge ridge-front"></div>
+      <div class="entry-ruins"><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="entry-ground"></div><div class="entry-hero-shadow"></div>
+      <img class="entry-hero" src="assets/characters/hero_recruit.png" alt="Sobrevivente em equipamento tático" onerror="this.style.display='none'">
+      <div class="entry-art-label"><b>GUERRA INFINITA</b><span>RECONSTRUA SUA BASE</span></div>
     </div>
-
-    <button type="button" id="startGameBtn" class="start-btn">Entrar na Arena</button>
+  </section>
+  <footer class="entry-footer"><span>UM MUNDO EM RUÍNAS. UMA NOVA CHANCE.</span><span>VERSÃO DE DESENVOLVIMENTO</span></footer>
 </main>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
-<script src="api/config.js" defer></script>
-<script src="api/client.js" defer></script>
-<script src="auth/firebase-config.js" defer></script>
-<script src="auth/auth.js" defer></script>
 <script src="main.js" defer></script>
 </body>
 </html>

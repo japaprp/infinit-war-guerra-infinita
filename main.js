@@ -1,61 +1,53 @@
-﻿(() => {
-    let selectedElement = "fire";
+(() => {
     const AUTH_SESSION_KEY = "iwar_auth_session";
     const LEGACY_AUTH_SESSION_KEY = "gde_auth_session";
 
+    const emailInput = document.getElementById("email");
     const nicknameInput = document.getElementById("nickname");
-    const elementButtons = Array.from(document.querySelectorAll(".element-btn"));
     const startButton = document.getElementById("startGameBtn");
+    const googleButton = document.getElementById("googleLoginBtn");
+    const message = document.getElementById("entryMessage");
 
-    const migrateLegacySession = () => {
-        if (localStorage.getItem(AUTH_SESSION_KEY)) return;
+    const setMessage = (text) => {
+        if (message) message.textContent = text;
+    };
+
+    if (!localStorage.getItem(AUTH_SESSION_KEY)) {
         const legacy = localStorage.getItem(LEGACY_AUTH_SESSION_KEY);
         if (legacy) localStorage.setItem(AUTH_SESSION_KEY, legacy);
-    };
+    }
 
-    migrateLegacySession();
+    startButton?.addEventListener("click", () => {
+        const email = (emailInput?.value || "").trim().toLowerCase();
+        if (!emailInput || !emailInput.checkValidity() || !email) {
+            emailInput?.setCustomValidity("Digite um e-mail válido.");
+            emailInput?.reportValidity();
+            emailInput?.focus();
+            return;
+        }
+        emailInput.setCustomValidity("");
 
-    const updateElementSelection = (element) => {
-        selectedElement = element;
-        elementButtons.forEach((button) => {
-            const isSelected = button.dataset.element === element;
-            button.classList.toggle("is-selected", isSelected);
-        });
-    };
+        const nick = (nicknameInput?.value || "").trim();
+        const safeNick = nick.replace(/[^a-zA-Z0-9_\- À-ÿ]/g, "").slice(0, 16);
+        const fallbackNick = email.split("@")[0].replace(/[^a-zA-Z0-9_\- À-ÿ]/g, "").slice(0, 16);
+        const finalNick = safeNick || fallbackNick || "Comandante";
 
-    elementButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-            updateElementSelection(button.dataset.element);
-        });
+        // Prototype-only access: this stores an email locally, it does not authenticate ownership.
+        const session = {
+            uid: "guest-" + email,
+            email,
+            displayName: finalNick,
+            provider: "email-local",
+            linkedAt: Date.now(),
+            localOnly: true
+        };
+        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+        localStorage.setItem("playerNick", finalNick);
+        localStorage.setItem("playerEmail", email);
+        window.location.href = "game.html";
     });
 
-    startButton.addEventListener("click", () => {
-        const nick = nicknameInput.value.trim();
-        let authSession = null;
-
-        try {
-            const raw = localStorage.getItem(AUTH_SESSION_KEY);
-            authSession = raw ? JSON.parse(raw) : null;
-        } catch {
-            authSession = null;
-        }
-
-        if (!nick) {
-            alert("Digite um nickname antes de entrar na arena.");
-            nicknameInput.focus();
-            return;
-        }
-
-        if (!authSession || !authSession.uid) {
-            alert("Vincule sua conta Google ou Facebook antes de entrar.");
-            return;
-        }
-
-        const safeNick = nick.replace(/[^a-zA-Z0-9_\- ]/g, "").slice(0, 16);
-
-        localStorage.setItem("playerNick", safeNick || "Jogador");
-        localStorage.setItem("playerElement", selectedElement);
-
-        window.location.href = "game.html";
+    googleButton?.addEventListener("click", () => {
+        setMessage("O login Google ainda precisa ser configurado no Firebase. O botão ficará funcional depois dessa configuração.");
     });
 })();

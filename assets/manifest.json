@@ -1,4 +1,4 @@
-﻿{
+{
   "map": {
     "terrain": "assets/map/terrain_grass_dark.png",
     "roads": "assets/map/roads_dirt.png",
@@ -25,5 +25,8 @@
     "wood": "assets/ui/icon_wood.png",
     "food": "assets/ui/icon_food.png",
     "gem": "assets/ui/icon_gem.png"
+  },
+  "characters": {
+    "hero_recruit": "assets/characters/hero_recruit.png"
   }
 }
